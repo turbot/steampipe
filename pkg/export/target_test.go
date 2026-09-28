@@ -2,6 +2,9 @@ package export
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -39,3 +42,46 @@ func TestTarget_Export_NilExporter(t *testing.T) {
 type mockExportSourceData struct{}
 
 func (m *mockExportSourceData) IsExportSourceData() {}
+
+// TestTarget_Export_Message tests that the status message returned by Target.Export()
+// reports a relative filePath joined with the working directory, and reports an
+// absolute filePath as-is (not doubled with the working directory).
+func TestTarget_Export_Message(t *testing.T) {
+	pwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+
+	testCases := []struct {
+		name     string
+		filePath string
+		expect   string
+	}{
+		{
+			name:     "relative path",
+			filePath: "output.json",
+			expect:   fmt.Sprintf("File exported to %s", filepath.Join(pwd, "output.json")),
+		},
+		{
+			name:     "absolute path",
+			filePath: filepath.Join(pwd, "abs", "output.json"),
+			expect:   fmt.Sprintf("File exported to %s", filepath.Join(pwd, "abs", "output.json")),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			target := &Target{
+				exporter: &testExporter{extension: ".json", name: "noop"},
+				filePath: tc.filePath,
+			}
+			msg, err := target.Export(context.Background(), &mockExportSourceData{})
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if msg != tc.expect {
+				t.Errorf("expected message %q, got %q", tc.expect, msg)
+			}
+		})
+	}
+}
