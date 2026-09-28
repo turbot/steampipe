@@ -198,7 +198,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 		timeoutCtx,
 		conn,
 		db_common.WithRetryInterval(constants.DBConnectionRetryBackoff),
-		db_common.WithTimeout(viper.GetDuration(pconstants.ArgDatabaseStartTimeout)*time.Second),
+		db_common.WithTimeout(time.Duration(viper.GetInt(pconstants.ArgDatabaseStartTimeout))*time.Second),
 	)
 	if err != nil {
 		conn.Close(ctx)
