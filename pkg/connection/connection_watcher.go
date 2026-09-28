@@ -75,8 +75,17 @@ func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 	if !errorsAndWarnings.Empty() {
 		w.pluginManager.SendPostgresErrorsAndWarningsNotification(ctx, errorsAndWarnings)
 		// if there was an error return
+		//
+		// NOTE: this aborts the refresh for EVERY connection, not just the one
+		// the config error relates to, and it will keep doing so on every
+		// subsequent file event for as long as the config folder fails to
+		// parse - so connections silently stop being created and credential
+		// updates stop being applied while the watcher itself keeps running.
+		// Log at ERROR level so this is visible at default log levels: it
+		// names the file to fix, and it is the only signal that syncing has
+		// stopped.
 		if errorsAndWarnings.GetError() != nil {
-			log.Printf("[WARN] error loading updated connection config: %v", errorsAndWarnings.GetError())
+			log.Printf("[ERROR] error loading updated connection config - NO connections will be refreshed until this is resolved: %v", errorsAndWarnings.GetError())
 			return
 		}
 	}
