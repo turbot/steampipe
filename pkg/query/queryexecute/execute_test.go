@@ -185,8 +185,7 @@ func TestShowBlankLineBetweenResults_DefaultValues(t *testing.T) {
 
 func TestHandlePublishSnapshotError_PaymentRequired(t *testing.T) {
 	// ARRANGE: Create a 402 Payment Required error
-	err := assert.AnError
-	err = &mockError{msg: "402 Payment Required"}
+	err := &mockError{msg: "402 Payment Required"}
 
 	// ACT: Handle the error
 	result := handlePublishSnapshotError(err)

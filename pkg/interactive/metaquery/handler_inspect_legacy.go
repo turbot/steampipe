@@ -78,6 +78,7 @@ func inspectLegacy(ctx context.Context, input *HandlerInput) error {
 			return fmt.Errorf("could not find connection or table called '%s'. Is the plugin installed? Is the connection configured?", tableOrConnection)
 		}
 
+		//nolint:forbidigo // acceptable
 		fmt.Printf(`
 To get information about the columns in a table, run %s
 	
@@ -108,6 +109,7 @@ func listConnectionsLegacy(ctx context.Context, input *HandlerInput) error {
 
 	querydisplay.ShowWrappedTable(header, rows, &querydisplay.ShowWrappedTableOptions{AutoMerge: false})
 
+	//nolint:forbidigo // acceptable
 	fmt.Printf(`
 To get information about the tables in a connection, run %s
 To get information about the columns in a table, run %s

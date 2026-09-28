@@ -506,7 +506,7 @@ func TestSetDefaultsFromConfig_ConcurrentCalls(t *testing.T) {
 		go func(id int) {
 			defer func() { done <- true }()
 			configMap := map[string]interface{}{
-				"key-" + string(rune('A'+id)): "value-" + string(rune('0'+id)),
+				"key-" + string(rune('A'+id)): "value-" + string(rune('0'+id)), //nolint:gosec // G115: id is a loop index bounded by numGoroutines (5), nowhere near rune overflow
 			}
 			SetDefaultsFromConfig(configMap)
 		}(i)

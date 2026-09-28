@@ -20,9 +20,9 @@ func DisplayTiming(result *queryresult.Result, rowCount int) {
 	if viper.GetString(pconstants.ArgTiming) != pconstants.ArgOff && timingResult != nil {
 		str := buildTimingString(timingResult)
 		if viper.GetBool(pconstants.ConfigKeyInteractive) {
-			fmt.Println(str)
+			fmt.Println(str) //nolint:forbidigo // acceptable
 		} else {
-			fmt.Fprintln(os.Stderr, str)
+			fmt.Fprintln(os.Stderr, str) //nolint:forbidigo // acceptable
 		}
 	}
 }
@@ -166,7 +166,7 @@ func formatQuals(scan *queryresult.ScanMetadataRow) string {
 				// Build the string of array elements
 				valueElements := make([]string, val.Len())
 				for i := 0; i < val.Len(); i++ {
-					valueElements[i] = fmt.Sprintf("%s", formatQualValue(val.Index(i).Interface()))
+					valueElements[i] = formatQualValue(val.Index(i).Interface())
 				}
 				valueStr = fmt.Sprintf("(%s)", strings.Join(valueElements, ", "))
 			} else {

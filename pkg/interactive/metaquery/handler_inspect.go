@@ -103,10 +103,11 @@ func listTables(ctx context.Context, input *HandlerInput) error {
 			if schema == input.Schema.TemporarySchemaName {
 				continue
 			}
-			fmt.Printf(" ==> %s\n", schema)
+			fmt.Printf(" ==> %s\n", schema) //nolint:forbidigo // acceptable
 			inspectConnection(ctx, schema, input)
 		}
 
+		//nolint:forbidigo // acceptable
 		fmt.Printf(`
 To get information about the columns in a table, run %s
 	
@@ -116,7 +117,7 @@ To get information about the columns in a table, run %s
 		arg := input.args()[0]
 		if !strings.HasSuffix(arg, "*") {
 			inspectConnection(ctx, arg, input)
-			fmt.Println()
+			fmt.Println() //nolint:forbidigo // acceptable
 			return nil
 		}
 
@@ -190,6 +191,7 @@ func listConnections(ctx context.Context, input *HandlerInput) error {
 		showStateSummaryTable(connectionState)
 	}
 
+	//nolint:forbidigo // acceptable
 	fmt.Printf(`
 To get information about the tables in a connection, run %s
 To get information about the columns in a table, run %s

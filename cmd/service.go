@@ -243,7 +243,7 @@ func startServiceAndRefreshConnections(ctx context.Context, listenAddresses []st
 }
 
 func runServiceInForeground(ctx context.Context) {
-	fmt.Println("Hit Ctrl+C to stop the service")
+	fmt.Println("Hit Ctrl+C to stop the service") //nolint:forbidigo // acceptable
 
 	sigIntChannel := make(chan os.Signal, 1)
 	signal.Notify(sigIntChannel, os.Interrupt)
@@ -262,11 +262,11 @@ func runServiceInForeground(ctx context.Context) {
 				continue
 			}
 			if newInfo == nil {
-				fmt.Println("Steampipe service stopped.")
+				fmt.Println("Steampipe service stopped.") //nolint:forbidigo // acceptable
 				return
 			}
 		case <-sigIntChannel:
-			fmt.Print("\r")
+			fmt.Print("\r") //nolint:forbidigo // acceptable
 			// if we have received this signal, then the user probably wants to shut down
 			// everything. Shutdowns MUST NOT happen in cancellable contexts
 			connectedClients, err := db_local.GetClientCount(context.Background())
@@ -280,15 +280,15 @@ func runServiceInForeground(ctx context.Context) {
 			if connectedClients.TotalClients > 1 {
 				if lastCtrlC.IsZero() || time.Since(lastCtrlC) > 30*time.Second {
 					lastCtrlC = time.Now()
-					fmt.Println(buildForegroundClientsConnectedMsg())
+					fmt.Println(buildForegroundClientsConnectedMsg()) //nolint:forbidigo // acceptable
 					continue
 				}
 			}
-			fmt.Println("Stopping Steampipe service.")
+			fmt.Println("Stopping Steampipe service.") //nolint:forbidigo // acceptable
 			if _, err := db_local.StopServices(ctx, false, constants.InvokerService); err != nil {
 				error_helpers.ShowError(ctx, err)
 			} else {
-				fmt.Println("Steampipe service stopped.")
+				fmt.Println("Steampipe service stopped.") //nolint:forbidigo // acceptable
 			}
 			return
 		}
@@ -326,7 +326,7 @@ func restartService(ctx context.Context) (_ *db_local.StartResult) {
 	currentDbState, err := db_local.GetState()
 	error_helpers.FailOnError(err)
 	if currentDbState == nil {
-		fmt.Println("Steampipe service is not running.")
+		fmt.Println("Steampipe service is not running.") //nolint:forbidigo // acceptable
 		return
 	}
 
@@ -338,6 +338,7 @@ func restartService(ctx context.Context) (_ *db_local.StartResult) {
 	}
 
 	if stopStatus != db_local.ServiceStopped {
+		//nolint:forbidigo // acceptable
 		fmt.Println(`
 Service stop failed.
 
@@ -364,7 +365,7 @@ to force a restart.
 	dbStartResult := startServiceAndRefreshConnections(ctx, currentDbState.ResolvedListenAddresses, currentDbState.Port, currentDbState.Invoker)
 	if dbStartResult.Status == db_local.ServiceFailedToStart {
 		exitCode = constants.ExitCodeServiceStartupFailure
-		fmt.Println("Steampipe service was stopped, but failed to restart.")
+		fmt.Println("Steampipe service was stopped, but failed to restart.") //nolint:forbidigo // acceptable
 		return
 	}
 
@@ -382,7 +383,7 @@ func runServiceStatusCmd(cmd *cobra.Command, _ []string) {
 	}()
 
 	if !db_local.IsDBInstalled() || !db_local.IsFDWInstalled() {
-		fmt.Println("Steampipe service is not installed.")
+		fmt.Println("Steampipe service is not installed.") //nolint:forbidigo // acceptable
 		return
 	}
 
@@ -452,7 +453,7 @@ func runServiceStopCmd(cmd *cobra.Command, _ []string) {
 		}
 
 		if dbState == nil {
-			fmt.Println("Steampipe service is not running.")
+			fmt.Println("Steampipe service is not running.") //nolint:forbidigo // acceptable
 			return
 		}
 		if dbState.Invoker != constants.InvokerService {
@@ -482,12 +483,13 @@ func runServiceStopCmd(cmd *cobra.Command, _ []string) {
 
 	switch status {
 	case db_local.ServiceStopped:
-		fmt.Println("Steampipe database service stopped.")
+		fmt.Println("Steampipe database service stopped.") //nolint:forbidigo // acceptable
 	case db_local.ServiceNotRunning:
-		fmt.Println("Steampipe service is not running.")
+		fmt.Println("Steampipe service is not running.") //nolint:forbidigo // acceptable
 	case db_local.ServiceStopFailed:
-		fmt.Println("Could not stop Steampipe service.")
+		fmt.Println("Could not stop Steampipe service.") //nolint:forbidigo // acceptable
 	case db_local.ServiceStopTimedOut:
+		//nolint:forbidigo // acceptable
 		fmt.Println(`
 Service stop operation timed-out.
 
@@ -513,7 +515,7 @@ func showAllStatus(ctx context.Context) {
 	error_helpers.FailOnError(err)
 
 	if len(processes) == 0 {
-		fmt.Println("There are no steampipe services running.")
+		fmt.Println("There are no steampipe services running.") //nolint:forbidigo // acceptable
 		return
 	}
 	headers := []string{"PID", "Install Directory", "Port", "Listen"}
@@ -551,7 +553,7 @@ func getServiceProcessDetails(process *psutils.Process) (string, string, string,
 
 func printStatus(ctx context.Context, dbState *db_local.RunningDBInstanceInfo, pmState *pluginmanager.State, alreadyRunning bool) {
 	if dbState == nil && !pmState.Running {
-		fmt.Println("Service is not running")
+		fmt.Println("Service is not running") //nolint:forbidigo // acceptable
 		return
 	}
 
@@ -644,7 +646,7 @@ To keep the service running after the %s session completes, use %s.
 		)
 	}
 
-	fmt.Println(statusMessage)
+	fmt.Println(statusMessage) //nolint:forbidigo // acceptable
 
 	if dbState != nil && pmState == nil {
 		// the service is running, but the plugin_manager is not running and there's no state file
@@ -660,6 +662,7 @@ Please use %s to recover the service
 }
 
 func printRunningImplicit(invoker constants.Invoker) {
+	//nolint:forbidigo // acceptable
 	fmt.Printf(`
 Steampipe service is running exclusively for an active %s session.
 
@@ -672,7 +675,7 @@ To force stop the service, use %s
 }
 
 func printClientsConnected() {
-	fmt.Printf(
+	fmt.Printf( //nolint:forbidigo // acceptable
 		`
 Cannot stop service since there are clients connected to the service.
 

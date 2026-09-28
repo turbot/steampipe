@@ -106,7 +106,9 @@ func installDbFiles(image *ociinstaller.OciImage[*dbImage, *dbImageConfig], temp
 		// Failed to move staging to destination
 		// Try to restore backup if it exists
 		if destExists {
-			os.Rename(backupDest, dest)
+			if restoreErr := os.Rename(backupDest, dest); restoreErr != nil {
+				log.Printf("[WARN] failed to restore backup installation at %s: %s", dest, restoreErr)
+			}
 		}
 		return fmt.Errorf("could not install database files: %s", err.Error())
 	}

@@ -67,7 +67,7 @@ func TestGetTableAndConnectionSuggestions_ReturnsEmptySliceNotNil(t *testing.T) 
 			}
 
 			// Additional check: even if not nil, should be empty in these test cases
-			if result != nil && len(result) != 0 {
+			if len(result) != 0 {
 				t.Errorf("getTableAndConnectionSuggestions(%q) returned non-empty slice %v, expected empty slice", tt.word, result)
 			}
 		})

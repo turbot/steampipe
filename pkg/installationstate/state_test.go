@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/turbot/pipe-fittings/v2/app_specific"
+	"github.com/turbot/steampipe/v2/pkg/filepaths"
 )
 
 // TestConcurrentSaveLoad demonstrates bug #5038: Save() is not atomic
@@ -71,5 +72,25 @@ func TestConcurrentSaveLoad(t *testing.T) {
 	}
 	if len(errs) > 0 {
 		t.Fatalf("got %d error(s) from concurrent Save()/Load() against a file that always had valid content written to it; first: %v", len(errs), errs[0])
+	}
+}
+
+func TestInstallationStateSaveFilePermissions(t *testing.T) {
+	tempDir := t.TempDir()
+	app_specific.InstallDir = filepath.Join(tempDir, ".steampipe")
+
+	state := newInstallationState()
+
+	if err := state.Save(); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+
+	path := filepaths.StateFilePath()
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("failed to stat %s: %v", path, err)
+	}
+	if perm := info.Mode().Perm(); perm != 0600 {
+		t.Errorf("expected %s to have permissions 0600, got %o", path, perm)
 	}
 }

@@ -15,7 +15,7 @@ type PoolOverrides struct {
 // applies the values in the given config if they are non-zero in PoolOverrides
 func (c PoolOverrides) apply(config *pgxpool.Config) {
 	if c.Size > 0 {
-		config.MaxConns = int32(c.Size)
+		config.MaxConns = int32(c.Size) //nolint:gosec // G115: Size is always set from small hardcoded pool-size literals at the two call sites (1, 2), never user input
 	}
 	if c.MaxLifeTime > 0 {
 		config.MaxConnLifetime = c.MaxLifeTime

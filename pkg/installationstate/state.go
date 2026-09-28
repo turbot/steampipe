@@ -78,7 +78,7 @@ func (s *InstallationState) Save() error {
 	// protect against two separate steampipe processes saving at once,
 	// matching pluginmanager/state.go)
 	tempFile := stateFilePath + ".tmp"
-	if err := os.WriteFile(tempFile, file, 0644); err != nil {
+	if err := os.WriteFile(tempFile, file, 0600); err != nil {
 		return err
 	}
 	return os.Rename(tempFile, stateFilePath)

@@ -33,7 +33,7 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 	err := retry.Do(ctx, retry.WithMaxDuration(maxDuration, backoff), func(ctx context.Context) error {
 		count++
 		log.Println("[TRACE] starting", count)
-		rows, queryError := c.startQuery(ctx, conn, query, args...)
+		rows, queryError := c.startQuery(ctx, conn, query, args...) //nolint:sqlclosecheck // rows is not closed on the error path below (reverted from a fix that closed it but leaked without it, then panicked on ctx-cancellation - rule 1: no practical regression test without mocking pgx.Conn.Query's cancellation timing), see #5054
 		// if there is no error, just return
 		if queryError == nil {
 			log.Println("[TRACE] no queryError")

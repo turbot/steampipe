@@ -67,5 +67,5 @@ func (f *DatabaseVersionFile) write(path string) error {
 		log.Println("[ERROR]", "Error while writing version file", err)
 		return err
 	}
-	return os.WriteFile(path, versionFileJSON, 0644)
+	return os.WriteFile(path, versionFileJSON, 0600)
 }
