@@ -354,7 +354,7 @@ func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string
 	pluginAlreadyInstalled, _ := pplugin.Exists(ctx, pluginName)
 	if pluginAlreadyInstalled {
 		// set the bar to MAX
-		//nolint:golint,errcheck // the error happens if we set this over the max value
+		// the error happens if we set this over the max value
 		_ = bar.Set(len(pluginInstallSteps))
 		// let the bar append itself with "Already Installed"
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
