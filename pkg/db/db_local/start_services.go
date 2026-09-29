@@ -645,8 +645,12 @@ func killInstanceIfAny(ctx context.Context) bool {
 }
 
 func FindAllSteampipePostgresInstances(ctx context.Context) ([]*psutils.Process, error) {
+	return findSteampipePostgresInstances(ctx, psutils.ProcessesWithContext)
+}
+
+func findSteampipePostgresInstances(ctx context.Context, listProcesses func(context.Context) ([]*psutils.Process, error)) ([]*psutils.Process, error) {
 	var instances []*psutils.Process
-	allProcesses, err := psutils.ProcessesWithContext(ctx)
+	allProcesses, err := listProcesses(ctx)
 	if err != nil {
 		log.Println("[TRACE] FindAllSteampipePostgresInstances - error retrieving process list: ", err.Error())
 		return nil, err
