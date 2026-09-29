@@ -658,8 +658,10 @@ func findSteampipePostgresInstances(ctx context.Context, listProcesses func(cont
 	for _, p := range allProcesses {
 		cmdLine, err := p.CmdlineSliceWithContext(ctx)
 		if err != nil {
-			log.Printf("[TRACE] FindAllSteampipePostgresInstances - error retrieving cmdline for pid %d: %s", p.Pid, err.Error())
-			return nil, err
+			// the process may have exited since the list was taken, or its
+			// command line may not be readable by this user
+			log.Printf("[TRACE] FindAllSteampipePostgresInstances - skipping pid %d, error retrieving cmdline: %s", p.Pid, err.Error())
+			continue
 		}
 		if isSteampipePostgresProcess(ctx, cmdLine) {
 			instances = append(instances, p)
