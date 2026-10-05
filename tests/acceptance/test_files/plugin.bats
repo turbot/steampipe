@@ -178,7 +178,7 @@ load ../helpers/steampipe_processes
   vFile2="$MY_TEST_COPY/plugins/hub.steampipe.io/plugins/turbot/chaos@latest/version.json"
   
   [ ! -f $vFile1 ] && fail "could not find $vFile1"
-  [ ! -f $vFile2 ] && fail "could not find $vFile2"
+  [ -f $vFile2 ] || fail "could not find $vFile2"
   
 }
 
@@ -336,7 +336,7 @@ load ../helpers/steampipe_processes
   run steampipe plugin list --install-dir $MY_TEST_COPY
 
   # verify that global file got created
-  [ ! -f $vFile ] && fail "could not find $vFile"
+  [ -f $vFile ] || fail "could not find $vFile"
   
 }
 
