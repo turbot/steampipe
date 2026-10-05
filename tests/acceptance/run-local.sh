@@ -12,8 +12,9 @@
 # script prints a summary and exits non-zero if any file failed.
 #
 # Each file gets one temporary root holding its install and working directories, and
-# TMPDIR points at that root while the file runs, so every temporary directory the tests
-# create lands under it as well. The script itself only stops processes whose command line
+# TMPDIR points at that root while the file runs, so bats' own temporary directories
+# ($BATS_FILE_TMPDIR, $BATS_TEST_TMPDIR) land under it as well; tests should use those
+# rather than a bare `mktemp -d`, which BSD mktemp (macOS) creates outside TMPDIR. The script itself only stops processes whose command line
 # references that root, or that run the binary it built (`service stop` for the file's
 # install, then SIGTERM/SIGKILL of the rest); the root is then removed. It never stops a
 # service from any other install, including ~/.steampipe. Some
@@ -104,19 +105,6 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 export PATH=$BIN_DIR:$PATH
-
-# BSD mktemp ignores TMPDIR when called without a template, so tests calling a bare `mktemp -d` would
-# escape the per-file root; GNU mktemp honours it
-if [ "$(uname)" = "Darwin" ]; then
-  cat > $BIN_DIR/mktemp <<'SHIM'
-#!/bin/sh
-for a in "$@"; do
-  case $a in -*) ;; *) exec /usr/bin/mktemp "$@" ;; esac
-done
-exec /usr/bin/mktemp "$@" "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"
-SHIM
-  chmod +x $BIN_DIR/mktemp
-fi
 
 if [ $# -eq 0 ]; then
   FILES=$ALL_FILES
