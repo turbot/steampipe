@@ -1,4 +1,21 @@
 #!/bin/bash
+#
+# Runs acceptance test files against a steampipe built from this checkout.
+#
+#   run-local.sh                      every file CI runs, in CI's order
+#   run-local.sh settings.bats ...    only the named files (".bats" is optional)
+#
+# The binary is built into a temporary directory and put first on PATH. Each file gets a
+# fresh install directory and working directory, warmed up the way CI does (first query,
+# then the chaos and chaosdynamic plugins), and a per-file time limit. A file fails if a
+# test fails, if setup fails, if it times out, or if it leaves a service running; the
+# script prints a summary and exits non-zero if any file failed.
+#
+# Only processes tied to the temporary install directories and the binary this script
+# built are stopped (`service stop` for that install, then SIGTERM/SIGKILL of anything
+# still referencing it). A service from any other install, including ~/.steampipe, is
+# never touched. Per-file output is kept in a temporary log directory printed at the start
+# and again in the summary; install and working directories are removed.
 
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
@@ -11,18 +28,19 @@ export STEAMPIPE_LOG=info
 
 # the test files CI runs, in CI's order (see .github/workflows/11-test-acceptance.yaml)
 ALL_FILES="migration brew installation plugin connection_config service settings ssl blank_aggregators search_path chaos_and_query date_time_types dynamic_schema dynamic_aggregators cache performance config_precedence cloud schema_cloning exit_codes force_stop"
-# CI does not run these on macOS
+# the workflow excludes these two for macOS
 if [ "$(uname)" = "Darwin" ]; then
   ALL_FILES="${ALL_FILES/migration /}"
   ALL_FILES="${ALL_FILES/ force_stop/}"
 fi
 
-FILE_TIMEOUT=1800   # seconds
+FILE_TIMEOUT=900     # seconds; the CI job limit (timeout-minutes: 15)
 IDLE_LIMIT=30       # seconds without output, once every planned test has reported
 
-BIN_DIR=$(mktemp -d)
-LOG_DIR=$(mktemp -d)
-INSTALL_DIRS=""     # every install dir this script has created
+BIN_DIR=$(mktemp -d) || { echo "mktemp failed"; exit 1; }
+LOG_DIR=$(mktemp -d) || { echo "mktemp failed"; exit 1; }
+CUR_INSTALL=""      # install and working dir of the file being run
+CUR_WD=""
 CUR_PID=""
 TAIL_PID=""
 
@@ -41,7 +59,8 @@ kill_tree() {
 }
 
 # stop whatever is still running under an install dir this script created, or from the binary it built.
-# The service is asked to stop first; the plugin manager ignores SIGTERM, so the rest get SIGKILL.
+# The service is asked to stop first, then anything still referencing the dir gets SIGTERM and, after a
+# pause, SIGKILL for whatever has not exited.
 stop_leftovers() {
   local dir=$1
   if [ -n "$dir" ]; then
@@ -59,11 +78,11 @@ cleanup() {
   trap '' EXIT INT TERM
   [ -n "$TAIL_PID" ] && kill $TAIL_PID 2>/dev/null
   [ -n "$CUR_PID" ] && kill_tree $CUR_PID KILL
-  local dir
-  for dir in $INSTALL_DIRS; do
-    stop_leftovers $dir
-    rm -rf $dir
-  done
+  if [ -n "$CUR_INSTALL" ]; then
+    stop_leftovers $CUR_INSTALL
+    rm -rf $CUR_INSTALL
+  fi
+  [ -n "$CUR_WD" ] && rm -rf $CUR_WD
   rm -rf $BIN_DIR
   exit $code
 }
@@ -91,9 +110,11 @@ FAILED=0
 
 for f in $FILES; do
   log=$LOG_DIR/$f.tap
-  export STEAMPIPE_INSTALL_DIR=$(mktemp -d)
-  INSTALL_DIRS="$INSTALL_DIRS $STEAMPIPE_INSTALL_DIR"
-  WD=$(mktemp -d)
+  # an empty install dir would make run.sh fall back to the real ~/.steampipe
+  CUR_INSTALL=$(mktemp -d) || { echo "mktemp failed"; exit 1; }
+  CUR_WD=$(mktemp -d) || { echo "mktemp failed"; exit 1; }
+  export STEAMPIPE_INSTALL_DIR=$CUR_INSTALL
+  WD=$CUR_WD
 
   echo
   echo "=== $f"
@@ -115,6 +136,7 @@ for f in $FILES; do
   fi
 
   if [ -z "$result" ]; then
+    : > $log
     (
       cd $WD
       MY_PATH=$MY_PATH exec $MY_PATH/run.sh $f.bats
@@ -151,11 +173,14 @@ for f in $FILES; do
     CUR_PID=""
     kill $TAIL_PID 2>/dev/null
     TAIL_PID=""
+    if [ -n "$leftovers" ] && [ "${result%% *}" = "PASS" ]; then result="FAIL"; fi
   fi
 
   # leave nothing running for the next file
   stop_leftovers $STEAMPIPE_INSTALL_DIR
   rm -rf $STEAMPIPE_INSTALL_DIR $WD
+  CUR_INSTALL=""
+  CUR_WD=""
 
   [ "${result%% *}" = "PASS" ] || FAILED=$((FAILED + 1))
   ok=$(grep -c '^ok ' $log 2>/dev/null)
