@@ -1,5 +1,6 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
+load ../helpers/steampipe_processes
 
 @test "steampipe service start" {
     run steampipe service start
@@ -263,7 +264,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
       done
 
       # make sure that there are no steampipe service processes running
-      assert_equal $(ps aux | grep steampipe | grep -v bats |grep -v grep | wc -l | tr -d ' ') 0
+      assert_equal $(count_steampipe_processes) 0
     done
   done
 
@@ -479,6 +480,6 @@ function teardown_file() {
   ps -ef | grep steampipe
 
   # check if any processes are running
-  num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
+  num=$(count_steampipe_processes)
   assert_equal $num 0
 }

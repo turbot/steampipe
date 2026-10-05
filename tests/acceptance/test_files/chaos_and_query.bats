@@ -1,5 +1,6 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
+load ../helpers/steampipe_processes
 
 @test "select from chaos.chaos_high_row_count order by column_0" {
   run steampipe query --output json  "select column_0,column_1,column_2,column_3,column_4,column_5,column_6,column_7,column_8,column_9,id from chaos.chaos_high_row_count order by column_0 limit 10"
@@ -344,6 +345,6 @@ function teardown_file() {
   ps -ef | grep steampipe
 
   # check if any processes are running
-  num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
+  num=$(count_steampipe_processes)
   assert_equal $num 0
 }
