@@ -4,11 +4,22 @@ load ../helpers/steampipe_processes
 
 ## workspace tests
 
+# runs even when the test fails part-way through
+teardown() {
+  if [ -n "$CONFIG_TESTS_DIR" ]; then
+    cd /
+    rm -rf "$CONFIG_TESTS_DIR"
+  fi
+}
+
 @test "generic config precedence test" {
   cp $FILE_PATH/test_data/source_files/config_tests/default.spc $STEAMPIPE_INSTALL_DIR/config/default.spc
   
-  # setup test folder and read the test-cases file
-  cd $FILE_PATH/test_data/source_files/config_tests
+  # steampipe creates install dirs and sample profile files relative to the
+  # working directory, so run in a copy of the test folder rather than the checkout
+  CONFIG_TESTS_DIR="$(mktemp -d)"
+  cp -R $FILE_PATH/test_data/source_files/config_tests/. "$CONFIG_TESTS_DIR"
+  cd "$CONFIG_TESTS_DIR"
   tests=$(cat workspace_tests.json)
   # echo $tests
 

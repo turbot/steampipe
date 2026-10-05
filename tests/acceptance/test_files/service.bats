@@ -2,6 +2,11 @@ load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 load ../helpers/steampipe_processes
 
+# the "service stability" test writes this file into the checkout; remove it even if that test fails
+teardown() {
+  rm -f "$FILE_PATH/test_data/mods/service_mod/sample.sql"
+}
+
 @test "steampipe service start" {
     run steampipe service start
     assert_success
