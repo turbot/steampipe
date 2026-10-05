@@ -118,7 +118,6 @@ load ../helpers/steampipe_processes
   run jd $TEST_DATA_DIR/expected_plugin_list_json.json output.json
   echo $output
   assert_success
-  rm -rf $MY_TEST_COPY
 }
 
 @test "plugin list - output table and json (with a missing plugin)" {
@@ -141,7 +140,6 @@ load ../helpers/steampipe_processes
   run jd $TEST_DATA_DIR/expected_plugin_list_json_with_missing_plugins.json output.json
   echo $output
   assert_success
-  rm -rf $MY_TEST_COPY
 }
 
 # # TODO: finds other ways to simulate failed plugins
@@ -167,7 +165,6 @@ load ../helpers/steampipe_processes
   run jd $TEST_DATA_DIR/expected_plugin_list_json_with_failed_plugins.json output.json
   echo $output
   assert_success
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify that installing plugins creates individual version.json files" {
@@ -183,7 +180,6 @@ load ../helpers/steampipe_processes
   [ ! -f $vFile1 ] && fail "could not find $vFile1"
   [ ! -f $vFile2 ] && fail "could not find $vFile2"
   
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify that backfilling of individual plugin version.json works" {
@@ -221,7 +217,6 @@ load ../helpers/steampipe_processes
   run jd "$MY_TEST_COPY/f2.json" "$MY_TEST_COPY/v2.json"
   echo $output
   assert_success
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify that backfilling of individual plugin version.json works where it is only partially backfilled" {
@@ -260,7 +255,6 @@ load ../helpers/steampipe_processes
   echo $output
   assert_success
   
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify that global plugin/versions.json is composed from individual version.json files when it is absent" {
@@ -292,7 +286,6 @@ load ../helpers/steampipe_processes
   echo $output
   assert_success
 
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify that global plugin/versions.json is composed from individual version.json files when it is corrupt" {
@@ -321,7 +314,6 @@ load ../helpers/steampipe_processes
   echo $output
   assert_success
   
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify that composition of global plugin/versions.json works when an individual version.json file is corrupt" {
@@ -346,7 +338,6 @@ load ../helpers/steampipe_processes
   # verify that global file got created
   [ ! -f $vFile ] && fail "could not find $vFile"
   
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify that plugin installed from registry are marked as 'local' when the modtime of the binary is after the install time" {
@@ -368,7 +359,6 @@ load ../helpers/steampipe_processes
   # assert
   assert_equal "$version" '"local"'
 
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify that steampipe check should bypass plugin requirement detection if installed plugin is local" {
@@ -404,7 +394,6 @@ load ../helpers/steampipe_processes
   fi
 
   assert_equal "$output" "Warning is not present in the output"
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify that plugin installed with --skip-config as true, should not have create a default config .spc file in config folder" {
@@ -417,7 +406,6 @@ load ../helpers/steampipe_processes
   run test -f $MY_TEST_COPY/config/aws.spc
   assert_failure
 
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify that plugin installed with --skip-config as false(default), should have default config .spc file in config folder" {
@@ -430,7 +418,6 @@ load ../helpers/steampipe_processes
   run test -f $MY_TEST_COPY/config/aws.spc
   assert_success
 
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify reinstalling a plugin does not overwrite existing plugin config" {
@@ -464,13 +451,20 @@ load ../helpers/steampipe_processes
   assert_success
 
   rm config.spc
-  rm -rf $MY_TEST_COPY
 }
 
 # Custom function to create a copy of the install directory
 copy_install_directory() {
-  cp -r "$MY_TEST_DIRECTORY" "/tmp/test_copy"
-  export MY_TEST_COPY="/tmp/test_copy"
+  MY_TEST_COPY="$(mktemp -d)"
+  cp -r "$MY_TEST_DIRECTORY/." "$MY_TEST_COPY"
+  export MY_TEST_COPY
+}
+
+# runs even when a test fails part-way through
+teardown() {
+  if [ -n "$MY_TEST_COPY" ]; then
+    rm -rf "$MY_TEST_COPY"
+  fi
 }
 
 function setup_file() {
