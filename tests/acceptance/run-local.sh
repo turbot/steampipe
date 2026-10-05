@@ -14,11 +14,12 @@
 # Each file gets one temporary root holding its install and working directories, and
 # TMPDIR points at that root while the file runs, so bats' own temporary directories
 # ($BATS_FILE_TMPDIR, $BATS_TEST_TMPDIR) land under it as well; tests should use those
-# rather than a bare `mktemp -d`, which BSD mktemp (macOS) creates outside TMPDIR. The script itself only stops processes whose command line
-# references that root, or that run the binary it built (`service stop` for the file's
-# install, then SIGTERM/SIGKILL of the rest); the root is then removed. It never stops a
-# service from any other install, including ~/.steampipe. Some
-# test files (service, force_stop, ssl) call `steampipe service stop --force`, which stops
+# rather than a bare `mktemp -d`, which BSD mktemp (macOS) creates outside TMPDIR. The
+# script itself only stops processes whose command line references that root, or that run
+# the binary it built (`service stop` for the file's install, then SIGTERM/SIGKILL of the
+# rest); the root is then removed. It never stops a service from any other install,
+# including ~/.steampipe. Some test files (service, force_stop, ssl) call
+# `steampipe service stop --force`, which stops
 # every steampipe service on the machine whatever its install dir, so a run that includes
 # them will stop a service of your own.
 # Per-file output is kept in a temporary log directory printed at the start and again in
