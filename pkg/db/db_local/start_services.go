@@ -645,8 +645,12 @@ func killInstanceIfAny(ctx context.Context) bool {
 }
 
 func FindAllSteampipePostgresInstances(ctx context.Context) ([]*psutils.Process, error) {
+	return findSteampipePostgresInstances(ctx, psutils.ProcessesWithContext)
+}
+
+func findSteampipePostgresInstances(ctx context.Context, listProcesses func(context.Context) ([]*psutils.Process, error)) ([]*psutils.Process, error) {
 	var instances []*psutils.Process
-	allProcesses, err := psutils.ProcessesWithContext(ctx)
+	allProcesses, err := listProcesses(ctx)
 	if err != nil {
 		log.Println("[TRACE] FindAllSteampipePostgresInstances - error retrieving process list: ", err.Error())
 		return nil, err
@@ -654,8 +658,10 @@ func FindAllSteampipePostgresInstances(ctx context.Context) ([]*psutils.Process,
 	for _, p := range allProcesses {
 		cmdLine, err := p.CmdlineSliceWithContext(ctx)
 		if err != nil {
-			log.Printf("[TRACE] FindAllSteampipePostgresInstances - error retrieving cmdline for pid %d: %s", p.Pid, err.Error())
-			return nil, err
+			// the process may have exited since the list was taken, or its
+			// command line may not be readable by this user
+			log.Printf("[TRACE] FindAllSteampipePostgresInstances - skipping pid %d, error retrieving cmdline: %s", p.Pid, err.Error())
+			continue
 		}
 		if isSteampipePostgresProcess(ctx, cmdLine) {
 			instances = append(instances, p)
