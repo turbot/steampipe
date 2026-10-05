@@ -35,7 +35,7 @@ func TestFindSteampipePostgresInstancesSkipsExitedProcess(t *testing.T) {
 		t.Fatalf("failed to run child process: %v", err)
 	}
 
-	postgresCmd := exec.Command(os.Args[0], "-test.run=^TestFakeSteampipePostgresProcess$", fakePostgresArg)
+	postgresCmd := exec.Command(os.Args[0], "-test.run=^TestFakeSteampipePostgresProcess$", fakePostgresArg) //nolint:gosec // G204: os.Args[0] is this test binary, re-run with fixed arguments
 	postgresCmd.Args[0] = "postgres"
 	if err := postgresCmd.Start(); err != nil {
 		t.Fatalf("failed to start fake postgres process: %v", err)
