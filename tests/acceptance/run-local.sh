@@ -45,7 +45,7 @@ kill_tree() {
 stop_leftovers() {
   local dir=$1
   if [ -n "$dir" ]; then
-    STEAMPIPE_INSTALL_DIR=$dir steampipe service stop --force > /dev/null 2>&1
+    STEAMPIPE_INSTALL_DIR=$dir steampipe service stop > /dev/null 2>&1
     pkill -f "$dir" 2>/dev/null
   fi
   sleep 2

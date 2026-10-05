@@ -5,7 +5,10 @@ load ../helpers/steampipe_processes
 # runs even when a test fails; only the install-dir test sets TILDE_INSTALL_DIR
 teardown() {
   if [ -n "$TILDE_INSTALL_DIR" ]; then
-    steampipe service stop --force --install-dir "$TILDE_INSTALL_DIR" > /dev/null 2>&1
+    steampipe service stop --install-dir "$TILDE_INSTALL_DIR" > /dev/null 2>&1
+    pkill -f "$TILDE_INSTALL_DIR" > /dev/null 2>&1
+    sleep 1
+    pkill -KILL -f "$TILDE_INSTALL_DIR" > /dev/null 2>&1
     rm -rf "$TILDE_INSTALL_DIR"
   fi
 }
