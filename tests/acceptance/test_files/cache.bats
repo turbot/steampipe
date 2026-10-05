@@ -1,5 +1,6 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
+load ../helpers/steampipe_processes
 
 @test "steampipe cache functionality check ON" {
   run steampipe plugin install chaos
@@ -224,6 +225,6 @@ function teardown_file() {
   ps -ef | grep steampipe
 
   # check if any processes are running
-  num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
+  num=$(count_steampipe_processes)
   assert_equal $num 0
 }

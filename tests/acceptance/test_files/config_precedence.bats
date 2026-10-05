@@ -1,13 +1,16 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
+load ../helpers/steampipe_processes
 
 ## workspace tests
 
 @test "generic config precedence test" {
   cp $FILE_PATH/test_data/source_files/config_tests/default.spc $STEAMPIPE_INSTALL_DIR/config/default.spc
   
-  # setup test folder and read the test-cases file
-  cd $FILE_PATH/test_data/source_files/config_tests
+  # steampipe creates install dirs and sample profile files relative to the
+  # working directory, so run in a copy of the test folder rather than the checkout
+  cp -R $FILE_PATH/test_data/source_files/config_tests/. "$BATS_TEST_TMPDIR"
+  cd "$BATS_TEST_TMPDIR"
   tests=$(cat workspace_tests.json)
   # echo $tests
 
@@ -113,6 +116,6 @@ function teardown_file() {
   ps -ef | grep steampipe
 
   # check if any processes are running
-  num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
+  num=$(count_steampipe_processes)
   assert_equal $num 0
 }

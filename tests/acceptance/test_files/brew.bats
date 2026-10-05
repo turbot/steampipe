@@ -1,5 +1,6 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
+load ../helpers/steampipe_processes
 
 # Homebrew-core runs a set of tests in their release workflows. These tests replicate the 
 # tests that they run on steampipe. This is to make sure that there are no unknown failures
@@ -8,7 +9,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe completion should not create INSTALL DIRs" {
   export STEAMPIPE_LOG=info
   # create a fresh target install dir
-  target_install_directory=$(mktemp -d)
+  target_install_directory="$BATS_TEST_TMPDIR/install"
+  mkdir -p "$target_install_directory"
 
   run steampipe completion zsh --install-dir $target_install_directory
 
@@ -30,7 +32,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "symlinked steampipe binary should work" {
   export STEAMPIPE_LOG=info
   # create a fresh target dir
-  target_directory=$(mktemp -d)
+  target_directory="$BATS_TEST_TMPDIR/bin"
+  mkdir -p "$target_directory"
 
   # create a symlink to the steampipe binary
   ln -s $(which steampipe) $target_directory/sp
@@ -52,6 +55,6 @@ function teardown_file() {
   ps -ef | grep steampipe
 
   # check if any processes are running
-  num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
+  num=$(count_steampipe_processes)
   assert_equal $num 0
 }

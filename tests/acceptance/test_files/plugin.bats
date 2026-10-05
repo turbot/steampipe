@@ -1,5 +1,6 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
+load ../helpers/steampipe_processes
 
 @test "plugin install" {
   run steampipe plugin install chaos
@@ -117,7 +118,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run jd $TEST_DATA_DIR/expected_plugin_list_json.json output.json
   echo $output
   assert_success
-  rm -rf $MY_TEST_COPY
 }
 
 @test "plugin list - output table and json (with a missing plugin)" {
@@ -140,7 +140,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run jd $TEST_DATA_DIR/expected_plugin_list_json_with_missing_plugins.json output.json
   echo $output
   assert_success
-  rm -rf $MY_TEST_COPY
 }
 
 # # TODO: finds other ways to simulate failed plugins
@@ -166,7 +165,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run jd $TEST_DATA_DIR/expected_plugin_list_json_with_failed_plugins.json output.json
   echo $output
   assert_success
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify that installing plugins creates individual version.json files" {
@@ -180,9 +178,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   vFile2="$MY_TEST_COPY/plugins/hub.steampipe.io/plugins/turbot/chaos@latest/version.json"
   
   [ ! -f $vFile1 ] && fail "could not find $vFile1"
-  [ ! -f $vFile2 ] && fail "could not find $vFile2"
+  [ -f $vFile2 ] || fail "could not find $vFile2"
   
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify that backfilling of individual plugin version.json works" {
@@ -220,7 +217,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run jd "$MY_TEST_COPY/f2.json" "$MY_TEST_COPY/v2.json"
   echo $output
   assert_success
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify that backfilling of individual plugin version.json works where it is only partially backfilled" {
@@ -259,7 +255,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   echo $output
   assert_success
   
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify that global plugin/versions.json is composed from individual version.json files when it is absent" {
@@ -291,7 +286,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   echo $output
   assert_success
 
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify that global plugin/versions.json is composed from individual version.json files when it is corrupt" {
@@ -320,7 +314,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   echo $output
   assert_success
   
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify that composition of global plugin/versions.json works when an individual version.json file is corrupt" {
@@ -343,9 +336,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe plugin list --install-dir $MY_TEST_COPY
 
   # verify that global file got created
-  [ ! -f $vFile ] && fail "could not find $vFile"
+  [ -f $vFile ] || fail "could not find $vFile"
   
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify that plugin installed from registry are marked as 'local' when the modtime of the binary is after the install time" {
@@ -367,7 +359,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # assert
   assert_equal "$version" '"local"'
 
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify that steampipe check should bypass plugin requirement detection if installed plugin is local" {
@@ -403,7 +394,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   fi
 
   assert_equal "$output" "Warning is not present in the output"
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify that plugin installed with --skip-config as true, should not have create a default config .spc file in config folder" {
@@ -416,7 +406,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run test -f $MY_TEST_COPY/config/aws.spc
   assert_failure
 
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify that plugin installed with --skip-config as false(default), should have default config .spc file in config folder" {
@@ -429,7 +418,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run test -f $MY_TEST_COPY/config/aws.spc
   assert_success
 
-  rm -rf $MY_TEST_COPY
 }
 
 @test "verify reinstalling a plugin does not overwrite existing plugin config" {
@@ -463,20 +451,28 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_success
 
   rm config.spc
-  rm -rf $MY_TEST_COPY
 }
 
 # Custom function to create a copy of the install directory
 copy_install_directory() {
-  cp -r "$MY_TEST_DIRECTORY" "/tmp/test_copy"
-  export MY_TEST_COPY="/tmp/test_copy"
+  MY_TEST_COPY="$BATS_TEST_TMPDIR/install_copy"
+  mkdir -p "$MY_TEST_COPY"
+  cp -r "$MY_TEST_DIRECTORY/." "$MY_TEST_COPY"
+  export MY_TEST_COPY
+}
+
+# bats keeps its temporary directories until the run ends; remove each copy as its test
+# finishes so the file holds one install copy at a time, not one per test
+teardown() {
+  rm -rf "$BATS_TEST_TMPDIR/install_copy"
 }
 
 function setup_file() {
   export BATS_TEST_TIMEOUT=180
   echo "# setup_file()">&3
 
-  tmpdir="$(mktemp -d)"
+  tmpdir="$BATS_FILE_TMPDIR/install"
+  mkdir -p "$tmpdir"
   steampipe query "select 1" --install-dir $tmpdir
   # Export the directory path as an environment variable
   export MY_TEST_DIRECTORY=$tmpdir
@@ -487,6 +483,6 @@ function teardown_file() {
   ps -ef | grep steampipe
 
   # check if any processes are running
-  num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
+  num=$(count_steampipe_processes)
   assert_equal $num 0
 }

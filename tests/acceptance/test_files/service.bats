@@ -1,5 +1,11 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
+load ../helpers/steampipe_processes
+
+# the "service stability" test writes this file into the checkout; remove it even if that test fails
+teardown() {
+  rm -f "$FILE_PATH/test_data/mods/service_mod/sample.sql"
+}
 
 @test "steampipe service start" {
     run steampipe service start
@@ -20,7 +26,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # Set the STEAMPIPE_INITDB_DATABASE_NAME env variable 
   export STEAMPIPE_INITDB_DATABASE_NAME="custom_db_name"
   
-  target_install_directory=$(mktemp -d)
+  target_install_directory="$BATS_TEST_TMPDIR/install"
+  mkdir -p "$target_install_directory"
   
   # Start the service
   run steampipe service start --install-dir $target_install_directory
@@ -44,7 +51,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # Set the STEAMPIPE_INITDB_DATABASE_NAME env variable
   export STEAMPIPE_INITDB_DATABASE_NAME="Custom_db_name"
   
-  target_install_directory=$(mktemp -d)
+  target_install_directory="$BATS_TEST_TMPDIR/install"
+  mkdir -p "$target_install_directory"
   
   # Start the service
   run steampipe service start --install-dir $target_install_directory
@@ -263,12 +271,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
       done
 
       # make sure that there are no steampipe service processes running
-      assert_equal $(ps aux | grep steampipe | grep -v bats |grep -v grep | wc -l | tr -d ' ') 0
+      assert_equal $(count_steampipe_processes) 0
     done
   done
-
-  # remove the sample sql file
-  rm -f sample.sql
 }
 
 @test "steampipe test database config with default listen option(hcl)" {
@@ -433,7 +438,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   skip "needs updating when new migration is complete"
 
   # create a temp directory to install steampipe(0.13.6)
-  tmpdir="$(mktemp -d)"
+  tmpdir="$BATS_TEST_TMPDIR/old_steampipe"
   mkdir -p "${tmpdir}"
   tmpdir="${tmpdir%/}"
 
@@ -479,6 +484,6 @@ function teardown_file() {
   ps -ef | grep steampipe
 
   # check if any processes are running
-  num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
+  num=$(count_steampipe_processes)
   assert_equal $num 0
 }
