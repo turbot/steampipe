@@ -16,7 +16,10 @@
 # create lands under it as well. The script itself only stops processes whose command line
 # references that root, or that run the binary it built (`service stop` for the file's
 # install, then SIGTERM/SIGKILL of the rest); the root is then removed. It never stops a
-# service from any other install, including ~/.steampipe.
+# service from any other install, including ~/.steampipe. Some
+# test files (service, force_stop, ssl) call `steampipe service stop --force`, which stops
+# every steampipe service on the machine whatever its install dir, so a run that includes
+# them will stop a service of your own.
 # Per-file output is kept in a temporary log directory printed at the start and again in
 # the summary.
 
