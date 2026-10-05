@@ -16,7 +16,7 @@ load ../helpers/steampipe_processes
   verify_sql[1]="select * from sample_func()"
 
   # create a temp directory to install steampipe(1.0.3)
-  tmpdir="$(mktemp -d)"
+  tmpdir="$BATS_TEST_TMPDIR/old_steampipe"
   mkdir -p "${tmpdir}"
   tmpdir="${tmpdir%/}"
     
@@ -88,7 +88,7 @@ load ../helpers/steampipe_processes
   verify_sql[1]="select * from sample_func()"
 
   # create a temp directory to install steampipe(2.2.0)
-  tmpdir="$(mktemp -d)"
+  tmpdir="$BATS_TEST_TMPDIR/old_steampipe"
   mkdir -p "${tmpdir}"
   tmpdir="${tmpdir%/}"
     

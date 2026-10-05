@@ -9,7 +9,8 @@ load ../helpers/steampipe_processes
 @test "steampipe completion should not create INSTALL DIRs" {
   export STEAMPIPE_LOG=info
   # create a fresh target install dir
-  target_install_directory=$(mktemp -d)
+  target_install_directory="$BATS_TEST_TMPDIR/install"
+  mkdir -p "$target_install_directory"
 
   run steampipe completion zsh --install-dir $target_install_directory
 
@@ -31,7 +32,8 @@ load ../helpers/steampipe_processes
 @test "symlinked steampipe binary should work" {
   export STEAMPIPE_LOG=info
   # create a fresh target dir
-  target_directory=$(mktemp -d)
+  target_directory="$BATS_TEST_TMPDIR/bin"
+  mkdir -p "$target_directory"
 
   # create a symlink to the steampipe binary
   ln -s $(which steampipe) $target_directory/sp

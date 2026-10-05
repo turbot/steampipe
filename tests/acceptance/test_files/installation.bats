@@ -4,7 +4,8 @@ load ../helpers/steampipe_processes
 
 @test "check postgres database, fdw are correctly installed" {
   # create a fresh target install dir
-  target_install_directory=$(mktemp -d)
+  target_install_directory="$BATS_TEST_TMPDIR/install"
+  mkdir -p "$target_install_directory"
 
   # running steampipe - this would install the postgres database and the FDW from the registry
   steampipe query "select 1" --install-dir $target_install_directory
@@ -52,7 +53,8 @@ load ../helpers/steampipe_processes
 
 @test "check plugin is correctly installed" {
   # create a fresh target install dir
-  target_install_directory=$(mktemp -d)
+  target_install_directory="$BATS_TEST_TMPDIR/install"
+  mkdir -p "$target_install_directory"
 
   # running steampipe - this would install the postgres database and the FDW from the registry
   steampipe query "select 1" --install-dir $target_install_directory

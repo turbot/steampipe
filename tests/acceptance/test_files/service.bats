@@ -26,7 +26,8 @@ teardown() {
   # Set the STEAMPIPE_INITDB_DATABASE_NAME env variable 
   export STEAMPIPE_INITDB_DATABASE_NAME="custom_db_name"
   
-  target_install_directory=$(mktemp -d)
+  target_install_directory="$BATS_TEST_TMPDIR/install"
+  mkdir -p "$target_install_directory"
   
   # Start the service
   run steampipe service start --install-dir $target_install_directory
@@ -50,7 +51,8 @@ teardown() {
   # Set the STEAMPIPE_INITDB_DATABASE_NAME env variable
   export STEAMPIPE_INITDB_DATABASE_NAME="Custom_db_name"
   
-  target_install_directory=$(mktemp -d)
+  target_install_directory="$BATS_TEST_TMPDIR/install"
+  mkdir -p "$target_install_directory"
   
   # Start the service
   run steampipe service start --install-dir $target_install_directory
@@ -436,7 +438,7 @@ teardown() {
   skip "needs updating when new migration is complete"
 
   # create a temp directory to install steampipe(0.13.6)
-  tmpdir="$(mktemp -d)"
+  tmpdir="$BATS_TEST_TMPDIR/old_steampipe"
   mkdir -p "${tmpdir}"
   tmpdir="${tmpdir%/}"
 

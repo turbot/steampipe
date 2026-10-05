@@ -455,23 +455,18 @@ load ../helpers/steampipe_processes
 
 # Custom function to create a copy of the install directory
 copy_install_directory() {
-  MY_TEST_COPY="$(mktemp -d)"
+  MY_TEST_COPY="$BATS_TEST_TMPDIR/install_copy"
+  mkdir -p "$MY_TEST_COPY"
   cp -r "$MY_TEST_DIRECTORY/." "$MY_TEST_COPY"
   export MY_TEST_COPY
-}
-
-# runs even when a test fails part-way through
-teardown() {
-  if [ -n "$MY_TEST_COPY" ]; then
-    rm -rf "$MY_TEST_COPY"
-  fi
 }
 
 function setup_file() {
   export BATS_TEST_TIMEOUT=180
   echo "# setup_file()">&3
 
-  tmpdir="$(mktemp -d)"
+  tmpdir="$BATS_FILE_TMPDIR/install"
+  mkdir -p "$tmpdir"
   steampipe query "select 1" --install-dir $tmpdir
   # Export the directory path as an environment variable
   export MY_TEST_DIRECTORY=$tmpdir
