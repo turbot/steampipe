@@ -11,11 +11,14 @@
 # test fails, if setup fails, if it times out, or if it leaves a service running; the
 # script prints a summary and exits non-zero if any file failed.
 #
-# Only processes tied to the temporary install directories and the binary this script
-# built are stopped (`service stop` for that install, then SIGTERM/SIGKILL of anything
-# still referencing it). A service from any other install, including ~/.steampipe, is
-# never touched. Per-file output is kept in a temporary log directory printed at the start
-# and again in the summary; install and working directories are removed.
+# Each file gets one temporary root holding its install and working directories, and
+# TMPDIR points at that root while the file runs, so every temporary directory the tests
+# create lands under it as well. The script itself only stops processes whose command line
+# references that root, or that run the binary it built (`service stop` for the file's
+# install, then SIGTERM/SIGKILL of the rest); the root is then removed. It never stops a
+# service from any other install, including ~/.steampipe.
+# Per-file output is kept in a temporary log directory printed at the start and again in
+# the summary.
 
 MY_PATH="`dirname \"$0\"`"              # relative
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
@@ -39,8 +42,9 @@ IDLE_LIMIT=30       # seconds without output, once every planned test has report
 
 BIN_DIR=$(mktemp -d) || { echo "mktemp failed"; exit 1; }
 LOG_DIR=$(mktemp -d) || { echo "mktemp failed"; exit 1; }
-CUR_INSTALL=""      # install and working dir of the file being run
-CUR_WD=""
+ORIG_TMP="${TMPDIR:-/tmp}"
+ORIG_TMP="${ORIG_TMP%/}"
+CUR_ROOT=""         # temporary root of the file being run; holds its install and working dirs
 CUR_PID=""
 TAIL_PID=""
 
@@ -58,17 +62,19 @@ kill_tree() {
   kill -$sig $pid 2>/dev/null
 }
 
-# stop whatever is still running under an install dir this script created, or from the binary it built.
-# The service is asked to stop first, then anything still referencing the dir gets SIGTERM and, after a
-# pause, SIGKILL for whatever has not exited.
+# stop whatever is still running under a file's temporary root, or from the binary this script built.
+# The file's service is asked to stop first, then anything whose command line references the root gets
+# SIGTERM and, after a pause, SIGKILL for whatever has not exited. Matching the root's unique name rather
+# than its full path also catches a path spelled with /private on macOS.
 stop_leftovers() {
-  local dir=$1
-  if [ -n "$dir" ]; then
-    STEAMPIPE_INSTALL_DIR=$dir steampipe service stop > /dev/null 2>&1
-    pkill -f "$dir" 2>/dev/null
+  local root=$1 name
+  if [ -n "$root" ]; then
+    name=/$(basename $root)
+    STEAMPIPE_INSTALL_DIR=$root/install steampipe service stop > /dev/null 2>&1
+    pkill -f "$name" 2>/dev/null
   fi
   sleep 2
-  [ -n "$dir" ] && pkill -KILL -f "$dir" 2>/dev/null
+  [ -n "$root" ] && pkill -KILL -f "$name" 2>/dev/null
   pkill -KILL -f "$BIN_DIR/steampipe" 2>/dev/null
   return 0
 }
@@ -78,11 +84,10 @@ cleanup() {
   trap '' EXIT INT TERM
   [ -n "$TAIL_PID" ] && kill $TAIL_PID 2>/dev/null
   [ -n "$CUR_PID" ] && kill_tree $CUR_PID KILL
-  if [ -n "$CUR_INSTALL" ]; then
-    stop_leftovers $CUR_INSTALL
-    rm -rf $CUR_INSTALL
+  if [ -n "$CUR_ROOT" ]; then
+    stop_leftovers $CUR_ROOT
+    rm -rf $CUR_ROOT
   fi
-  [ -n "$CUR_WD" ] && rm -rf $CUR_WD
   rm -rf $BIN_DIR
   exit $code
 }
@@ -97,6 +102,19 @@ if [ $? -ne 0 ]; then
 fi
 export PATH=$BIN_DIR:$PATH
 
+# BSD mktemp ignores TMPDIR when called without a template, so tests calling a bare `mktemp -d` would
+# escape the per-file root; GNU mktemp honours it
+if [ "$(uname)" = "Darwin" ]; then
+  cat > $BIN_DIR/mktemp <<'SHIM'
+#!/bin/sh
+for a in "$@"; do
+  case $a in -*) ;; *) exec /usr/bin/mktemp "$@" ;; esac
+done
+exec /usr/bin/mktemp "$@" "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"
+SHIM
+  chmod +x $BIN_DIR/mktemp
+fi
+
 if [ $# -eq 0 ]; then
   FILES=$ALL_FILES
 else
@@ -110,11 +128,12 @@ FAILED=0
 
 for f in $FILES; do
   log=$LOG_DIR/$f.tap
+  # a short name directly under the original temp dir keeps socket paths under the OS length limit;
   # an empty install dir would make run.sh fall back to the real ~/.steampipe
-  CUR_INSTALL=$(mktemp -d) || { echo "mktemp failed"; exit 1; }
-  CUR_WD=$(mktemp -d) || { echo "mktemp failed"; exit 1; }
-  export STEAMPIPE_INSTALL_DIR=$CUR_INSTALL
-  WD=$CUR_WD
+  CUR_ROOT=$(mktemp -d "$ORIG_TMP/sp.XXXXXX") || { echo "mktemp failed"; exit 1; }
+  export STEAMPIPE_INSTALL_DIR=$CUR_ROOT/install
+  WD=$CUR_ROOT/wd
+  mkdir $STEAMPIPE_INSTALL_DIR $WD || { echo "mkdir failed"; exit 1; }
 
   echo
   echo "=== $f"
@@ -124,6 +143,7 @@ for f in $FILES; do
 
   # a fresh installation per file, warmed up the way CI does
   (
+    export TMPDIR=$CUR_ROOT
     cd $WD
     echo "Working directory: $WD"
     echo "Install directory: $STEAMPIPE_INSTALL_DIR"
@@ -138,6 +158,7 @@ for f in $FILES; do
   if [ -z "$result" ]; then
     : > $log
     (
+      export TMPDIR=$CUR_ROOT
       cd $WD
       MY_PATH=$MY_PATH exec $MY_PATH/run.sh $f.bats
     ) > $log 2>&1 &
@@ -154,7 +175,7 @@ for f in $FILES; do
       idle=$(( $(date +%s) - $(mtime $log) ))
       if [ -n "$plan" ] && [ "$reported" -ge "$plan" ] && [ $idle -ge $IDLE_LIMIT ] && [ -z "$leftovers" ]; then
         leftovers=" (left a service running)"
-        stop_leftovers $STEAMPIPE_INSTALL_DIR
+        stop_leftovers $CUR_ROOT
       fi
       if [ $(( $(date +%s) - start )) -ge $FILE_TIMEOUT ]; then
         kill_tree $CUR_PID TERM
@@ -176,11 +197,10 @@ for f in $FILES; do
     if [ -n "$leftovers" ] && [ "${result%% *}" = "PASS" ]; then result="FAIL"; fi
   fi
 
-  # leave nothing running for the next file
-  stop_leftovers $STEAMPIPE_INSTALL_DIR
-  rm -rf $STEAMPIPE_INSTALL_DIR $WD
-  CUR_INSTALL=""
-  CUR_WD=""
+  # stop everything the file left running, then remove everything it created, before the next file
+  stop_leftovers $CUR_ROOT
+  rm -rf $CUR_ROOT
+  CUR_ROOT=""
 
   [ "${result%% *}" = "PASS" ] || FAILED=$((FAILED + 1))
   ok=$(grep -c '^ok ' $log 2>/dev/null)
