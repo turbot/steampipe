@@ -272,9 +272,6 @@ teardown() {
       assert_equal $(count_steampipe_processes) 0
     done
   done
-
-  # remove the sample sql file
-  rm -f sample.sql
 }
 
 @test "steampipe test database config with default listen option(hcl)" {
