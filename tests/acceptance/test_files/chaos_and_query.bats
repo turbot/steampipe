@@ -2,6 +2,14 @@ load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 load ../helpers/steampipe_processes
 
+# runs even when a test fails; only the install-dir test sets TILDE_INSTALL_DIR
+teardown() {
+  if [ -n "$TILDE_INSTALL_DIR" ]; then
+    steampipe service stop --force --install-dir "$TILDE_INSTALL_DIR" > /dev/null 2>&1
+    rm -rf "$TILDE_INSTALL_DIR"
+  fi
+}
+
 @test "select from chaos.chaos_high_row_count order by column_0" {
   run steampipe query --output json  "select column_0,column_1,column_2,column_3,column_4,column_5,column_6,column_7,column_8,column_9,id from chaos.chaos_high_row_count order by column_0 limit 10"
   echo $output > $TEST_DATA_DIR/actual_1.json
@@ -303,7 +311,11 @@ load ../helpers/steampipe_processes
 }
 
 @test "select query install directory" {
-  run steampipe query --output csv "select 1" --install-dir '~/.steampipe_test'
+  # a literal ~ is passed so that tilde expansion is what is tested; the
+  # directory is unique per run so no state is shared between runs
+  tilde_dir_name=$(basename "$(mktemp -d "$HOME/.steampipe_test.XXXXXX")")
+  export TILDE_INSTALL_DIR="$HOME/$tilde_dir_name"
+  run steampipe query --output csv "select 1" --install-dir "~/$tilde_dir_name"
   assert_success
 }
 
