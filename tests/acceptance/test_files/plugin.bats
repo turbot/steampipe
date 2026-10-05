@@ -461,6 +461,12 @@ copy_install_directory() {
   export MY_TEST_COPY
 }
 
+# bats keeps its temporary directories until the run ends; remove each copy as its test
+# finishes so the file holds one install copy at a time, not one per test
+teardown() {
+  rm -rf "$BATS_TEST_TMPDIR/install_copy"
+}
+
 function setup_file() {
   export BATS_TEST_TIMEOUT=180
   echo "# setup_file()">&3
