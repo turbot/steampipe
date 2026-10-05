@@ -252,14 +252,14 @@ go build -o steampipe
 # Unit tests
 go test ./...
 
-# Acceptance tests (local) - sets up a temp install dir, installs chaos plugins, runs all tests
+# Acceptance tests (local) - builds this checkout, then runs the files CI runs, in CI's order
 tests/acceptance/run-local.sh
 
-# Run a single acceptance test file
-tests/acceptance/run-local.sh 001.query.bats
+# Run only the named files
+tests/acceptance/run-local.sh settings.bats
 ```
 
-`run-local.sh` creates a temporary `STEAMPIPE_INSTALL_DIR`, runs `steampipe plugin install chaos chaosdynamic`, then delegates to `run.sh`. This isolates tests from your real `~/.steampipe` installation. The `steampipe` binary must already be on your `PATH` (build it first with `go build -o steampipe` and add it or use `go install`).
+`run-local.sh` builds the checkout itself (Go required; it does not use a `steampipe` on your `PATH`) and gives each test file a fresh temporary install directory, warmed up as CI does (`steampipe plugin install chaos chaosdynamic`). This isolates tests from your real `~/.steampipe` installation, which it never stops. On macOS it skips `migration` and `force_stop`, as the workflow does. Each file has a 15-minute limit (CI's); a file fails if a test fails, it times out, or it leaves a service running. It prints a per-file summary and exits non-zero if any file failed; per-file logs are kept in the temp directory named at the start of the output.
 
 ### Local Development with Related Repos
 
