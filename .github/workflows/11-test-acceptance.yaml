@@ -117,11 +117,6 @@ jobs:
           - "schema_cloning"
           - "exit_codes"
           - "force_stop"
-        exclude:
-          - platform: macos-latest
-            test_block: migration
-          - platform: macos-latest
-            test_block: force_stop
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout
