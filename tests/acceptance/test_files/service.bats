@@ -2,11 +2,6 @@ load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 load ../helpers/steampipe_processes
 
-# the "service stability" test writes this file into the checkout; remove it even if that test fails
-teardown() {
-  rm -f "$FILE_PATH/test_data/mods/service_mod/sample.sql"
-}
-
 @test "steampipe service start" {
     run steampipe service start
     assert_success
@@ -243,7 +238,7 @@ teardown() {
 
   test_indices=$(echo $tests | jq '. | keys[]')
 
-  cd $FILE_PATH/test_data/mods/service_mod
+  cd "$BATS_TEST_TMPDIR"
 
   # prepare a sample sql file
   echo 'select 1' > sample.sql
@@ -258,13 +253,13 @@ teardown() {
     # get the indices of the commands to run
     run_indices=$(echo $runs | jq '. | keys[]')
 
-    for k in 1..10; do
+    for k in {1..10}; do
       # loop through the run indices
       for j in $run_indices; do
-        cmd=$(echo $runs | jq ".[${j}]" | tr -d '"')
+        cmd=$(echo $runs | jq -r ".[${j}]")
         echo ">>>>>>Command: $cmd"
         # run the command
-        run $command
+        run $cmd
 
         # make sure that the command executed successfully
         assert_success
