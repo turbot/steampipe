@@ -1,2 +1,0 @@
-tcp4       0      0  *.8765                 *.*                    LISTEN     
-tcp6       0      0  *.8765                 *.*                    LISTEN     
