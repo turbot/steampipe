@@ -28,16 +28,7 @@ load ../helpers/steampipe_processes
     cwd=$(pwd)
     export STEAMPIPE_CONFIG_DUMP=config_json
 
-    # check the command(query/check/dashboard) and prepare the steampipe
-    # command accordingly
-    cmd=$(echo $tests | jq -c ".[${i}]" | jq ".cmd")
-    if [[ $cmd == '"query"' ]]; then
-      sp_cmd='steampipe query "select 1"'
-    elif [[ $cmd == '"check"' ]]; then
-      sp_cmd='steampipe check all'
-    elif [[ $cmd == '"dashboard"' ]]; then
-      sp_cmd='steampipe dashboard'
-    fi
+    sp_cmd='steampipe query "select 1"'
     # echo $sp_cmd
 
     # key=$(echo $i)
@@ -82,8 +73,8 @@ load ../helpers/steampipe_processes
       exp_val=$(echo $(echo $expected_config | jq --arg KEY $key '.[$KEY]' | tr -d '"'))
       act_val=$(echo $(echo $actual_config | jq --arg KEY $key '.[$KEY]' | tr -d '"'))
 
-      # get the absolute paths for install-dir and mod-location
-      if [[ $key == "install-dir" ]] || [[ $key == "mod-location" ]]; then
+      # get the absolute path for install-dir
+      if [[ $key == "install-dir" ]]; then
         exp_val="${cwd}/${exp_val}"
       fi
       echo "expected $key: $exp_val"

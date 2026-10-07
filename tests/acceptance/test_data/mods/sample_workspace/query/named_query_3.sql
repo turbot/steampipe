@@ -1,1 +1,0 @@
-select id, array_element, epoch_column_seconds, epoch_column_milliseconds from chaos.chaos_all_column_types where id='3'
