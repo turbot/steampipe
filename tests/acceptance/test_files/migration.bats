@@ -156,14 +156,3 @@ function teardown_file() {
   num=$(count_steampipe_processes)
   assert_equal $num 0
 }
-
-function setup() {
-  # skip if this test is run on Linux ARM64, since there is no linux_arm binary available
-  # for v0.13.6 to run this test
-  sys=$(uname -sm)
-  if [[ "$sys" == "Linux aarch64" ]]; then
-    skip
-  else
-    echo "Running migration test..."
-  fi
-}
