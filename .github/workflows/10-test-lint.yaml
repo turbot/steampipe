@@ -30,7 +30,7 @@ jobs:
           ref: v1.6.x
 
       # this is required, check golangci-lint-action docs
-      - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: '1.26.7'
           cache: false # setup-go v4 caches by default, do not change this parameter, check golangci-lint-action doc: https://github.com/golangci/golangci-lint-action/pull/704
