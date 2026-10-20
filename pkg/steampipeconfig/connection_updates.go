@@ -96,6 +96,9 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 	}
 	log.Printf("[INFO] built required connection state")
 
+	// the comparison below must neither update nor delete these, so it never sees them
+	keptConnections := takeConnectionsToKeep(GlobalConfig.ConnectionsWithSkippedPlugin, requiredConnectionStateMap, currentConnectionStateMap)
+
 	// build lookup of disabled connections
 	disabled := make(map[string]struct{})
 	for _, c := range requiredConnectionStateMap {
@@ -193,7 +196,8 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 	for _, name := range foreignSchemaNames {
 		_, existsInCurrentState := currentConnectionStateMap[name]
 		_, existsInRequiredState := requiredConnectionStateMap[name]
-		if !existsInCurrentState && !existsInRequiredState {
+		_, kept := keptConnections[name]
+		if !existsInCurrentState && !existsInRequiredState && !kept {
 			log.Printf("[TRACE] connection %s exists in db foreign schemas state but not current or required state - marking for deletion\n", name)
 			updates.Delete[name] = struct{}{}
 		}
@@ -229,10 +233,33 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 	// for all updates/deletes, if there are any aggregators of the same plugin type, update those as well
 	updates.populateAggregators()
 
+	for name, state := range keptConnections {
+		updates.FinalConnectionState[name] = state
+		updates.CurrentConnectionState[name] = state
+	}
+
 	// before we return, merge in connection state warnings
 	res.AddWarning(connectionStateResult.Warnings...)
 
 	return updates, res
+}
+
+// takeConnectionsToKeep removes the named connections that have a schema from both state maps
+// and returns their state, set to ready: startup sets ready connections to pending, and
+// without an update nothing else would move them on.
+func takeConnectionsToKeep(names map[string]struct{}, required, current ConnectionStateMap) ConnectionStateMap {
+	kept := make(ConnectionStateMap)
+	for name := range names {
+		state, ok := current[name]
+		if !ok || (state.State != constants.ConnectionStateReady && state.State != constants.ConnectionStatePending) {
+			continue
+		}
+		state.State = constants.ConnectionStateReady
+		kept[name] = state
+		delete(required, name)
+		delete(current, name)
+	}
+	return kept
 }
 
 type connectionRequiresUpdateResult struct {

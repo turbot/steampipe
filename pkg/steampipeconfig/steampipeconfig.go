@@ -31,6 +31,13 @@ type SteampipeConfig struct {
 	PluginsInstances map[string]*plugin.Plugin
 	// map of connection name to partially parsed connection config
 	Connections map[string]*modconfig.SteampipeConnection
+	// connections whose plugin block was skipped when loading, which a refresh leaves as they are
+	ConnectionsWithSkippedPlugin map[string]struct{}
+
+	// labels of the plugin blocks loadConfig skipped
+	skippedPluginInstances map[string]struct{}
+	// a dropped file could have held any plugin block
+	configFileDropped bool
 
 	// Steampipe options
 	DatabaseOptions *options.Database
@@ -45,6 +52,8 @@ func NewSteampipeConfig(commandName string) *SteampipeConfig {
 		Connections:      make(map[string]*modconfig.SteampipeConnection),
 		Plugins:          make(map[string][]*plugin.Plugin),
 		PluginsInstances: make(map[string]*plugin.Plugin),
+
+		skippedPluginInstances: make(map[string]struct{}),
 	}
 }
 
@@ -230,8 +239,12 @@ func duplicatePluginError(existingPlugin, newPlugin *plugin.Plugin) error {
 // even if there is not an explicit HCL config for it
 // NOTE: this populates the  Plugin and PluginInstance field of the connections
 func (c *SteampipeConfig) initializePlugins() {
+	c.ConnectionsWithSkippedPlugin = make(map[string]struct{})
 	for _, connection := range c.Connections {
 		plugin, err := c.resolvePluginInstanceForConnection(connection)
+		if c.pluginBlockSkipped(connection, err) {
+			c.ConnectionsWithSkippedPlugin[connection.Name] = struct{}{}
+		}
 		if err != nil {
 			log.Printf("[WARN] cannot resolve plugin for connection '%s': %s", connection.Name, err.Error())
 			connection.Error = err
@@ -265,6 +278,14 @@ func (c *SteampipeConfig) initializePlugins() {
 
 	}
 
+}
+
+func (c *SteampipeConfig) pluginBlockSkipped(connection *modconfig.SteampipeConnection, resolveErr error) bool {
+	if connection.PluginInstance == nil {
+		return false
+	}
+	_, skipped := c.skippedPluginInstances[*connection.PluginInstance]
+	return skipped || (resolveErr != nil && c.configFileDropped)
 }
 
 /*
