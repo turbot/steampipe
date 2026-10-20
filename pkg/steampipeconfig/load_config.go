@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -250,7 +251,11 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 		return perror_helpers.DiagsToErrorsAndWarnings("Failed to load all config files", diags)
 	}
 
-	body, diags := pparse.ParseHclFiles(fileData)
+	fileData, parseDiags := dropFilesWithErrors(fileData)
+	diags = append(diags, downgradeToWarnings(parseDiags)...)
+
+	body, moreDiags := pparse.ParseHclFiles(fileData)
+	diags = append(diags, moreDiags...)
 	if diags.HasErrors() {
 		return perror_helpers.DiagsToErrorsAndWarnings("Failed to load all config files", diags)
 	}
@@ -260,6 +265,10 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 	if moreDiags.HasErrors() {
 		diags = append(diags, moreDiags...)
 		return perror_helpers.DiagsToErrorsAndWarnings("Failed to load config", diags)
+	}
+	// nothing besides the dropped files defines config; refreshing would drop every connection
+	if parseDiags.HasErrors() && len(content.Blocks) == 0 {
+		return perror_helpers.DiagsToErrorsAndWarnings("Failed to load all config files", parseDiags)
 	}
 
 	// store block types which we have found in this folder - each is only allowed once
@@ -272,19 +281,20 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 
 		case schema.BlockTypePlugin:
 			plugin, moreDiags := parse.DecodePlugin(block)
-			diags = append(diags, moreDiags...)
+			diags = append(diags, downgradeToWarnings(moreDiags)...)
 			if moreDiags.HasErrors() {
 				continue
 			}
 			// add plugin to steampipeConfig
 			// NOTE: this errors if there is a plugin block with a duplicate label
 			if err := steampipeConfig.addPlugin(plugin); err != nil {
-				return perror_helpers.NewErrorsAndWarning(err)
+				diags = append(diags, blockWarning(block, err.Error()))
+				continue
 			}
 
 		case schema.BlockTypeConnection:
 			connection, moreDiags := pparse.DecodeConnection(block)
-			diags = append(diags, moreDiags...)
+			diags = append(diags, downgradeToWarnings(moreDiags)...)
 			if moreDiags.HasErrors() {
 				continue
 			}
@@ -317,13 +327,15 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 		case schema.BlockTypeOptions:
 			// check this options type is permitted based on the options passed in
 			if err := optionsBlockPermitted(block, optionBlockMap, opts); err != nil {
-				return perror_helpers.NewErrorsAndWarning(err)
+				diags = append(diags, blockWarning(block, err.Error()))
+				continue
 			}
 			opts, moreDiags := pparse.DecodeOptions(block, SteampipeOptionsBlockMapping)
 			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
+				diags = append(diags, downgradeToWarnings(moreDiags)...)
 				continue
 			}
+			optionBlockMap[block.Labels[0]] = true
 			// set options on steampipe config
 			// if options are already set, this will merge the new options over the top of the existing options
 			// i.e. new options have precedence
@@ -361,6 +373,47 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 	return res
 }
 
+// dropFilesWithErrors parses each file on its own and drops those with errors,
+// returning the rest and the dropped files' diagnostics.
+func dropFilesWithErrors(fileData map[string][]byte) (map[string][]byte, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+	res := make(map[string][]byte, len(fileData))
+	for _, path := range slices.Sorted(maps.Keys(fileData)) {
+		data := fileData[path]
+		body, fileDiags := pparse.ParseHclFiles(map[string][]byte{path: data})
+		if !fileDiags.HasErrors() {
+			_, moreDiags := body.Content(pparse.SteampipeConfigBlockSchema)
+			fileDiags = append(fileDiags, moreDiags...)
+		}
+		if fileDiags.HasErrors() {
+			diags = append(diags, fileDiags...)
+			continue
+		}
+		res[path] = data
+	}
+	return res, diags
+}
+
+// downgradeToWarnings returns copies, since callers still check the original
+// diags with HasErrors to decide whether to skip the block.
+func downgradeToWarnings(diags hcl.Diagnostics) hcl.Diagnostics {
+	res := make(hcl.Diagnostics, len(diags))
+	for i, diag := range diags {
+		warning := *diag
+		warning.Severity = hcl.DiagWarning
+		res[i] = &warning
+	}
+	return res
+}
+
+func blockWarning(block *hcl.Block, summary string) *hcl.Diagnostic {
+	return &hcl.Diagnostic{
+		Severity: hcl.DiagWarning,
+		Summary:  summary,
+		Subject:  hclhelpers.BlockRangePointer(block),
+	}
+}
+
 func getDuplicateConnectionError(existingConnection, newConnection *modconfig.SteampipeConnection) error {
 	return sperr.New("duplicate connection name: '%s'\n\t(%s:%d)\n\t(%s:%d)",
 		existingConnection.Name, existingConnection.DeclRange.Filename, existingConnection.DeclRange.Start.Line,
@@ -373,7 +426,6 @@ func optionsBlockPermitted(block *hcl.Block, blockMap map[string]bool, opts *loa
 	if _, ok := blockMap[blockType]; ok {
 		return fmt.Errorf("multiple instances of '%s' options block", blockType)
 	}
-	blockMap[blockType] = true
 	permitted := len(opts.allowedOptions) == 0 ||
 		slices.Contains(opts.allowedOptions, blockType)
 
