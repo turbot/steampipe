@@ -1,3 +1,8 @@
+## v2.4.8 [2026-10-22]
+_Dependencies_
+- Compiled with Go 1.26.10, which rejects certificate chains through the compromised eMudhra intermediate CAs ([golang/go#82345](https://github.com/golang/go/issues/82345)).
+- Update embedded `steampipe-postgres-fdw` to `v2.2.8` (compiled with Go 1.26.10).
+
 ## v2.4.7 [2026-09-16]
 _Dependencies_
 - Bump `golang.org/x/crypto` from v0.52.0 to v0.55.0 to remediate CVE-2026-56854.
