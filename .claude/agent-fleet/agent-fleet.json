@@ -1,0 +1,19 @@
+{
+  "warm": "git submodule update --init --recursive && go mod download",
+  "warmProbe": "tests/acceptance/lib/bats-core/bin/bats",
+  "platforms": ["darwin", "linux"],
+  "tools": ["go", "jq", "jd"],
+  "secrets": {},
+  "chores": {
+    "security-audit": {
+      "when": "mon week 3",
+      "areas": [
+        "plugin and database image downloads (pkg/ociinstaller)",
+        "embedded Postgres setup, passwords and SSL (pkg/db/db_local)",
+        "Pipes login and token handling (cmd/login.go)",
+        "connection config loading (pkg/steampipeconfig)",
+        "plugin manager gRPC service (pkg/pluginmanager_service)"
+      ]
+    }
+  }
+}
