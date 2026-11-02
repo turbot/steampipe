@@ -49,16 +49,16 @@ checks:
 
 kinds:
   go:
-    paths: ["**/*.go", "go.mod", "go.sum"]
+    paths: ["**/*.go", "go.mod", "go.sum", "cmd/**", "pkg/**", ".golangci.yml"]
     checks: [build, unit, lint, acceptance-query]
     show: [test]
   acceptance:
-    paths: ["tests/acceptance/**"]
+    paths: ["tests/**"]
     checks: [acceptance-query]
     show: [test]
   workflows:
-    paths: [".github/**", ".goreleaser.yml", ".acceptance.goreleaser.yml", "Makefile", "scripts/**"]
+    paths: [".github/**", ".goreleaser.yml", ".acceptance.goreleaser.yml", "Makefile", "scripts/**", ".gitattributes", ".gitignore", ".gitmodules"]
     show: [none]
   docs:
-    paths: ["**/*.md", "design/**", ".ai/**", ".claude/**"]
+    paths: ["**/*.md", "design/**", ".ai/**", ".claude/**", "LICENSE"]
     show: [none]
