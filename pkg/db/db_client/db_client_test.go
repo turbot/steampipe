@@ -231,7 +231,7 @@ func TestDbClient_ConcurrentCloseAndRead(t *testing.T) {
 			defer func() { done <- true }()
 			// Without the fix, Close() sets sessions to nil without mutex protection
 			// This is the bug - it should acquire the mutex first
-			client.Close(nil)
+			client.Close(context.TODO())
 		}()
 
 		// Wait for both goroutines
@@ -292,7 +292,7 @@ func TestDbClient_SessionsMapNilAfterClose(t *testing.T) {
 	client.sessionsMutex.Unlock()
 
 	// Close sets sessions to nil (without mutex protection - this is the bug)
-	client.Close(nil)
+	client.Close(context.TODO())
 
 	// Attempt to access sessions like AcquireSession does
 	// After the fix, this should not panic

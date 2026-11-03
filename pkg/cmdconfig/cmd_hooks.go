@@ -418,15 +418,15 @@ func ensureInstallDir() {
 // displayDeprecationWarnings shows the deprecated warnings in a formatted way
 func displayDeprecationWarnings(errorsAndWarnings perror_helpers.ErrorAndWarnings) {
 	if len(errorsAndWarnings.Warnings) > 0 {
-		fmt.Println(color.YellowString(fmt.Sprintf("\nDeprecation %s:", utils.Pluralize("warning", len(errorsAndWarnings.Warnings)))))
+		fmt.Println(color.YellowString(fmt.Sprintf("\nDeprecation %s:", utils.Pluralize("warning", len(errorsAndWarnings.Warnings))))) //nolint:forbidigo // acceptable
 		for _, warning := range errorsAndWarnings.Warnings {
-			fmt.Printf("%s\n\n", warning)
+			fmt.Printf("%s\n\n", warning) //nolint:forbidigo // acceptable
 		}
-		fmt.Println("For more details, see https://steampipe.io/docs/reference/config-files/workspace")
-		fmt.Println()
+		fmt.Println("For more details, see https://steampipe.io/docs/reference/config-files/workspace") //nolint:forbidigo // acceptable
+		fmt.Println() //nolint:forbidigo // acceptable
 	}
 }
 
 func displayPpDeprecationWarning() {
-	fmt.Fprintf(color.Error, "\n%s Steampipe mods and dashboards have been moved to %s. This command %s in a future version. Migration guide - https://powerpipe.io/blog/migrating-from-steampipe \n", color.YellowString("Deprecation warning:"), pconstants.Bold("Powerpipe"), pconstants.Bold("will be removed"))
+	fmt.Fprintf(color.Error, "\n%s Steampipe mods and dashboards have been moved to %s. This command %s in a future version. Migration guide - https://powerpipe.io/blog/migrating-from-steampipe \n", color.YellowString("Deprecation warning:"), pconstants.Bold("Powerpipe"), pconstants.Bold("will be removed")) //nolint:forbidigo // acceptable
 }

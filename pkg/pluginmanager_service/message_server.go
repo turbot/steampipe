@@ -57,7 +57,9 @@ func (m *PluginMessageServer) openMessageStream(pluginClient *sdkgrpc.PluginClie
 }
 
 func (m *PluginMessageServer) runMessageListener(stream sdkproto.WrapperPlugin_EstablishMessageStreamClient, connection string) {
-	defer stream.CloseSend()
+	defer func() {
+		_ = stream.CloseSend()
+	}()
 
 	log.Printf("[TRACE] runMessageListener connection '%s'", connection)
 	for {

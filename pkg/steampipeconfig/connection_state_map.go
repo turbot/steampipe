@@ -146,7 +146,7 @@ func (m ConnectionStateMap) Save() error {
 		log.Println("[ERROR]", "Error while writing state file", err)
 		return err
 	}
-	return os.WriteFile(connFilePath, connFileJSON, 0644)
+	return os.WriteFile(connFilePath, connFileJSON, 0600)
 }
 
 func (m ConnectionStateMap) Equals(other ConnectionStateMap) bool {

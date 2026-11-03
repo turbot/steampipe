@@ -230,15 +230,15 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 		// if there was an error and we started the service, stop it again
 		if res.Error != nil {
 			if res.Status == ServiceStarted {
-				StopServices(ctx, false, invoker)
+				_, _ = StopServices(ctx, false, invoker)
 			}
 			// remove the state file if we are going back with an error
-			removeRunningInstanceInfo()
+			_ = removeRunningInstanceInfo()
 			// we are going back with an error
 			// if the process was started,
 			if postgresCmd != nil && postgresCmd.Process != nil {
 				// kill it
-				postgresCmd.Process.Kill()
+				_ = postgresCmd.Process.Kill()
 			}
 		}
 	}()
@@ -443,7 +443,7 @@ func updateDatabaseNameInRunningInfo(ctx context.Context, databaseName string) (
 }
 
 func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cmd {
-	postgresCmd := exec.Command(
+	postgresCmd := exec.Command( //nolint:gosec // G204: filepaths.GetPostgresBinaryExecutablePath() is steampipe's own installed postgres binary path, not user input
 		filepaths.GetPostgresBinaryExecutablePath(),
 		// by this time, we are sure that the port is free to listen to
 		"-p", fmt.Sprint(port),
@@ -636,7 +636,7 @@ func killInstanceIfAny(ctx context.Context) bool {
 	for _, process := range processes {
 		wg.Add(1)
 		go func(p *psutils.Process) {
-			doThreeStepPostgresExit(ctx, p)
+			_ = doThreeStepPostgresExit(ctx, p)
 			wg.Done()
 		}(process)
 	}
@@ -645,8 +645,12 @@ func killInstanceIfAny(ctx context.Context) bool {
 }
 
 func FindAllSteampipePostgresInstances(ctx context.Context) ([]*psutils.Process, error) {
+	return findSteampipePostgresInstances(ctx, psutils.ProcessesWithContext)
+}
+
+func findSteampipePostgresInstances(ctx context.Context, listProcesses func(context.Context) ([]*psutils.Process, error)) ([]*psutils.Process, error) {
 	var instances []*psutils.Process
-	allProcesses, err := psutils.ProcessesWithContext(ctx)
+	allProcesses, err := listProcesses(ctx)
 	if err != nil {
 		log.Println("[TRACE] FindAllSteampipePostgresInstances - error retrieving process list: ", err.Error())
 		return nil, err
@@ -654,8 +658,10 @@ func FindAllSteampipePostgresInstances(ctx context.Context) ([]*psutils.Process,
 	for _, p := range allProcesses {
 		cmdLine, err := p.CmdlineSliceWithContext(ctx)
 		if err != nil {
-			log.Printf("[TRACE] FindAllSteampipePostgresInstances - error retrieving cmdline for pid %d: %s", p.Pid, err.Error())
-			return nil, err
+			// the process may have exited since the list was taken, or its
+			// command line may not be readable by this user
+			log.Printf("[TRACE] FindAllSteampipePostgresInstances - skipping pid %d, error retrieving cmdline: %s", p.Pid, err.Error())
+			continue
 		}
 		if isSteampipePostgresProcess(ctx, cmdLine) {
 			instances = append(instances, p)

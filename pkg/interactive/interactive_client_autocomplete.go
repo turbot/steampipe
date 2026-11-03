@@ -26,7 +26,6 @@ func (c *InteractiveClient) initialiseSuggestions(ctx context.Context) error {
 	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilLoading())
 	if err != nil {
 		log.Printf("[WARN] could not load connection state: %v", err)
-		//nolint:golint,nilerr // valid condition - not an error
 		return nil
 	}
 

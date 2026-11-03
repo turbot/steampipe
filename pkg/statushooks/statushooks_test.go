@@ -265,17 +265,17 @@ func TestSpinnerSetStatusRace(t *testing.T) {
 // TestContextFunctionsNilContext tests that context helper functions handle nil context
 func TestContextFunctionsNilContext(t *testing.T) {
 	// These should not panic with nil context
-	hooks := StatusHooksFromContext(nil)
+	hooks := StatusHooksFromContext(nil) //nolint:staticcheck // SA1012: the test's purpose is verifying nil-context handling, context.TODO() would defeat it
 	if hooks != NullHooks {
 		t.Error("Expected NullHooks for nil context")
 	}
 
-	progress := SnapshotProgressFromContext(nil)
+	progress := SnapshotProgressFromContext(nil) //nolint:staticcheck // SA1012: the test's purpose is verifying nil-context handling, context.TODO() would defeat it
 	if progress != NullProgress {
 		t.Error("Expected NullProgress for nil context")
 	}
 
-	renderer := MessageRendererFromContext(nil)
+	renderer := MessageRendererFromContext(nil) //nolint:staticcheck // SA1012: the test's purpose is verifying nil-context handling, context.TODO() would defeat it
 	if renderer == nil {
 		t.Error("Expected non-nil renderer for nil context")
 	}

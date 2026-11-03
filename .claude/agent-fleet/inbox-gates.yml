@@ -1,0 +1,64 @@
+# What a change to steampipe must run and show before an agent's PR counts as done.
+#
+# Left out on purpose:
+# - go vet: fails on develop on deliberate code that golangci-lint already suppresses.
+# - The rest of the acceptance suite: it takes long enough to stay in CI, and some files stop
+#   every steampipe service on the machine or need a Pipes token (see never_run).
+
+ci_is_proof: false
+
+never_run:
+  # Releases and published artifacts
+  - gh workflow run
+  - gh release
+  - git tag
+  - goreleaser
+  - docker push
+  - oras push
+  # Installs into /usr/local/bin, outside the checkout
+  - make build
+  - make all
+  - scripts/install.sh
+  # Changes the machine it runs on, or expects real plugins and credentials
+  - scripts/prepare_*
+  - scripts/smoke_test.sh
+  - scripts/test_cred_rotate.sh # queries real AWS accounts
+  # Acceptance files that reach Pipes workspaces with a real token
+  - tests/acceptance/run-local.sh cloud*
+  - tests/acceptance/run-local.sh snapshot*
+  # Acceptance files that run `steampipe service stop --force`, which stops every steampipe
+  # service on the machine, not just this checkout's
+  - tests/acceptance/run-local.sh service*
+  - tests/acceptance/run-local.sh force_stop*
+  - tests/acceptance/run-local.sh ssl*
+  - steampipe service stop --force
+  # A real login writes credentials to the machine
+  - steampipe login
+
+checks:
+  build: {run: "go build ./...", cost: 1}
+  unit: {run: "go test ./...", cost: 1}
+  # GOOS=linux because CI lints on Linux: on macOS a //nolint on a Linux-only conversion in
+  # pkg/ociinstaller/diskspace.go reports as unused.
+  lint:
+    run: 'd=$(mktemp -d) && GOBIN="$d" go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 && GOOS=linux "$d/golangci-lint" run --timeout=10m'
+    cost: 2
+  # Builds this checkout into a temporary directory, installs the chaos plugins from the public
+  # registry into a temporary install directory, and removes both when it ends.
+  acceptance-query: {run: "tests/acceptance/run-local.sh chaos_and_query", cost: 3}
+
+kinds:
+  go:
+    paths: ["**/*.go", "go.mod", "go.sum", "cmd/**", "pkg/**", ".golangci.yml"]
+    checks: [build, unit, lint, acceptance-query]
+    show: [test]
+  acceptance:
+    paths: ["tests/**"]
+    checks: [acceptance-query]
+    show: [test]
+  workflows:
+    paths: [".github/**", ".goreleaser.yml", ".acceptance.goreleaser.yml", "Makefile", "scripts/**", ".gitattributes", ".gitignore", ".gitmodules"]
+    show: [none]
+  docs:
+    paths: ["**/*.md", "design/**", ".ai/**", ".claude/**", "LICENSE"]
+    show: [none]
