@@ -9,7 +9,7 @@ import (
 // UserConfirmation displays the warning message and asks the user for input
 // regarding whether to continue or not
 func UserConfirmation(ctx context.Context, warningMsg string) (bool, error) {
-	fmt.Println(warningMsg)
+	fmt.Println(warningMsg) //nolint:forbidigo // acceptable
 	confirm := make(chan string, 1)
 	confirmErr := make(chan error, 1)
 

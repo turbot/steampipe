@@ -1,8 +1,9 @@
 package connection
 
 import (
+	"maps"
+
 	"github.com/turbot/pipe-fittings/v2/plugin"
-	"golang.org/x/exp/maps"
 )
 
 // LimiterMap is a map of limiter name to limiter definition

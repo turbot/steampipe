@@ -77,7 +77,7 @@ type MessageRenderer func(format string, a ...any)
 
 func MessageRendererFromContext(ctx context.Context) MessageRenderer {
 	defaultRenderer := func(format string, a ...any) {
-		fmt.Printf(format, a...)
+		fmt.Printf(format, a...) //nolint:forbidigo // acceptable
 	}
 	if ctx == nil {
 		return defaultRenderer

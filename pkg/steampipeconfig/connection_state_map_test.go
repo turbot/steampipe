@@ -1,10 +1,14 @@
 package steampipeconfig
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/turbot/pipe-fittings/v2/app_specific"
 	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/filepaths"
 )
 
 func TestConnectionStateMapGetSummary(t *testing.T) {
@@ -408,5 +412,30 @@ func TestConnectionStateMapSetConnectionsToPendingOrIncomplete(t *testing.T) {
 
 	if stateMap["conn3"].State != constants.ConnectionStateDisabled {
 		t.Errorf("Expected conn3 to remain disabled, got %s", stateMap["conn3"].State)
+	}
+}
+
+func TestConnectionStateMapSaveFilePermissions(t *testing.T) {
+	tempDir := t.TempDir()
+	app_specific.InstallDir = filepath.Join(tempDir, ".steampipe")
+
+	stateMap := ConnectionStateMap{
+		"conn1": &ConnectionState{
+			ConnectionName: "conn1",
+			State:          constants.ConnectionStateReady,
+		},
+	}
+
+	if err := stateMap.Save(); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+
+	path := filepaths.ConnectionStatePath()
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("failed to stat %s: %v", path, err)
+	}
+	if perm := info.Mode().Perm(); perm != 0600 {
+		t.Errorf("expected %s to have permissions 0600, got %o", path, perm)
 	}
 }

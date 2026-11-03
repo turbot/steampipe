@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 type Target struct {
@@ -20,7 +21,11 @@ func (t *Target) Export(ctx context.Context, input ExportSourceData) (string, er
 	if err != nil {
 		return "", err
 	} else {
-		pwd, _ := os.Getwd()
-		return fmt.Sprintf("File exported to %s/%s", pwd, t.filePath), nil
+		exportPath := t.filePath
+		if !filepath.IsAbs(exportPath) {
+			pwd, _ := os.Getwd()
+			exportPath = filepath.Join(pwd, exportPath)
+		}
+		return fmt.Sprintf("File exported to %s", exportPath), nil
 	}
 }

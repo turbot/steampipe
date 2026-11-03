@@ -18,7 +18,7 @@ func getAvailableDiskSpace(path string) (uint64, error) {
 
 	// Available blocks * block size = available bytes
 	// Use Bavail (available to unprivileged user) rather than Bfree (total free)
-	availableBytes := stat.Bavail * uint64(stat.Bsize)
+	availableBytes := stat.Bavail * uint64(stat.Bsize) //nolint:gosec // Bsize is the filesystem block size and is never negative
 	return availableBytes, nil
 }
 

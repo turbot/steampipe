@@ -114,7 +114,7 @@ func ensureDefaultConfigFile(configFolder string) error {
 
 	// case: if sample is modified - always write new sample file content
 	if sampleModified {
-		err := os.WriteFile(defaultConfigSampleFile, []byte(constants.DefaultConnectionConfigContent), 0755)
+		err := os.WriteFile(defaultConfigSampleFile, []byte(constants.DefaultConnectionConfigContent), 0600)
 		if err != nil {
 			return err
 		}
@@ -122,7 +122,7 @@ func ensureDefaultConfigFile(configFolder string) error {
 
 	// case: if sample is modified but default is not modified - write the new default file content
 	if sampleModified && !userModifiedDefault {
-		err := os.WriteFile(defaultConfigFile, []byte(constants.DefaultConnectionConfigContent), 0755)
+		err := os.WriteFile(defaultConfigFile, []byte(constants.DefaultConnectionConfigContent), 0600)
 		if err != nil {
 			return err
 		}
@@ -288,12 +288,29 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 			if moreDiags.HasErrors() {
 				continue
 			}
+			// NOTE: a problem with a SINGLE connection must not fail the whole
+			// config load. LoadConnectionConfig re-parses the entire config
+			// folder, and the connection watcher aborts the refresh when it
+			// returns an error - so failing here for one bad connection stops
+			// ALL connections from being synced (no schemas created, no
+			// credential updates applied) for as long as the offending block
+			// exists, while the file watcher itself keeps running. Skip the
+			// offending connection with a warning and keep the rest usable.
 			if existingConnection, alreadyThere := steampipeConfig.Connections[connection.Name]; alreadyThere {
-				err := getDuplicateConnectionError(existingConnection, connection)
-				return perror_helpers.NewErrorsAndWarning(err)
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagWarning,
+					Summary:  getDuplicateConnectionError(existingConnection, connection).Error(),
+					Subject:  hclhelpers.BlockRangePointer(block),
+				})
+				continue
 			}
 			if ok, errorMessage := db_common.IsSchemaNameValid(connection.Name); !ok {
-				return perror_helpers.NewErrorsAndWarning(sperr.New("invalid connection name: '%s' in '%s'. %s ", connection.Name, block.TypeRange.Filename, errorMessage))
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagWarning,
+					Summary:  fmt.Sprintf("invalid connection name: '%s' in '%s'. %s ", connection.Name, block.TypeRange.Filename, errorMessage),
+					Subject:  hclhelpers.BlockRangePointer(block),
+				})
+				continue
 			}
 			steampipeConfig.Connections[connection.Name] = connection
 

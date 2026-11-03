@@ -27,7 +27,7 @@ func fieldDescriptionsToColumns(fieldDescriptions []pgconn.FieldDescription, con
 		typeName := columnTypeDatabaseTypeName(f, connection)
 
 		cols[i] = &queryresult.ColumnDef{
-			Name:     string(f.Name),
+			Name:     f.Name,
 			DataType: typeName,
 		}
 	}

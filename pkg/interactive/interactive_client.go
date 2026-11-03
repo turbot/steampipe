@@ -322,8 +322,6 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) {
 	// set this to a default
 	c.autocompleteOnEmpty = false
 	c.interactivePrompt.RunCtx(ctx)
-
-	return
 }
 
 func cleanBufferForWSL(s string) (string, bool) {
@@ -520,7 +518,7 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 	// validate the metaquery arguments
 	validateResult := metaquery.Validate(query)
 	if validateResult.Message != "" {
-		fmt.Println(validateResult.Message)
+		fmt.Println(validateResult.Message) //nolint:forbidigo // acceptable
 	}
 	if err := validateResult.Err; err != nil {
 		return err

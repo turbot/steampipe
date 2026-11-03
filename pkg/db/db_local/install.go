@@ -244,7 +244,9 @@ func installFDW(ctx context.Context, firstSetup bool) (string, error) {
 		defer func() {
 			if !firstSetup {
 				// update the signature
-				updateDownloadedBinarySignature()
+				if err := updateDownloadedBinarySignature(); err != nil {
+					log.Printf("[WARN] failed to update downloaded binary signature: %s", err)
+				}
 			}
 		}()
 	}
@@ -300,7 +302,9 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	defer func() {
 		statushooks.SetStatus(ctx, "Completing configuration")
 		client.Close(ctx)
-		doThreeStepPostgresExit(ctx, process)
+		if err := doThreeStepPostgresExit(ctx, process); err != nil {
+			log.Printf("[WARN] failed to stop postgres process started for install: %s", err)
+		}
 	}()
 
 	statushooks.SetStatus(ctx, "Generating database passwords…")
@@ -350,7 +354,7 @@ func resolveDatabaseName(oldDbName *string) string {
 }
 
 func startServiceForInstall(port int) (*psutils.Process, error) {
-	postgresCmd := exec.Command(
+	postgresCmd := exec.Command( //nolint:gosec // G204: filepaths.GetPostgresBinaryExecutablePath() is steampipe's own installed postgres binary path, not user input
 		filepaths.GetPostgresBinaryExecutablePath(),
 		// by this time, we are sure that the port if free to listen to
 		"-p", fmt.Sprint(port),
@@ -374,7 +378,7 @@ func startServiceForInstall(port int) (*psutils.Process, error) {
 		return nil, err
 	}
 
-	return psutils.NewProcess(int32(postgresCmd.Process.Pid))
+	return psutils.NewProcess(int32(postgresCmd.Process.Pid)) //nolint:gosec // G115: OS process IDs never exceed int32 range on any supported platform
 }
 
 func isValidDatabaseName(databaseName string) bool {
@@ -541,5 +545,5 @@ func updateDownloadedBinarySignature() error {
 		return err
 	}
 	installedSignature := fmt.Sprintf("%s|%s", versionInfo.EmbeddedDB.ImageDigest, versionInfo.FdwExtension.ImageDigest)
-	return os.WriteFile(filepaths.GetDBSignatureLocation(), []byte(installedSignature), 0755)
+	return os.WriteFile(filepaths.GetDBSignatureLocation(), []byte(installedSignature), 0600)
 }

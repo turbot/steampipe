@@ -32,7 +32,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
-          go-version: 1.26.1
+          go-version: 1.26.10
 
       - name: Fetching Go Cache Paths
         id: go-cache-paths
@@ -70,9 +70,6 @@ jobs:
         run: |
           mkdir ~/artifacts
           mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
-          mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_linux_arm64.tar.gz ~/artifacts/linux-arm64.tar.gz
-          mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_darwin_arm64.zip ~/artifacts/darwin.zip
-          mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin-amd64.zip
 
       - name: List Build Artifacts
         run: ls -l ~/artifacts
@@ -111,15 +108,12 @@ jobs:
           - "performance"
           - "config_precedence"
           - "cloud"
-          - "snapshot"
+          # Disabled: snapshot creates against turbot-ops/clitesting exceed the
+          # 60s gateway limit and return 504. Re-enable via #5025.
+          # - "snapshot"
           - "schema_cloning"
           - "exit_codes"
           - "force_stop"
-        exclude:
-          - platform: macos-latest
-            test_block: migration
-          - platform: macos-latest
-            test_block: force_stop
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout
@@ -130,7 +124,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
-          go-version: 1.26.1
+          go-version: 1.26.10
 
       - name: Prepare for downloads
         id: prepare-for-downloads
@@ -218,10 +212,4 @@ jobs:
         uses: geekyeggo/delete-artifact@f275313e70c08f6120db482d7a6b98377786765b # v5.1.0
         with:
           name: build-artifact-linux
-          failOnError: true
-
-      - name: Clean up Darwin Build
-        uses: geekyeggo/delete-artifact@f275313e70c08f6120db482d7a6b98377786765b # v5.1.0
-        with:
-          name: build-artifact-darwin
           failOnError: true

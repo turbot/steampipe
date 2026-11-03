@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"slices"
 	"strings"
 	"sync"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/turbot/steampipe/v2/pkg/error_helpers"
 	"github.com/turbot/steampipe/v2/pkg/statushooks"
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
 
 type Manager struct {
