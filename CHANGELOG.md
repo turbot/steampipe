@@ -1,3 +1,14 @@
+## v2.4.9 [2026-10-29]
+_Dependencies_
+- Bump `github.com/klauspost/compress` from v1.18.5 to v1.18.7 to remediate CVE-2026-63209.
+- Bump `github.com/go-jose/go-jose/v4` from v4.1.4 to v4.1.6 to remediate CVE-2026-116587.
+- Update embedded `steampipe-postgres-fdw` to `v2.2.9`.
+
+## v2.4.8 [2026-10-22]
+_Dependencies_
+- Compiled with Go 1.26.10, which rejects certificate chains through the compromised eMudhra intermediate CAs ([golang/go#82345](https://github.com/golang/go/issues/82345)).
+- Update embedded `steampipe-postgres-fdw` to `v2.2.8` (compiled with Go 1.26.10).
+
 ## v2.4.7 [2026-09-16]
 _Dependencies_
 - Bump `golang.org/x/crypto` from v0.52.0 to v0.55.0 to remediate CVE-2026-56854.

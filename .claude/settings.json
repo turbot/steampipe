@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "s=\"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/scripts/hold-label-guard.sh\"; if [ -x \"$s\" ]; then exec \"$s\"; fi; exit 0"
+          },
+          {
+            "type": "command",
+            "command": "s=\"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/scripts/checkout-scope-guard.sh\"; if [ -n \"${AGENT_FLEET_CHECKOUT:-}\" ] && [ -x \"$s\" ]; then exec \"$s\"; fi; exit 0"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "s=\"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/scripts/checkout-scope-guard-file.sh\"; if [ -n \"${AGENT_FLEET_CHECKOUT:-}\" ] && [ -x \"$s\" ]; then exec \"$s\"; fi; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}
