@@ -136,3 +136,52 @@ func TestConnectionUpdates_IdentifyMissingComments(t *testing.T) {
 		})
 	}
 }
+
+// A connection whose plugin block was skipped keeps its schema only if it has one:
+// taking it out of both maps is what stops the refresh updating or deleting it.
+func TestTakeConnectionsToKeep(t *testing.T) {
+	tests := []struct {
+		name         string
+		currentState string
+		wantKept     bool
+	}{
+		{name: "ready", currentState: constants.ConnectionStateReady, wantKept: true},
+		{name: "pending_after_startup", currentState: constants.ConnectionStatePending, wantKept: true},
+		{name: "already_in_error", currentState: constants.ConnectionStateError},
+		{name: "pending_incomplete", currentState: constants.ConnectionStatePendingIncomplete},
+		{name: "disabled", currentState: constants.ConnectionStateDisabled},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			required := ConnectionStateMap{
+				"held":  {ConnectionName: "held", State: constants.ConnectionStateError},
+				"other": {ConnectionName: "other", State: constants.ConnectionStateReady},
+			}
+			current := ConnectionStateMap{
+				"held":  {ConnectionName: "held", State: tt.currentState, SchemaHash: "hash"},
+				"other": {ConnectionName: "other", State: constants.ConnectionStateReady},
+			}
+
+			kept := takeConnectionsToKeep(map[string]struct{}{"held": {}, "new": {}}, required, current)
+
+			state, gotKept := kept["held"]
+			if gotKept != tt.wantKept {
+				t.Fatalf("kept = %v, want %v", gotKept, tt.wantKept)
+			}
+			_, inRequired := required["held"]
+			_, inCurrent := current["held"]
+			if inRequired == tt.wantKept || inCurrent == tt.wantKept {
+				t.Errorf("in required = %v, in current = %v, want both %v", inRequired, inCurrent, !tt.wantKept)
+			}
+			if tt.wantKept && (state.State != constants.ConnectionStateReady || state.SchemaHash != "hash") {
+				t.Errorf("kept state = %q with hash %q, want ready with the current hash", state.State, state.SchemaHash)
+			}
+			if _, ok := kept["new"]; ok {
+				t.Error("a connection with no current state has no schema to keep")
+			}
+			if _, ok := required["other"]; !ok {
+				t.Error("an unrelated connection must stay in the comparison")
+			}
+		})
+	}
+}
