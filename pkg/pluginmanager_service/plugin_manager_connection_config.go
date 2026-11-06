@@ -51,9 +51,10 @@ func (m *PluginManager) sendUpdateConnectionConfigs(requestMap map[string]*sdkpr
 			continue
 		}
 		// if the plugin is still starting there is no client to send the update to
-		// (the connection watcher queues a refresh connections after this config change)
+		// (the plugin was started with the connection configs read before this change, and nothing
+		// sends the change later, so it is dropped until the next config change or a plugin restart)
 		if runningPlugin.isStarting() {
-			log.Printf("[INFO] sendUpdateConnectionConfigs - plugin '%s' is still starting - skipping", pluginInstance)
+			log.Printf("[WARN] sendUpdateConnectionConfigs - plugin '%s' is still starting - connection config update dropped", pluginInstance)
 			continue
 		}
 
@@ -83,9 +84,10 @@ func (m *PluginManager) handleAddedConnections(addedConnections map[string][]*sd
 			continue
 		}
 		// if the plugin is still starting it has no reattach config yet - treat it as not running
-		// (the connection watcher queues a refresh connections after this config change)
+		// (the plugin was started with the connection configs read before this change, and nothing
+		// sends the change later, so it is dropped until the next config change or a plugin restart)
 		if runningPlugin.isStarting() {
-			log.Printf("[INFO] handleAddedConnections - plugin '%s' is still starting - doing nothing here", p)
+			log.Printf("[WARN] handleAddedConnections - plugin '%s' is still starting - added connections dropped", p)
 			continue
 		}
 
@@ -115,8 +117,10 @@ func (m *PluginManager) handleDeletedConnections(deletedConnections map[string][
 			continue
 		}
 		// if the plugin is still starting it has no reattach config yet - treat it as not running
+		// (the plugin was started with the connection configs read before this change, and nothing
+		// sends the change later, so it is dropped until the next config change or a plugin restart)
 		if runningPlugin.isStarting() {
-			log.Printf("[INFO] handleDeletedConnections - plugin '%s' is still starting - doing nothing here", p)
+			log.Printf("[WARN] handleDeletedConnections - plugin '%s' is still starting - deleted connections dropped", p)
 			continue
 		}
 

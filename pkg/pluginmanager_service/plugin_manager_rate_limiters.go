@@ -151,6 +151,13 @@ func (m *PluginManager) setRateLimitersForPlugin(pluginShortName string) error {
 		log.Printf("[INFO] handleUserLimiterChanges: plugin %s is not currently running - ignoring", pluginShortName)
 		return nil
 	}
+	// if the plugin is still starting it has no client or reattach config yet.
+	// initializePlugin sends m.userLimiters, so the new limiters reach the plugin only if
+	// it has not got that far yet; otherwise the change is dropped until the next one
+	if runningPlugin.isStarting() {
+		log.Printf("[WARN] handleUserLimiterChanges: plugin %s is still starting - rate limiter update may be dropped", pluginShortName)
+		return nil
+	}
 	if !runningPlugin.reattach.SupportedOperations.RateLimiters {
 		log.Printf("[INFO] handleUserLimiterChanges: plugin %s does not support setting rate limit - ignoring", pluginShortName)
 		return nil

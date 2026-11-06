@@ -5,12 +5,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/turbot/pipe-fittings/v2/ociinstaller"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v6/grpc/proto"
 )
 
 // a plugin which is still starting has a placeholder runningPlugin with a nil client and reattach config.
-// connection config changes arriving in that window must not panic, and must not be sent to the plugin.
-// (RefreshConnections applies them once the plugin has started)
+// connection config and rate limiter changes arriving in that window must not panic, and are not sent
+// to the plugin (they are dropped; nothing sends them once the plugin has started)
 
 func newStartingPluginManager(t *testing.T, pluginInstance string) *PluginManager {
 	t.Helper()
@@ -53,5 +54,15 @@ func TestSendUpdateConnectionConfigs_PluginStarting(t *testing.T) {
 
 	var err error
 	require.NotPanics(t, func() { err = pm.sendUpdateConnectionConfigs(requestMap) })
+	assert.NoError(t, err)
+}
+
+func TestSetRateLimitersForPlugin_PluginStarting(t *testing.T) {
+	// key the starting plugin the same way setRateLimitersForPlugin looks it up
+	p := ociinstaller.NewImageRef("aws").DisplayImageRef()
+	pm := newStartingPluginManager(t, p)
+
+	var err error
+	require.NotPanics(t, func() { err = pm.setRateLimitersForPlugin("aws") })
 	assert.NoError(t, err)
 }
