@@ -14,3 +14,9 @@ type runningPlugin struct {
 	failed         chan struct{}
 	error          error
 }
+
+// isStarting returns true if this is still the placeholder added by addRunningPlugin,
+// i.e. the plugin process has not finished starting so there is no client or reattach config yet
+func (p *runningPlugin) isStarting() bool {
+	return p.client == nil || p.reattach == nil
+}
