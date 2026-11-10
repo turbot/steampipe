@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -48,8 +47,6 @@ type PluginManager struct {
 	// map of connection configs, keyed by connection name
 	// this is populated at startup and updated when a connection config change is detected
 	connectionConfigMap connection.ConnectionConfigMap
-	// map of max cache size, keyed by plugin instance
-	pluginCacheSizeMap map[string]int64
 
 	// mut protects concurrent access to plugin manager state (runningPluginMap, connectionConfigMap, etc.)
 	//
@@ -114,8 +111,6 @@ func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto
 
 	// populate plugin connection config map
 	pluginManager.populatePluginConnectionConfigs()
-	// determine cache size for each plugin
-	pluginManager.setPluginCacheSizeMap()
 
 	// create a connection pool to connection refresh
 	// in testing, a size of 20 seemed optimal
@@ -620,7 +615,7 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 
 	// if this plugin supports setting cache options, do so
 	if supportedOperations.SetCacheOptions {
-		err = m.setCacheOptions(pluginClient)
+		err = m.setCacheOptions(pluginInstance, pluginClient)
 		if err != nil {
 			log.Printf("[WARN] failed to set cache options for %s: %s", pluginName, err.Error())
 			return nil, err
@@ -663,35 +658,30 @@ func (m *PluginManager) populatePluginConnectionConfigs() {
 	}
 }
 
-// populate map of connection configs for each plugin
-func (m *PluginManager) setPluginCacheSizeMap() {
-	m.pluginCacheSizeMap = make(map[string]int64, len(m.pluginConnectionConfigMap))
-
-	// read the env var setting cache size
-	maxCacheSizeMb, _ := strconv.Atoi(os.Getenv(constants.EnvCacheMaxSize))
-
-	// get total connection count for this pluginInstance (excluding aggregators)
-	numConnections := m.nonAggregatorConnectionCount()
-
-	log.Printf("[TRACE] PluginManager setPluginCacheSizeMap: %d %s.", numConnections, utils.Pluralize("connection", numConnections))
-	log.Printf("[TRACE] Total cache size %dMb", maxCacheSizeMb)
-
-	for pluginInstance, connections := range m.pluginConnectionConfigMap {
-		var size int64 = 0
-		// if no max size is set, just set all plugins to zero (unlimited)
-		if maxCacheSizeMb > 0 {
-			// get connection count for this pluginInstance (excluding aggregators)
-			numPluginConnections := nonAggregatorConnectionCount(connections)
-			size = int64(float64(numPluginConnections) / float64(numConnections) * float64(maxCacheSizeMb))
-			// make this at least 1 Mb (as zero means unlimited)
-			if size == 0 {
-				size = 1
-			}
-			log.Printf("[INFO] Plugin '%s', %d %s, max cache size %dMb", pluginInstance, numPluginConnections, utils.Pluralize("connection", numPluginConnections), size)
-		}
-
-		m.pluginCacheSizeMap[pluginInstance] = size
+// pluginCacheSizeMb returns the query cache size for a plugin instance.
+// All plugins share one total (cache_max_size_mb or STEAMPIPE_CACHE_MAX_SIZE_MB), in proportion
+// to their number of connections in the current connection config. Aggregators do not count.
+// A total of 0 means no limit, so the size is 0. Otherwise the size is at least 1 MB.
+func (m *PluginManager) pluginCacheSizeMb(pluginInstance string) int64 {
+	totalMb := viper.GetInt64(pconstants.ArgMaxCacheSizeMb)
+	if totalMb <= 0 {
+		return 0
 	}
+
+	m.mut.RLock()
+	numPluginConnections := nonAggregatorConnectionCount(m.pluginConnectionConfigMap[pluginInstance])
+	numConnections := m.nonAggregatorConnectionCount()
+	m.mut.RUnlock()
+
+	var size int64
+	if numConnections > 0 {
+		size = totalMb * int64(numPluginConnections) / int64(numConnections)
+	}
+	// zero means no limit, so make this at least 1 Mb
+	size = max(size, 1)
+
+	log.Printf("[INFO] Plugin '%s', %d of %d %s, max cache size %dMb of %dMb", pluginInstance, numPluginConnections, numConnections, utils.Pluralize("connection", numConnections), size, totalMb)
+	return size
 }
 
 func (m *PluginManager) notifyNewDynamicSchemas(pluginClient *sdkgrpc.PluginClient, exemplarConnectionConfig *sdkproto.ConnectionConfig, connectionNames []string) error {
@@ -789,18 +779,18 @@ func (m *PluginManager) setAllConnectionConfigs(connectionConfigs []*sdkproto.Co
 	// if plugin _does not_ support setting the cache options separately, pass the max size now
 	// (if it does support SetCacheOptions, it will be called after we return)
 	if !supportedOperations.SetCacheOptions {
-		req.MaxCacheSizeMb = m.pluginCacheSizeMap[pluginInstance]
+		req.MaxCacheSizeMb = m.pluginCacheSizeMb(pluginInstance)
 	}
 
 	_, err := pluginClient.SetAllConnectionConfigs(req)
 	return err
 }
 
-func (m *PluginManager) setCacheOptions(pluginClient *sdkgrpc.PluginClient) error {
+func (m *PluginManager) setCacheOptions(pluginInstance string, pluginClient *sdkgrpc.PluginClient) error {
 	req := &sdkproto.SetCacheOptionsRequest{
 		Enabled:   viper.GetBool(pconstants.ArgServiceCacheEnabled),
 		Ttl:       viper.GetInt64(pconstants.ArgCacheMaxTtl),
-		MaxSizeMb: viper.GetInt64(pconstants.ArgMaxCacheSizeMb),
+		MaxSizeMb: m.pluginCacheSizeMb(pluginInstance),
 	}
 	_, err := pluginClient.SetCacheOptions(req)
 	return err
