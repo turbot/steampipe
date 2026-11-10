@@ -182,7 +182,6 @@ func TestPluginMessageServer_SurvivesPluginManagerOperations(t *testing.T) {
 
 	// Perform various plugin manager operations
 	pm.populatePluginConnectionConfigs()
-	pm.setPluginCacheSizeMap()
 	pm.nonAggregatorConnectionCount()
 
 	// Message server should still be accessible
