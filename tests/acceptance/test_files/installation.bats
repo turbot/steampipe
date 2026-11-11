@@ -11,7 +11,7 @@ load ../helpers/steampipe_processes
   steampipe query "select 1" --install-dir $target_install_directory
 
   # check postgres binary is present in correct location
-  run file $target_install_directory/db/14.19.0/postgres/bin/postgres
+  run file $target_install_directory/db/14.24.0/postgres/bin/postgres
   if [[ "$arch" == "x86_64" && "$os" == "Darwin" ]]; then
     assert_output --partial 'Mach-O 64-bit executable x86_64'
   elif [[ "$arch" == "arm64" && "$os" == "Darwin" ]]; then
@@ -23,7 +23,7 @@ load ../helpers/steampipe_processes
   fi
 
   # check initdb binary is present in the correct location
-  run file $target_install_directory/db/14.19.0/postgres/bin/initdb
+  run file $target_install_directory/db/14.24.0/postgres/bin/initdb
   if [[ "$arch" == "arm64" && "$os" == "Darwin" ]]; then
     assert_output --partial 'Mach-O 64-bit executable arm64'
   elif [[ "$arch" == "x86_64" && "$os" == "Darwin" ]]; then
@@ -35,7 +35,7 @@ load ../helpers/steampipe_processes
   fi
 
   # check fdw binary(steampipe_postgres_fdw.so) is present in the correct location
-  run file $target_install_directory/db/14.19.0/postgres/lib/postgresql/steampipe_postgres_fdw.so
+  run file $target_install_directory/db/14.24.0/postgres/lib/postgresql/steampipe_postgres_fdw.so
   if [[ "$arch" == "arm64" && "$os" == "Darwin" ]]; then
     assert_output --partial 'Mach-O 64-bit bundle arm64'
   elif [[ "$arch" == "x86_64" && "$os" == "Darwin" ]]; then
@@ -47,7 +47,7 @@ load ../helpers/steampipe_processes
   fi
 
   # check fdw extension(steampipe_postgres_fdw.control) is present in the correct location
-  run file $target_install_directory/db/14.19.0/postgres/share/postgresql/extension/steampipe_postgres_fdw.control
+  run file $target_install_directory/db/14.24.0/postgres/share/postgresql/extension/steampipe_postgres_fdw.control
   assert_output --partial 'ASCII text'
 }
 

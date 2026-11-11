@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
 
 	"github.com/fatih/color"
@@ -27,11 +28,11 @@ import (
 var ensureMux sync.Mutex
 
 func noBackupWarning() string {
-	warningMessage := `Steampipe database has been upgraded from Postgres 14.17 to Postgres 14.19.
+	warningMessage := fmt.Sprintf(`Steampipe database has been upgraded to Postgres %s.
 
 Unfortunately the data in your public schema failed migration using the standard pg_dump and pg_restore tools. Your data has been preserved in the ~/.steampipe/db directory.
 
-If you need to restore the contents of your public schema, please open an issue at https://github.com/turbot/steampipe.`
+If you need to restore the contents of your public schema, please open an issue at https://github.com/turbot/steampipe.`, constants.DatabaseVersion)
 
 	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
 }
@@ -83,20 +84,35 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return err
 	}
 
-	statushooks.SetStatus(ctx, "Preparing backups…")
-
-	// call prepareBackup to generate the db dump file if necessary
-	// NOTE: this returns the existing database name - we use this when creating the new database
-	dbName, err := prepareBackup(ctx)
-	if err != nil {
-		log.Printf("[ERROR] prepareBackup failed: %s", err.Error())
-		if errors.Is(err, errDbInstanceRunning) {
-			// remove the installation - otherwise, the backup won't get triggered, even if the user stops the service
-			os.RemoveAll(filepaths.DatabaseInstanceDir())
-			return err
+	found, oldLocation, err := findDifferentPgInstallation(ctx)
+	moved := false
+	if err == nil && found && isSameMajorVersion(filepath.Base(oldLocation), constants.DatabaseVersion) {
+		statushooks.SetStatus(ctx, "Moving database…")
+		if err := moveDataFromSameMajorInstall(ctx, oldLocation, filepaths.GetDataLocation()); err != nil {
+			// the old installation is still in place, so the dump and restore path can carry the data over instead
+			log.Printf("[WARN] moveDataFromSameMajorInstall failed, falling back to dump and restore: %s", err.Error())
+		} else {
+			moved = true
 		}
-		// ignore all other errors with the backup, displaying a warning instead
-		statushooks.Message(ctx, noBackupWarning())
+	}
+
+	var dbName *string
+	if !moved {
+		statushooks.SetStatus(ctx, "Preparing backups…")
+
+		// call prepareBackup to generate the db dump file if necessary
+		// NOTE: this returns the existing database name - we use this when creating the new database
+		dbName, err = prepareBackup(ctx)
+		if err != nil {
+			log.Printf("[ERROR] prepareBackup failed: %s", err.Error())
+			if errors.Is(err, errDbInstanceRunning) {
+				// remove the installation - otherwise, the backup won't get triggered, even if the user stops the service
+				os.RemoveAll(filepaths.DatabaseInstanceDir())
+				return err
+			}
+			// ignore all other errors with the backup, displaying a warning instead
+			statushooks.Message(ctx, noBackupWarning())
+		}
 	}
 
 	// install the fdw
@@ -106,10 +122,13 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return fmt.Errorf("Download & install steampipe-postgres-fdw... FAILED!")
 	}
 
-	// run the database installation
-	err = runInstall(ctx, dbName)
-	if err != nil {
-		return err
+	// a moved data folder is already initialised
+	if !moved {
+		// run the database installation
+		err = runInstall(ctx, dbName)
+		if err != nil {
+			return err
+		}
 	}
 
 	// write a signature after everything gets done!
