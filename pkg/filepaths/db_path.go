@@ -118,6 +118,10 @@ func GetPgHbaConfLocation() string {
 	return filepath.Join(GetDataLocation(), "pg_hba.conf")
 }
 
+func GetPgVersionLocation() string {
+	return filepath.Join(GetDataLocation(), "PG_VERSION")
+}
+
 func GetPostgresqlConfLocation() string {
 	return filepath.Join(GetDataLocation(), "postgresql.conf")
 }

@@ -35,7 +35,7 @@ export STEAMPIPE_UPDATE_CHECK=false
 export STEAMPIPE_LOG=info
 
 # the test files CI runs, in CI's order (see .github/workflows/11-test-acceptance.yaml)
-ALL_FILES="migration brew installation plugin connection_config service settings ssl blank_aggregators search_path chaos_and_query date_time_types dynamic_schema dynamic_aggregators cache performance config_precedence cloud schema_cloning exit_codes force_stop"
+ALL_FILES="migration brew installation plugin connection_config service settings ssl pg_hba blank_aggregators search_path chaos_and_query date_time_types dynamic_schema dynamic_aggregators cache performance config_precedence cloud schema_cloning exit_codes force_stop"
 
 FILE_TIMEOUT=900     # seconds; the CI job limit (timeout-minutes: 15)
 IDLE_LIMIT=30       # seconds without output, once every planned test has reported

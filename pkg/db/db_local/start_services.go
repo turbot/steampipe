@@ -383,6 +383,9 @@ func startPostgresProcess(ctx context.Context, listenAddresses []string, port in
 	if err := writePGConf(ctx); err != nil {
 		return nil, err
 	}
+	if err := writePgHbaConf(filepaths.GetDataLocation()); err != nil {
+		return nil, err
+	}
 
 	postgresCmd := createCmd(ctx, port, listenAddresses)
 	log.Printf("[TRACE] startPostgresProcess - postgres command: %s", postgresCmd)

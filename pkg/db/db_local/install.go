@@ -276,8 +276,8 @@ func needsInit() bool {
 	putils.LogTime("db_local.needsInit start")
 	defer putils.LogTime("db_local.needsInit end")
 
-	// test whether pg_hba.conf exists in our target directory
-	return !filehelpers.FileExists(filepaths.GetPgHbaConfLocation())
+	// initdb writes PG_VERSION, so its absence means the database is not installed
+	return !filehelpers.FileExists(filepaths.GetPgVersionLocation())
 }
 
 func runInstall(ctx context.Context, oldDbName *string) error {
@@ -372,6 +372,10 @@ func resolveDatabaseName(oldDbName *string) string {
 }
 
 func startServiceForInstall(port int) (*psutils.Process, error) {
+	if err := writePgHbaConf(filepaths.GetDataLocation()); err != nil {
+		return nil, err
+	}
+
 	postgresCmd := exec.Command( //nolint:gosec // G204: filepaths.GetPostgresBinaryExecutablePath() is steampipe's own installed postgres binary path, not user input
 		filepaths.GetPostgresBinaryExecutablePath(),
 		// by this time, we are sure that the port if free to listen to
@@ -452,9 +456,9 @@ func initDatabase() error {
 		return err
 	}
 
-	// intentionally overwriting existing pg_hba.conf with a minimal config which only allows root
-	// so that we can setup the database and permissions
-	return os.WriteFile(filepaths.GetPgHbaConfLocation(), []byte(constants.MinimalPgHbaContent), 0600)
+	// initdb's pg_hba.conf trusts every local connection. Remove it, so that the first start
+	// writes Steampipe's file and does not keep initdb's as the user's rules.
+	return os.Remove(filepaths.GetPgHbaConfLocation())
 }
 
 func installDatabaseWithPermissions(ctx context.Context, databaseName string, rawClient *pgx.Conn) error {
@@ -522,12 +526,7 @@ func installDatabaseWithPermissions(ctx context.Context, databaseName string, ra
 			return err
 		}
 	}
-	return writePgHbaContent(databaseName, constants.DatabaseUser)
-}
-
-func writePgHbaContent(databaseName string, username string) error {
-	content := fmt.Sprintf(constants.PgHbaTemplate, databaseName, username)
-	return os.WriteFile(filepaths.GetPgHbaConfLocation(), []byte(content), 0600)
+	return nil
 }
 
 func installForeignServer(ctx context.Context, rawClient *pgx.Conn) error {

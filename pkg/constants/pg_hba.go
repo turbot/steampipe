@@ -1,46 +1,22 @@
 package constants
 
-var MinimalPgHbaContent string = `
-hostssl all root samehost trust
-host all root samehost trust
+// PgHbaHeader starts every pg_hba.conf that Steampipe writes. Its first line is how
+// Steampipe recognises a file that it wrote itself.
+const PgHbaHeader = `# Written by Steampipe each time the database starts. DO NOT EDIT.
+# Put your own rules in pg_hba.conf.d/<name>.conf. They come first, so they win.
 `
 
-// PgHbaTemplate is to be formatted with two variables:
-//   - databaseName
-//   - username
+// PgHbaSteampipeRules are Steampipe's own rules. They are written after every rule
+// in pg_hba.conf.d.
 //
-// Example:
-//
-//	fmt.Sprintf(template, datName, username)
-var PgHbaTemplate string = `
-# PostgreSQL Client Authentication Configuration File
-# ===================================================
-#
-# STEAMPIPE
-#
-# The root user is assumed by steampipe to manage the database configuration.
-# Access is not granted to users of steampipe.
-#
-# The configuration is:
-# * Access is restricted to samehost
-# * Future - access via SSL only (remove host line)
-#
-hostssl all root samehost trust
-host    all root samehost trust
-
-# All user queries (steampipe query, steampipe service etc.) are run as the
-# steampipe user. The steampipe user is restricted in access to the steampipe
-# database, and further restricted by permissions to only read from steampipe
-# managed schemas. Write access is allowed to the public schema in the
-# steampipe database.
-#
-# The configuration is:
-# * Access from samehost does not require a password (trust)
-# * Access from any other host does require a password
-# * Future - access via SSL only (remove host line)
-#
-hostssl %[1]s %[2]s samehost trust
-host    %[1]s %[2]s samehost trust
-hostssl %[1]s %[2]s all scram-sha-256
-host    %[1]s %[2]s all scram-sha-256
+// The database column is "all": at install, CONNECT is revoked from PUBLIC on the postgres
+// and template1 databases, so the steampipe user can reach only its own database. A database
+// that someone creates later is not covered by those grants.
+const PgHbaSteampipeRules = `host all root      samehost trust
+host all steampipe samehost trust
+host all steampipe all      scram-sha-256
 `
+
+// PgHbaPreservedFileName is where a copy of a pg_hba.conf that someone else changed is
+// kept, inside pg_hba.conf.d. A later copy replaces it.
+const PgHbaPreservedFileName = "00-preserved.conf"
