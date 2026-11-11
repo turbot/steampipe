@@ -3,6 +3,7 @@ package db_local
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log"
@@ -60,6 +61,13 @@ const (
 	noMatViewRefreshListFileName   = "without_refresh.lst"
 	onlyMatViewRefreshListFileName = "only_refresh.lst"
 )
+
+// backupErrorStopsInstall reports whether a failed backup stops the install. The user can fix both
+// errors, and the backup must run again at the next start.
+func backupErrorStopsInstall(err error) bool {
+	var stop *pgHbaStopError
+	return errors.Is(err, errDbInstanceRunning) || errors.As(err, &stop)
+}
 
 // prepareBackup creates a backup file of the public schema for the current database, if we are migrating
 // if a backup was taken, this returns the name of the database that was backed up
@@ -262,7 +270,7 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 		return nil, err
 	}
 	// whatever an older Steampipe left in the old data directory, the backup must connect as root
-	if err := writePgHbaConf(dataLocation); err != nil {
+	if err := preparePgHbaConf(dataLocation); err != nil {
 		return nil, err
 	}
 	socketArgs, err := postgresSocketArgs(dataLocation, port)

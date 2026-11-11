@@ -114,10 +114,6 @@ func GetPostmasterPidLocation() string {
 	return filepath.Join(GetDataLocation(), "postmaster.pid")
 }
 
-func GetPgHbaConfLocation() string {
-	return filepath.Join(GetDataLocation(), "pg_hba.conf")
-}
-
 func GetPgVersionLocation() string {
 	return filepath.Join(GetDataLocation(), "PG_VERSION")
 }

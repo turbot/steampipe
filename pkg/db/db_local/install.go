@@ -2,7 +2,6 @@ package db_local
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -104,7 +103,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		dbName, err = prepareBackup(ctx)
 		if err != nil {
 			log.Printf("[ERROR] prepareBackup failed: %s", err.Error())
-			if errors.Is(err, errDbInstanceRunning) {
+			if backupErrorStopsInstall(err) {
 				// remove the installation - otherwise, the backup won't get triggered, even if the user stops the service
 				os.RemoveAll(filepaths.DatabaseInstanceDir())
 				return err
@@ -377,7 +376,7 @@ func resolveDatabaseName(oldDbName *string) string {
 }
 
 func startServiceForInstall(port int) (*psutils.Process, error) {
-	if err := writePgHbaConf(filepaths.GetDataLocation()); err != nil {
+	if err := preparePgHbaConf(filepaths.GetDataLocation()); err != nil {
 		return nil, err
 	}
 	socketArgs, err := postgresSocketArgs(filepaths.GetDataLocation(), port)
@@ -466,9 +465,9 @@ func initDatabase() error {
 		return err
 	}
 
-	// initdb's pg_hba.conf trusts every local connection. Remove it, so that the first start
-	// writes Steampipe's file and does not keep initdb's as the user's rules.
-	return os.Remove(filepaths.GetPgHbaConfLocation())
+	// initdb's pg_hba.conf trusts every local connection, and would count as the user's own file.
+	// Write Steampipe's over it at once, so that pg_hba.conf is never missing.
+	return writeSteampipePgHba(filepaths.GetDataLocation())
 }
 
 func installDatabaseWithPermissions(ctx context.Context, databaseName string, rawClient *pgx.Conn) error {

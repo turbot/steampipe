@@ -3,6 +3,7 @@ package db_local
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -383,7 +384,7 @@ func startPostgresProcess(ctx context.Context, listenAddresses []string, port in
 	if err := writePGConf(ctx); err != nil {
 		return nil, err
 	}
-	if err := writePgHbaConf(filepaths.GetDataLocation()); err != nil {
+	if err := preparePgHbaConf(filepaths.GetDataLocation()); err != nil {
 		return nil, err
 	}
 
@@ -405,6 +406,11 @@ func startPostgresProcess(ctx context.Context, listenAddresses []string, port in
 func retrieveDatabaseNameFromService(ctx context.Context, dataDir string, port int) (string, error) {
 	connection, err := createMaintenanceClient(ctx, dataDir, port)
 	if err != nil {
+		// its message says what to do
+		var stop *pgHbaStopError
+		if errors.As(err, &stop) {
+			return "", err
+		}
 		return "", fmt.Errorf("failed to connect to the database: %v - please try again or reset your steampipe database", err)
 	}
 	defer connection.Close(ctx)

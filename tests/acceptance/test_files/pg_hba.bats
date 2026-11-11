@@ -1,5 +1,6 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
+bats_require_minimum_version 1.5.0
 
 # These tests only start and stop the service of $STEAMPIPE_INSTALL_DIR, on their own port.
 # They never use `service stop --force`, so they leave every other Steampipe service alone.
@@ -13,10 +14,18 @@ setup_file() {
   export HBA_FILE=$HBA_DATA_DIR/pg_hba.conf
   export HBA_DIR=$HBA_DATA_DIR/pg_hba.conf.d
   export HBA_HEADER="# Written by Steampipe each time the database starts. DO NOT EDIT."
+
+  # steampipe query has no --database-port flag
+  cat > "$STEAMPIPE_INSTALL_DIR/config/pg_hba_port.spc" <<EOF
+options "database" {
+  port = $PG_PORT
+}
+EOF
 }
 
 teardown_file() {
   steampipe service stop
+  rm -f "$STEAMPIPE_INSTALL_DIR/config/pg_hba_port.spc"
 }
 
 start_service() {
@@ -32,9 +41,25 @@ connect_as() {
   PGPASSWORD="$3" psql -w -h 127.0.0.1 -p $PG_PORT -U "$1" "$2" -tAc "select 1"
 }
 
-@test "a fresh install has no preserved pg_hba.conf.d/00-preserved.conf" {
-  [ -d "$HBA_DATA_DIR" ]
-  [ ! -e "$HBA_DIR/00-preserved.conf" ]
+# postgres runs with -D <data directory>, so its command line names the data directory
+assert_no_postgres() {
+  run pgrep -f "$HBA_DATA_DIR"
+  assert_failure
+  run steampipe service status
+  assert_output --partial "Service is not running"
+}
+
+# a pg_hba.conf with no header and no checksum, as the user makes it
+write_hba_from_body() {
+  sed '1,/^# checksum: /d' "$HBA_FILE" > "$BATS_FILE_TMPDIR/body.conf"
+  mv "$BATS_FILE_TMPDIR/body.conf" "$HBA_FILE"
+}
+
+@test "a fresh install has Steampipe's pg_hba.conf before the first start" {
+  # the install writes it at once after initdb, so pg_hba.conf is never missing
+  run head -n 1 "$HBA_FILE"
+  assert_output "$HBA_HEADER"
+  [ -d "$HBA_DIR" ]
 }
 
 @test "after a service start pg_hba.conf starts with Steampipe's header and ends with Steampipe's rules" {
@@ -48,8 +73,6 @@ connect_as() {
   assert_line --index 0 --regexp '^local +all +root +trust$'
   assert_line --index 1 --regexp '^host +all +steampipe +samehost +trust$'
   assert_line --index 2 --regexp '^host +all +steampipe +all +scram-sha-256$'
-
-  [ ! -e "$HBA_DIR/00-preserved.conf" ]
 }
 
 @test "root connects through the unix socket and is rejected over TCP" {
@@ -132,10 +155,9 @@ EOF
   assert_output "$HBA_HEADER"
   run grep -c hostssl "$HBA_FILE"
   assert_output "0"
-  [ ! -e "$HBA_DIR/00-preserved.conf" ]
 }
 
-@test "a hand-edited pg_hba.conf is kept as pg_hba.conf.d/00-preserved.conf and its rules apply" {
+@test "a hand-edited older pg_hba.conf with no local rule for root stops the start, and is not changed" {
   steampipe service stop
   cat > "$HBA_FILE" <<'EOF'
 host all steampipe samehost scram-sha-256
@@ -144,21 +166,122 @@ EOF
   cp "$HBA_FILE" "$BATS_FILE_TMPDIR/edited.conf"
 
   run start_service
+  assert_equal "$status" 32
+  assert_output --partial "has rules that Steampipe did not write, and they do not let Steampipe connect"
+  assert_output --partial "local all root trust"
+  # the user's rule is listed, the rule that Steampipe 2.4 wrote is not
+  assert_output --partial "Your rules (the rules that older Steampipe versions did not write):
+    host all steampipe samehost scram-sha-256
+"
+  run cmp "$HBA_FILE" "$BATS_FILE_TMPDIR/edited.conf"
+  assert_success
+  assert_no_postgres
+
+  # a batch query fails the same way: the message on stderr, nothing on stdout
+  run --separate-stderr steampipe query "select 1"
+  assert_failure
+  assert_equal "$output" ""
+  [[ "$stderr" == *"has rules that Steampipe did not write"* ]]
+  run cmp "$HBA_FILE" "$BATS_FILE_TMPDIR/edited.conf"
+  assert_success
+  assert_no_postgres
+}
+
+@test "the same file with local all root trust added starts, is not changed, and its rules apply" {
+  { echo "local all root trust"; cat "$BATS_FILE_TMPDIR/edited.conf"; } > "$HBA_FILE"
+  cp "$HBA_FILE" "$BATS_FILE_TMPDIR/yours.conf"
+
+  run start_service
+  assert_success
+  run cmp "$HBA_FILE" "$BATS_FILE_TMPDIR/yours.conf"
   assert_success
 
-  run cmp "$HBA_DIR/00-preserved.conf" "$BATS_FILE_TMPDIR/edited.conf"
+  run connect_as_root_by_socket
   assert_success
-
-  run grep -l "00-preserved.conf" $STEAMPIPE_INSTALL_DIR/logs/*.log
-  assert_success
-
-  # the preserved rule asks for a password and wins over Steampipe's own rule
+  # the user's rule asks for a password
   run connect_as steampipe steampipe ""
   assert_failure
   run connect_as steampipe steampipe "$PG_PASSWORD"
   assert_success
+  # the user's file still lets root connect over TCP
   run connect_as root postgres ""
   assert_success
+}
+
+@test "a Steampipe pg_hba.conf with its header lines deleted is the user's, and pg_hba.conf.d is not used" {
+  steampipe service stop
+  # give the file back to Steampipe, and start once to write it
+  rm "$HBA_FILE"
+  run start_service
+  assert_success
+  steampipe service stop
+
+  write_hba_from_body
+  cp "$HBA_FILE" "$BATS_FILE_TMPDIR/yours.conf"
+  echo "host all steampipe samehost scram-sha-256" > "$HBA_DIR/10-unused.conf"
+
+  run start_service
+  assert_success
+  assert_output --partial "is your own file, so Steampipe does not use the files in $HBA_DIR: 10-unused.conf"
+  run cmp "$HBA_FILE" "$BATS_FILE_TMPDIR/yours.conf"
+  assert_success
+  # the unused rule would ask for a password
+  run connect_as steampipe steampipe ""
+  assert_success
+
+  steampipe service stop
+  rm "$HBA_DIR/10-unused.conf" "$HBA_FILE"
+}
+
+@test "an edited Steampipe pg_hba.conf stops a restart and a start, and is not changed" {
+  run start_service
+  assert_success
+  run head -n 1 "$HBA_FILE"
+  assert_output "$HBA_HEADER"
+  echo "host all bob all md5" >> "$HBA_FILE"
+  cp "$HBA_FILE" "$BATS_FILE_TMPDIR/edited.conf"
+
+  run steampipe service restart
+  assert_equal "$status" 32
+  assert_output --partial "pg_hba.conf was changed after Steampipe wrote it"
+  assert_output --partial "Rules in the file that Steampipe would not write:
+    host all bob all md5
+"
+  # the running service keeps running
+  run connect_as_root_by_socket
+  assert_success
+
+  steampipe service stop
+  run start_service
+  assert_equal "$status" 32
+  assert_output --partial "pg_hba.conf was changed after Steampipe wrote it"
+  run cmp "$HBA_FILE" "$BATS_FILE_TMPDIR/edited.conf"
+  assert_success
+  assert_no_postgres
+
+  # discard the change: Steampipe writes its file again
+  rm "$HBA_FILE"
+  run start_service
+  assert_success
+  run grep -c "bob" "$HBA_FILE"
+  assert_output "0"
+}
+
+@test "a rule in pg_hba.conf.d that refuses root stops the start at once" {
+  steampipe service stop
+  echo "local all root reject" > "$HBA_DIR/05-no-root.conf"
+
+  # a refused login is not retried until the start time-out
+  local started=$SECONDS
+  STEAMPIPE_DATABASE_START_TIMEOUT=120 run start_service
+  local took=$((SECONDS - started))
+  assert_equal "$status" 32
+  assert_output --partial "a rule in $HBA_DIR stops Steampipe from connecting as root through the unix socket"
+  assert_output --partial "05-no-root.conf"
+  [ "$took" -lt 60 ] || fail "the start took ${took}s"
+  assert_no_postgres
+
+  rm "$HBA_DIR/05-no-root.conf"
 }
 
 @test "service start refuses an install directory that makes the socket path too long" {
