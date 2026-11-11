@@ -111,17 +111,36 @@ func isSameMajorVersion(oldVersion, targetVersion string) bool {
 
 // moveDataFromSameMajorInstall moves the data folder of the old installation at oldLocation to newDataLocation
 // and removes the old installation. If it returns an error the old installation's files are still in place and the
-// new installation is removed, so the next run installs it again and retries the move.
+// new installation's binaries are removed, so the next run installs them again and retries the move. The new data
+// folder is removed only when it is empty: one that holds data is kept, and the error tells the user how to recover.
 func moveDataFromSameMajorInstall(ctx context.Context, oldLocation, newDataLocation string) (err error) {
 	defer func() {
 		if err == nil {
 			return
 		}
 		newLocation := filepaths.DatabaseInstanceDir()
-		if removeErr := os.RemoveAll(newLocation); removeErr != nil {
+		err = fmt.Errorf("could not move the database from %s to %s: %w", oldLocation, newLocation, err)
+
+		newBinaries := filepath.Join(newLocation, "postgres")
+		if removeErr := os.RemoveAll(newBinaries); removeErr != nil {
+			log.Printf("[WARN] Could not remove new binaries at %s: %s", newBinaries, removeErr)
+		}
+		// os.Remove never removes a folder that holds anything
+		if removeErr := os.Remove(newDataLocation); removeErr != nil && !os.IsNotExist(removeErr) {
+			oldDataLocation := filepath.Join(oldLocation, "data")
+			err = fmt.Errorf(`%w
+
+Two data folders were kept:
+  %s (PostgreSQL %s) holds your data, unchanged. Steampipe will move it into place and use it.
+  %s (PostgreSQL %s) already holds data, so Steampipe cannot move your data into its place.
+Check %s, then move it somewhere else or delete it, and run Steampipe again`,
+				err, oldDataLocation, filepath.Base(oldLocation), newDataLocation, filepath.Base(newLocation), newDataLocation)
+			return
+		}
+		if removeErr := os.Remove(newLocation); removeErr != nil {
 			log.Printf("[WARN] Could not remove new installation at %s: %s", newLocation, removeErr)
 		}
-		err = fmt.Errorf("could not move the database from %s to %s, your data is unchanged in %s: %w", oldLocation, newLocation, oldLocation, err)
+		err = fmt.Errorf("%w\n\nYour data is unchanged in %s", err, oldLocation)
 	}()
 
 	if err := killRunningDbInstance(ctx); err != nil {
