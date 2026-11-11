@@ -127,15 +127,29 @@ func moveDataFromSameMajorInstall(ctx context.Context, oldLocation, newDataLocat
 		}
 		// os.Remove never removes a folder that holds anything
 		if removeErr := os.Remove(newDataLocation); removeErr != nil && !os.IsNotExist(removeErr) {
-			oldDataLocation := filepath.Join(oldLocation, "data")
-			err = fmt.Errorf(`%w
+			// either folder may hold the data the user wants: the new one may be a database already upgraded
+			if entries, readErr := os.ReadDir(newDataLocation); readErr != nil || len(entries) > 0 {
+				oldDataLocation := filepath.Join(oldLocation, "data")
+				err = fmt.Errorf(`%w
 
-Two data folders were kept:
-  %s (PostgreSQL %s) holds your data, unchanged. Steampipe will move it into place and use it.
-  %s (PostgreSQL %s) already holds data, so Steampipe cannot move your data into its place.
-Check %s, then move it somewhere else or delete it, and run Steampipe again`,
-				err, oldDataLocation, filepath.Base(oldLocation), newDataLocation, filepath.Base(newLocation), newDataLocation)
-			return
+Both data folders were kept:
+  %s (PostgreSQL %s), unchanged
+  %s (PostgreSQL %s), which is not empty
+The next run moves %s into place, so %s must be out of the way first. Check which folder holds the data you want, then:
+  to keep %s, move %s somewhere else, or delete it;
+  to keep %s, move %s somewhere else, then move %s to %s.
+Keep %s until then: without it Steampipe creates an empty database in %s, replacing what is there.
+Then run Steampipe again`,
+					err,
+					oldDataLocation, filepath.Base(oldLocation),
+					newDataLocation, filepath.Base(newLocation),
+					oldDataLocation, newDataLocation,
+					oldDataLocation, newDataLocation,
+					newDataLocation, oldDataLocation, newDataLocation, oldDataLocation,
+					oldLocation, newDataLocation)
+				return
+			}
+			log.Printf("[WARN] Could not remove new data folder at %s: %s", newDataLocation, removeErr)
 		}
 		if removeErr := os.Remove(newLocation); removeErr != nil {
 			log.Printf("[WARN] Could not remove new installation at %s: %s", newLocation, removeErr)
