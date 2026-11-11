@@ -249,7 +249,7 @@ Your rules (the lines that older Steampipe versions did not write):
     host all steampipe samehost scram-sha-256
     host all reporting 10.0.0.0/8 scram-sha-256
 
-File: /Users/me/.steampipe/db/14.19.0/data/pg_hba.conf
+File: /Users/me/.steampipe/db/14.24.0/data/pg_hba.conf
 ```
 
 "Your rules" are the rule lines that are not one of the older Steampipe rules in the lists
@@ -399,21 +399,29 @@ All three:
 | Upgrade, your own `pg_hba.conf` with a `local` rule for `root` | Nothing changes. |
 | Upgrade, your own `pg_hba.conf` with no such rule | The first start stops with the message. You choose, and start again. |
 | Upgrade while a Steampipe 2.4 service runs | Queries work. `steampipe service stop` says to use `--force` once. |
-| Downgrade, Steampipe's `pg_hba.conf` | Steampipe 2.4 reads `pg_hba.conf` and connects as `root` over TCP, so it cannot start or stop the service. See the steps below. |
-| Downgrade, your own `pg_hba.conf` | Steampipe 2.4 reads your file as it is. It works if your file lets `root` connect over TCP. |
+| Downgrade, Steampipe's `pg_hba.conf` | Steampipe 2.4 starts, with an empty `public` schema. Your data stays in `db/14.24.0/`. Do the steps below to copy it. |
+| Downgrade, your own `pg_hba.conf` | The copy works if your file lets `root` connect over TCP. |
+| Upgrade again after a downgrade | Steampipe moves the data of Steampipe 2.4 back, and writes its own `pg_hba.conf`. No step is necessary. |
 
-`pg_hba.conf` holds a copy of your `pg_hba.conf.d/` rules, so Steampipe 2.4 still uses them
-after a downgrade.
+Steampipe 2.4 uses Postgres 14.19.0, and this version uses 14.24.0. So Steampipe 2.4 installs its
+own database in `db/14.19.0/`, and copies your `public` schema from `db/14.24.0/` with `pg_dump`.
+`pg_dump` connects as `root` over TCP, and Steampipe's `pg_hba.conf` refuses that. The copy fails,
+and Steampipe 2.4 starts with an empty `public` schema. Steampipe 2.4 writes its own `pg_hba.conf`
+in `db/14.19.0/data/`, and does not read `pg_hba.conf.d/`.
 
 Steps to go back to Steampipe 2.4:
 
-1. If a service runs, run `steampipe service stop --force`.
-2. Add `host all root samehost trust` at the end of `pg_hba.conf`. Steampipe 2.4 never writes
-   that file again.
-3. Run `steampipe service start`.
+1. Run `steampipe service stop`, before you install Steampipe 2.4.
+2. Add `host all root samehost trust` at the end of `db/14.24.0/data/pg_hba.conf`.
+3. Install Steampipe 2.4, and run `steampipe service start`. It copies your data, then removes
+   `db/14.24.0/`.
 
-When you upgrade again, the checksum does not match, so Steampipe stops and shows the choices.
-Delete `pg_hba.conf` to go back to Steampipe's rules.
+If you started Steampipe 2.4 before step 2: run `steampipe service stop`, do step 2, delete
+`db/14.19.0/`, and start again. Steampipe 2.4 installs its database again and copies your data.
+Data that you saved in the empty `public` schema is lost.
+
+When you upgrade again, Steampipe moves `db/14.19.0/data/` to `db/14.24.0/data/` and writes its
+own `pg_hba.conf` over the file of Steampipe 2.4.
 
 ## Cases
 
@@ -471,10 +479,10 @@ Acceptance tests, in `pg_hba.bats`, which does not stop every service on the mac
   unchanged. `steampipe service restart` refuses, and the running service keeps running.
 - A Steampipe file with its header lines deleted is treated as yours.
 - When `pg_hba.conf` is yours, a file in `pg_hba.conf.d/` gives the warning and is not used.
-- Downgrade: after a start with this version, Steampipe 2.4.9 cannot start the service. After
-  the steps in [Upgrade and downgrade](#upgrade-and-downgrade), Steampipe 2.4.9 can start the
-  service, run a query and stop it. This version then stops with the "edited" message, and after
-  `pg_hba.conf` is deleted it starts.
+- Downgrade, on Linux only, because the backup of Steampipe 2.4.9 fails on macOS before it
+  connects: after a start with this version, Steampipe 2.4.9 starts with an empty `public`
+  schema. After the steps in [Upgrade and downgrade](#upgrade-and-downgrade), it starts with the
+  data. This version then starts with the data, and with its own `pg_hba.conf`.
 
 Manual checks before the release, because CI runs on Linux only:
 
