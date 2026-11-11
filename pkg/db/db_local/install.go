@@ -28,11 +28,11 @@ import (
 var ensureMux sync.Mutex
 
 func noBackupWarning() string {
-	warningMessage := `Steampipe database has been upgraded from Postgres 14.17 to Postgres 14.19.
+	warningMessage := fmt.Sprintf(`Steampipe database has been upgraded to Postgres %s.
 
 Unfortunately the data in your public schema failed migration using the standard pg_dump and pg_restore tools. Your data has been preserved in the ~/.steampipe/db directory.
 
-If you need to restore the contents of your public schema, please open an issue at https://github.com/turbot/steampipe.`
+If you need to restore the contents of your public schema, please open an issue at https://github.com/turbot/steampipe.`, constants.DatabaseVersion)
 
 	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
 }
@@ -85,18 +85,19 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	}
 
 	found, oldLocation, err := findDifferentPgInstallation(ctx)
-	sameMajor := err == nil && found && isSameMajorVersion(filepath.Base(oldLocation), constants.DatabaseVersion)
-
-	var dbName *string
-	if sameMajor {
+	moved := false
+	if err == nil && found && isSameMajorVersion(filepath.Base(oldLocation), constants.DatabaseVersion) {
 		statushooks.SetStatus(ctx, "Moving database…")
 		if err := moveDataFromSameMajorInstall(ctx, oldLocation, filepaths.GetDataLocation()); err != nil {
-			log.Printf("[ERROR] moveDataFromSameMajorInstall failed: %s", err.Error())
-			// remove the new installation - otherwise the next run would initialise an empty database here
-			os.RemoveAll(filepaths.DatabaseInstanceDir())
-			return fmt.Errorf("could not move the database from %s - your data has not been changed: %w", oldLocation, err)
+			// the old installation is still in place, so the dump and restore path can carry the data over instead
+			log.Printf("[WARN] moveDataFromSameMajorInstall failed, falling back to dump and restore: %s", err.Error())
+		} else {
+			moved = true
 		}
-	} else {
+	}
+
+	var dbName *string
+	if !moved {
 		statushooks.SetStatus(ctx, "Preparing backups…")
 
 		// call prepareBackup to generate the db dump file if necessary
@@ -122,7 +123,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	}
 
 	// a moved data folder is already initialised
-	if !sameMajor {
+	if !moved {
 		// run the database installation
 		err = runInstall(ctx, dbName)
 		if err != nil {

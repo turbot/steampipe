@@ -109,14 +109,15 @@ func isSameMajorVersion(oldVersion, targetVersion string) bool {
 }
 
 // moveDataFromSameMajorInstall moves the data folder of the old installation at oldLocation to newDataLocation
-// and removes the old installation. If it returns an error the old installation is left untouched.
+// and removes the old installation. If it returns an error the old installation's files are still in place.
 func moveDataFromSameMajorInstall(ctx context.Context, oldLocation, newDataLocation string) error {
 	if err := killRunningDbInstance(ctx); err != nil {
 		return err
 	}
 
-	// an orphan killed above leaves the data folder needing recovery: start and stop the old server so the
-	// folder is moved with a clean shutdown checkpoint
+	// an orphan killed above leaves the data folder needing recovery: start and stop the old server so it
+	// recovers on the binaries that wrote it. If the stop escalates to an immediate shutdown, the new server
+	// of the same major replays what is left.
 	runConfig, err := startDatabaseInLocation(ctx, oldLocation)
 	if err != nil {
 		return fmt.Errorf("could not start the database in %s: %w", oldLocation, err)
@@ -245,7 +246,8 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 
 // findDifferentPgInstallation checks whether the '$STEAMPIPE_INSTALL_DIR/db' directory contains any database installation
 // other than desired version.
-// it's called as part of `prepareBackup` to decide whether `pg_dump` needs to run
+// it's called by `EnsureDBInstalled` to decide whether a same-major data folder can be moved, and as part of
+// `prepareBackup` to decide whether `pg_dump` needs to run
 // it's also called as part of `restoreDBBackup` for removal of the installation once restoration successfully completes
 func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 	dbBaseDirectory := filepaths.EnsureDatabaseDir()

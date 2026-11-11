@@ -2,30 +2,34 @@ package db_local
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 )
 
 func TestIsSameMajorVersion(t *testing.T) {
 	tests := []struct {
-		old, target string
-		want        bool
+		name, old, target string
+		want              bool
 	}{
-		{"14.19.0", "14.24.0", true},
-		{"14.17.0", "14.19.0", true},
-		{"14.19.0", "18.1.0", false},
-		{"18.1.0", "14.19.0", false},
-		{"not-a-version", "14.24.0", false},
-		{"14.19.0", "", false},
+		{"same major, minor bump", "14.19.0", "14.24.0", true},
+		{"same major, older minor", "14.17.0", "14.19.0", true},
+		{"major upgrade", "14.19.0", "18.1.0", false},
+		{"major downgrade", "18.1.0", "14.19.0", false},
+		{"unparseable old version", "not-a-version", "14.24.0", false},
+		{"empty target version", "14.19.0", "", false},
 	}
 	for _, tt := range tests {
-		if got := isSameMajorVersion(tt.old, tt.target); got != tt.want {
-			t.Errorf("isSameMajorVersion(%q, %q) = %v, want %v", tt.old, tt.target, got, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isSameMajorVersion(tt.old, tt.target); got != tt.want {
+				t.Errorf("isSameMajorVersion(%q, %q) = %v, want %v", tt.old, tt.target, got, tt.want)
+			}
+		})
 	}
 }
 
@@ -46,12 +50,16 @@ func writeFakeInstall(t *testing.T, location string) {
 	}
 }
 
-func TestFindDifferentPgInstallationSameMajor(t *testing.T) {
+func TestFindDifferentPgInstallation_SameMajor(t *testing.T) {
 	original := app_specific.InstallDir
 	defer func() { app_specific.InstallDir = original }()
 	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
 
-	oldLocation := filepath.Join(app_specific.InstallDir, "db", "14.0.0")
+	target, err := semver.NewVersion(constants.DatabaseVersion)
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldLocation := filepath.Join(app_specific.InstallDir, "db", fmt.Sprintf("%d.0.0", target.Major()))
 	writeFakeInstall(t, oldLocation)
 
 	found, location, err := findDifferentPgInstallation(context.Background())
@@ -97,7 +105,7 @@ func TestMoveDataFolder(t *testing.T) {
 	}
 }
 
-func TestMoveDataFolderFailureLeavesOldInstall(t *testing.T) {
+func TestMoveDataFolder_FailureLeavesOldInstall(t *testing.T) {
 	dbDir := t.TempDir()
 	oldLocation := filepath.Join(dbDir, "14.19.0")
 	writeFakeInstall(t, oldLocation)
