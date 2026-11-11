@@ -133,6 +133,47 @@ func TestMoveDataFromSameMajorInstall_FailureRemovesNewInstall(t *testing.T) {
 	}
 }
 
+func TestMoveDataFromSameMajorInstall_FailureKeepsNonEmptyNewData(t *testing.T) {
+	original := app_specific.InstallDir
+	defer func() { app_specific.InstallDir = original }()
+	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
+
+	// the fake postgres binary cannot be executed, so starting the old server fails
+	oldLocation := filepath.Join(app_specific.InstallDir, "db", "14.19.0")
+	writeFakeInstall(t, oldLocation)
+	newLocation := filepaths.DatabaseInstanceDir()
+	newBinaries := filepaths.GetDatabaseLocation()
+	if err := os.WriteFile(filepath.Join(newBinaries, "marker"), []byte(""), 0600); err != nil {
+		t.Fatal(err)
+	}
+	newDataLocation := filepaths.GetDataLocation()
+	if err := os.WriteFile(filepath.Join(newDataLocation, "PG_VERSION"), []byte("14\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	err := moveDataFromSameMajorInstall(context.Background(), oldLocation, newDataLocation)
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+	oldDataLocation := filepath.Join(oldLocation, "data")
+	for _, want := range []string{oldDataLocation, newDataLocation, "14.19.0", constants.DatabaseVersion} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error should name %s: %v", want, err)
+		}
+	}
+	for _, kept := range []string{filepath.Join(oldDataLocation, "PG_VERSION"), filepath.Join(newDataLocation, "PG_VERSION")} {
+		if _, statErr := os.Stat(kept); statErr != nil {
+			t.Errorf("%s should have been kept: %v", kept, statErr)
+		}
+	}
+	if _, statErr := os.Stat(newBinaries); !os.IsNotExist(statErr) {
+		t.Errorf("new binaries %s should have been removed, stat err: %v", newBinaries, statErr)
+	}
+	if _, statErr := os.Stat(newLocation); statErr != nil {
+		t.Errorf("new installation %s should have been kept around its data folder: %v", newLocation, statErr)
+	}
+}
+
 func TestMoveDataFolder_FailureLeavesOldInstall(t *testing.T) {
 	dbDir := t.TempDir()
 	oldLocation := filepath.Join(dbDir, "14.19.0")
