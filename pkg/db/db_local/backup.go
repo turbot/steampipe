@@ -132,7 +132,7 @@ Both data folders were kept:
 The next run moves %s into place, so %s must be out of the way first. Check which folder holds the data you want, then:
   to keep %s, move %s somewhere else, or delete it;
   to keep %s, move %s somewhere else, then move %s to %s.
-Keep %s until then: without it Steampipe creates an empty database in %s, replacing what is there.
+Keep %s until then: without it Steampipe cannot move the data into %s.
 Then run Steampipe again`,
 				err,
 				oldDataLocation, filepath.Base(oldLocation),
