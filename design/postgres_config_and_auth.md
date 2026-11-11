@@ -326,8 +326,8 @@ tunnel ───── TCP 127.0.0.1 ──▶ root   ok        tunnel ───
   directory. This is true on every OS and on every mount where Postgres runs. Steampipe needs
   no check of the socket's owner.
 - Every `root` connection from Steampipe uses the socket. This includes the plugin manager, and
-  `pg_dump` and `pg_restore` during a database upgrade, which use the old data directory.
-  Connections through the socket do not use SSL.
+  `pg_dump` and `pg_restore` during a database upgrade. `pg_dump` uses the old installation's
+  data directory, and `pg_restore` the new one's. Connections through the socket do not use SSL.
 - A socket path has a length limit: 103 bytes on macOS, 107 on Linux. The path is
   `<data directory>/.s.PGSQL.<port>`. With the default install directory it is about 55 bytes.
   Before postgres starts, Steampipe checks the length. If the path is too long, Steampipe stops
