@@ -34,7 +34,8 @@ const (
 )
 
 // pgRunningInfo represents a running pg instance that we need to startup to create the
-// backup archive and the name of the installed database
+// backup archive, or to shut down cleanly before moving its data folder, and the name of
+// the installed database
 type pgRunningInfo struct {
 	cmd    *exec.Cmd
 	port   int

@@ -354,8 +354,8 @@ When a change spans multiple repos (e.g. adding a new config field):
 ### Important Constants
 
 - **Default DB port**: 9193 (`pkg/constants/db.go`)
-- **PostgreSQL version**: 14.19.0
-- **FDW version**: 2.1.4
+- **PostgreSQL version**: 14.24.0
+- **FDW version**: 2.2.9
 - **Internal schema**: `steampipe_internal`
 - **Install directory**: `~/.steampipe/`
 - **Plugin directory**: `~/.steampipe/plugins/`
