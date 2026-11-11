@@ -88,12 +88,11 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	moved := false
 	if err == nil && found && isSameMajorVersion(filepath.Base(oldLocation), constants.DatabaseVersion) {
 		statushooks.SetStatus(ctx, "Moving database…")
+		// no fallback to dump and restore: it replaces the new data folder and deletes the old installation
 		if err := moveDataFromSameMajorInstall(ctx, oldLocation, filepaths.GetDataLocation()); err != nil {
-			// the old installation is still in place, so the dump and restore path can carry the data over instead
-			log.Printf("[WARN] moveDataFromSameMajorInstall failed, falling back to dump and restore: %s", err.Error())
-		} else {
-			moved = true
+			return err
 		}
+		moved = true
 	}
 
 	var dbName *string

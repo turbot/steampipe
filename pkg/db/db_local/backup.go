@@ -110,8 +110,53 @@ func isSameMajorVersion(oldVersion, targetVersion string) bool {
 }
 
 // moveDataFromSameMajorInstall moves the data folder of the old installation at oldLocation to newDataLocation
-// and removes the old installation. If it returns an error the old installation's files are still in place.
-func moveDataFromSameMajorInstall(ctx context.Context, oldLocation, newDataLocation string) error {
+// and removes the old installation. If it returns an error the old installation's files are still in place and the
+// new installation's binaries are removed, so the next run installs them again and retries the move. The new data
+// folder is removed only when it is empty: one that holds data is kept, and the error tells the user how to recover.
+func moveDataFromSameMajorInstall(ctx context.Context, oldLocation, newDataLocation string) (err error) {
+	defer func() {
+		if err == nil {
+			return
+		}
+		newLocation := filepaths.DatabaseInstanceDir()
+		err = fmt.Errorf("could not move the database from %s to %s: %w", oldLocation, newLocation, err)
+
+		newBinaries := filepath.Join(newLocation, "postgres")
+		if removeErr := os.RemoveAll(newBinaries); removeErr != nil {
+			log.Printf("[WARN] Could not remove new binaries at %s: %s", newBinaries, removeErr)
+		}
+		// os.Remove never removes a folder that holds anything
+		if removeErr := os.Remove(newDataLocation); removeErr != nil && !os.IsNotExist(removeErr) {
+			// either folder may hold the data the user wants: the new one may be a database already upgraded
+			if entries, readErr := os.ReadDir(newDataLocation); readErr != nil || len(entries) > 0 {
+				oldDataLocation := filepath.Join(oldLocation, "data")
+				err = fmt.Errorf(`%w
+
+Both data folders were kept:
+  %s (PostgreSQL %s), unchanged
+  %s (PostgreSQL %s), which is not empty
+The next run moves %s into place, so %s must be out of the way first. Check which folder holds the data you want, then:
+  to keep %s, move %s somewhere else, or delete it;
+  to keep %s, move %s somewhere else, then move %s to %s.
+Keep %s until then: without it Steampipe creates an empty database in %s, replacing what is there.
+Then run Steampipe again`,
+					err,
+					oldDataLocation, filepath.Base(oldLocation),
+					newDataLocation, filepath.Base(newLocation),
+					oldDataLocation, newDataLocation,
+					oldDataLocation, newDataLocation,
+					newDataLocation, oldDataLocation, newDataLocation, oldDataLocation,
+					oldLocation, newDataLocation)
+				return
+			}
+			log.Printf("[WARN] Could not remove new data folder at %s: %s", newDataLocation, removeErr)
+		}
+		if removeErr := os.Remove(newLocation); removeErr != nil {
+			log.Printf("[WARN] Could not remove new installation at %s: %s", newLocation, removeErr)
+		}
+		err = fmt.Errorf("%w\n\nYour data is unchanged in %s", err, oldLocation)
+	}()
+
 	if err := killRunningDbInstance(ctx); err != nil {
 		return err
 	}
