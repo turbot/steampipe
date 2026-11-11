@@ -9,8 +9,8 @@
 # paths, and an ad-hoc re-sign on macOS. To build a different PostgreSQL
 # version only PG_VERSION changes.
 #
-# Required tools: macOS - Homebrew with openssl@3 (and icu4c for PG16+),
-# Xcode command line tools. Linux - build-essential, flex, bison, curl, pkg-config,
+# Required tools: macOS - Xcode command line tools, and Homebrew icu4c for
+# PG16+ (OpenSSL is built from source). Linux - build-essential, flex, bison, curl, pkg-config,
 # libreadline-dev, zlib1g-dev, libssl-dev, patchelf, file (and libicu-dev for
 # PG16+). Run it on the platform it builds for.
 #
@@ -61,12 +61,24 @@ echo "  output dir : $OUTPUT_DIR"
 
 cd "$OUTPUT_DIR"
 
+# fetch_verified URL FILE SHA256 - download FILE unless present, then check its SHA-256.
+fetch_verified() {
+  local url="$1" file="$2" sha="$3"
+  if [[ ! -f "$file" ]]; then
+    echo "== downloading $url"
+    curl -fL --retry 3 -o "$file.part" "$url"
+    mv "$file.part" "$file"
+  fi
+  if [[ "$(shasum -a 256 "$file" | awk '{print $1}')" != "$sha" ]]; then
+    echo "ERROR: SHA-256 mismatch for $file (expected $sha); delete it and retry" >&2
+    exit 1
+  fi
+}
+
 # --- fetch + extract source (postgresql.org/ftp/source) ---
-if [[ ! -f "$SRC_TARBALL" ]]; then
-  echo "== downloading $SRC_URL"
-  curl -fL --retry 3 -o "$SRC_TARBALL.part" "$SRC_URL"
-  mv "$SRC_TARBALL.part" "$SRC_TARBALL"
-fi
+# postgresql.org publishes the checksum next to each tarball.
+SRC_SHA="$(curl -fsSL --retry 3 "$SRC_URL.sha256" | awk '{print $1}')"
+fetch_verified "$SRC_URL" "$SRC_TARBALL" "$SRC_SHA"
 rm -rf "$SRC_DIR"
 tar -xf "$SRC_TARBALL"
 cd "$SRC_DIR"
@@ -85,9 +97,34 @@ if [[ "$OS" == "Darwin" ]]; then
   export MACOSX_DEPLOYMENT_TARGET=11.0
   export CFLAGS="-mmacosx-version-min=11.0"
   export LDFLAGS="-mmacosx-version-min=11.0 -Wl,-rpath,@loader_path/../lib/postgresql"
-  # openssl@3, not plain `openssl`: Homebrew points that at OpenSSL 4, a different
-  # soname from the libssl.3 / libcrypto.3 the shipped packages carry.
-  OPENSSL_PREFIX="$(brew --prefix openssl@3)"
+
+  # OpenSSL is built from source, not taken from Homebrew: Homebrew's dylibs
+  # carry the build host's minimum macOS version (26.0 on a current Mac), so
+  # the package would not load on older systems. This is the 3.5 LTS release
+  # (soname 3, like the libssl.3 / libcrypto.3 the shipped packages carry);
+  # the checksum is pinned here.
+  OPENSSL_VERSION="3.5.9"
+  OPENSSL_SHA256="603f5602e2eef00d77fbd429d34dcd5822bb301757a1bc9cdb24c670f1eb859a"
+  OPENSSL_TARBALL="openssl-${OPENSSL_VERSION}.tar.gz"
+  OPENSSL_PREFIX="$OUTPUT_DIR/openssl-${OPENSSL_VERSION}-darwin-${ARCH}"
+  case "$ARCH" in
+    arm64)  OPENSSL_TARGET="darwin64-arm64-cc" ;;
+    x86_64) OPENSSL_TARGET="darwin64-x86_64-cc" ;;
+  esac
+  (
+    unset CFLAGS LDFLAGS
+    cd "$OUTPUT_DIR"
+    fetch_verified "https://github.com/openssl/openssl/releases/download/openssl-${OPENSSL_VERSION}/${OPENSSL_TARBALL}" \
+      "$OPENSSL_TARBALL" "$OPENSSL_SHA256"
+    rm -rf "openssl-${OPENSSL_VERSION}" "$OPENSSL_PREFIX"
+    tar -xf "$OPENSSL_TARBALL"
+    cd "openssl-${OPENSSL_VERSION}"
+    ./Configure "$OPENSSL_TARGET" shared no-tests \
+      --prefix="$OPENSSL_PREFIX" --openssldir=/etc/ssl --libdir=lib \
+      -mmacosx-version-min=11.0
+    make -j"$(sysctl -n hw.ncpu)"
+    make install_sw
+  )
 
   # PostgreSQL 16+ builds with ICU by default and `configure` hard-fails
   # without icu-uc/icu-i18n (PG18 in particular). PG14/15 build fine
@@ -221,11 +258,11 @@ if [[ "$OS" == "Darwin" ]]; then
 
   # ---- macOS OpenSSL bundling (PG built --with-openssl) ----
   # postgres / pg_dump / libpq / contrib (sslinfo, pgcrypto) link
-  # libssl.3 + libcrypto.3 at the build machine's absolute brew openssl
-  # path - not relocatable (dyld "Library not loaded:
-  # .../openssl@3/lib/libssl.3.dylib" on any host without that path).
+  # libssl.3 + libcrypto.3 at the build machine's absolute OpenSSL install
+  # path - not relocatable (dyld "Library not loaded" on any host without
+  # that path).
   # Same bundle pattern as ICU: copy the two dylibs into lib/postgresql,
-  # set each id -> @rpath; rewrite every reference into the brew openssl
+  # set each id -> @rpath; rewrite every reference into the OpenSSL install
   # prefix to @loader_path inside the co-located libs (libssl->libcrypto)
   # and to @rpath in the bin/* binaries. The openssl ABI soname (3) is a
   # pinned compatibility contract, like the ICU major.
