@@ -6,13 +6,17 @@
 # Follows design/embedded_postgres_build_instructions.md (macOS §3.2-3.4,
 # Linux §3.5-3.6) and adds what that recipe lacks: pruning to the five shipped
 # binaries, bundling OpenSSL (and ICU for PG16+) with relocatable library
-# paths, and an ad-hoc re-sign on macOS. To build a different PostgreSQL
-# version only PG_VERSION changes.
+# paths, and an ad-hoc re-sign on macOS. On macOS it builds OpenSSL from
+# source (Homebrew's dylibs carry the build host's minimum macOS version)
+# instead of using Homebrew's. It downloads the PostgreSQL source from
+# ftp.postgresql.org and, on macOS, OpenSSL from github.com, and checks both
+# against SHA-256 checksums. To build a different PostgreSQL version only
+# PG_VERSION changes.
 #
 # Required tools: macOS - Xcode command line tools, and Homebrew icu4c for
-# PG16+ (OpenSSL is built from source). Linux - build-essential, flex, bison, curl, pkg-config,
-# libreadline-dev, zlib1g-dev, libssl-dev, patchelf, file (and libicu-dev for
-# PG16+). Run it on the platform it builds for.
+# PG16+. Linux - build-essential, flex, bison, curl, pkg-config, perl
+# (shasum), libreadline-dev, zlib1g-dev, libssl-dev, patchelf, file (and
+# libicu-dev for PG16+). Run it on the platform it builds for.
 #
 # Usage:
 #   scripts/build-embedded-pg.sh [PG_VERSION] [OUTPUT_DIR]
@@ -78,6 +82,10 @@ fetch_verified() {
 # --- fetch + extract source (postgresql.org/ftp/source) ---
 # postgresql.org publishes the checksum next to each tarball.
 SRC_SHA="$(curl -fsSL --retry 3 "$SRC_URL.sha256" | awk '{print $1}')"
+if [[ ! "$SRC_SHA" =~ ^[0-9a-f]{64}$ ]]; then
+  echo "ERROR: could not read a SHA-256 from $SRC_URL.sha256 (got '$SRC_SHA')" >&2
+  exit 1
+fi
 fetch_verified "$SRC_URL" "$SRC_TARBALL" "$SRC_SHA"
 rm -rf "$SRC_DIR"
 tar -xf "$SRC_TARBALL"
@@ -111,6 +119,8 @@ if [[ "$OS" == "Darwin" ]]; then
     arm64)  OPENSSL_TARGET="darwin64-arm64-cc" ;;
     x86_64) OPENSSL_TARGET="darwin64-x86_64-cc" ;;
   esac
+  # --openssldir only sets OpenSSL's default config and CA locations; Steampipe
+  # sets OPENSSL_CONF and generates its own server certificates.
   (
     unset CFLAGS LDFLAGS
     cd "$OUTPUT_DIR"
@@ -283,7 +293,7 @@ if [[ "$OS" == "Darwin" ]]; then
       local f="$1" anchor="$2"
       otool -L "$f" | awk 'NR>1{print $1}' | while read -r dep; do
         case "$dep" in
-          "$OPENSSL_PREFIX"/*|*/openssl@*/lib/lib*)
+          "$OPENSSL_PREFIX"/*)
             install_name_tool -change "$dep" "$anchor/$(basename "$dep")" "$f" 2>/dev/null || true ;;
         esac
       done
