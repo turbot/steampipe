@@ -9,12 +9,12 @@ on:
           Version number for the OCI image for this release - usually the same as the
           postgres version
         required: true
-        default: 14.19.0
+        default: 14.24.0
 
       postgres_version:
         description: "Postgres Version to package (eg 14.2.0)"
         required: true
-        default: 14.19.0
+        default: 14.24.0
 
 permissions:
   contents: write
@@ -28,8 +28,6 @@ env:
   CONFIG_SCHEMA_VERSION: "2020-11-18"
   VERSION: ${{ github.event.inputs.version }}
   PG_VERSION: ${{ github.event.inputs.postgres_version }}
-  PATH_BASE: https://repo1.maven.org/maven2/io/zonky/test/postgres
-  NAME_PREFIX: embedded-postgres-binaries
   STEAMPIPE_UPDATE_CHECK: false
   ORAS_VERSION: 1.1.0
 
@@ -65,11 +63,6 @@ jobs:
             echo "Version already exists: $VERSION"
             exit 1
           fi
-
-      - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-        with:
-          ref: ${{ github.event.inputs.branch }}
 
       # Login to GHCR
       - name: Log in to the Container registry
