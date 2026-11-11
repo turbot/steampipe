@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
 	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/filepaths"
 )
 
 func TestIsSameMajorVersion(t *testing.T) {
@@ -102,6 +104,32 @@ func TestMoveDataFolder(t *testing.T) {
 	}
 	if _, err := os.Stat(oldLocation); !os.IsNotExist(err) {
 		t.Errorf("old installation %s should have been removed, stat err: %v", oldLocation, err)
+	}
+}
+
+func TestMoveDataFromSameMajorInstall_FailureRemovesNewInstall(t *testing.T) {
+	original := app_specific.InstallDir
+	defer func() { app_specific.InstallDir = original }()
+	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
+
+	// the fake postgres binary cannot be executed, so starting the old server fails
+	oldLocation := filepath.Join(app_specific.InstallDir, "db", "14.19.0")
+	writeFakeInstall(t, oldLocation)
+	newLocation := filepaths.DatabaseInstanceDir()
+
+	err := moveDataFromSameMajorInstall(context.Background(), oldLocation, filepaths.GetDataLocation())
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+	if !strings.Contains(err.Error(), oldLocation) || !strings.Contains(err.Error(), newLocation) {
+		t.Errorf("error should name %s and %s: %v", oldLocation, newLocation, err)
+	}
+	content, readErr := os.ReadFile(filepath.Join(oldLocation, "data", "PG_VERSION"))
+	if readErr != nil || string(content) != "14\n" {
+		t.Fatalf("old data folder was changed: %q, %v", content, readErr)
+	}
+	if _, statErr := os.Stat(newLocation); !os.IsNotExist(statErr) {
+		t.Errorf("new installation %s should have been removed, stat err: %v", newLocation, statErr)
 	}
 }
 
