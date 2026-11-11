@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
 
 	"github.com/fatih/color"
@@ -83,20 +84,34 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return err
 	}
 
-	statushooks.SetStatus(ctx, "Preparing backups…")
+	found, oldLocation, err := findDifferentPgInstallation(ctx)
+	sameMajor := err == nil && found && isSameMajorVersion(filepath.Base(oldLocation), constants.DatabaseVersion)
 
-	// call prepareBackup to generate the db dump file if necessary
-	// NOTE: this returns the existing database name - we use this when creating the new database
-	dbName, err := prepareBackup(ctx)
-	if err != nil {
-		log.Printf("[ERROR] prepareBackup failed: %s", err.Error())
-		if errors.Is(err, errDbInstanceRunning) {
-			// remove the installation - otherwise, the backup won't get triggered, even if the user stops the service
+	var dbName *string
+	if sameMajor {
+		statushooks.SetStatus(ctx, "Moving database…")
+		if err := moveDataFromSameMajorInstall(ctx, oldLocation, filepaths.GetDataLocation()); err != nil {
+			log.Printf("[ERROR] moveDataFromSameMajorInstall failed: %s", err.Error())
+			// remove the new installation - otherwise the next run would initialise an empty database here
 			os.RemoveAll(filepaths.DatabaseInstanceDir())
-			return err
+			return fmt.Errorf("could not move the database from %s - your data has not been changed: %w", oldLocation, err)
 		}
-		// ignore all other errors with the backup, displaying a warning instead
-		statushooks.Message(ctx, noBackupWarning())
+	} else {
+		statushooks.SetStatus(ctx, "Preparing backups…")
+
+		// call prepareBackup to generate the db dump file if necessary
+		// NOTE: this returns the existing database name - we use this when creating the new database
+		dbName, err = prepareBackup(ctx)
+		if err != nil {
+			log.Printf("[ERROR] prepareBackup failed: %s", err.Error())
+			if errors.Is(err, errDbInstanceRunning) {
+				// remove the installation - otherwise, the backup won't get triggered, even if the user stops the service
+				os.RemoveAll(filepaths.DatabaseInstanceDir())
+				return err
+			}
+			// ignore all other errors with the backup, displaying a warning instead
+			statushooks.Message(ctx, noBackupWarning())
+		}
 	}
 
 	// install the fdw
@@ -106,10 +121,13 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return fmt.Errorf("Download & install steampipe-postgres-fdw... FAILED!")
 	}
 
-	// run the database installation
-	err = runInstall(ctx, dbName)
-	if err != nil {
-		return err
+	// a moved data folder is already initialised
+	if !sameMajor {
+		// run the database installation
+		err = runInstall(ctx, dbName)
+		if err != nil {
+			return err
+		}
 	}
 
 	// write a signature after everything gets done!

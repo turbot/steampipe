@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/shirou/gopsutil/process"
 	"github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
@@ -93,6 +94,55 @@ func prepareBackup(ctx context.Context) (*string, error) {
 	}
 
 	return &runConfig.dbName, nil
+}
+
+// isSameMajorVersion reports whether two embedded postgres versions share a major version, in which case the
+// on-disk data format is unchanged and the data folder can be reused as-is. A version that does not parse is
+// treated as a different major, so it keeps the dump and restore path.
+func isSameMajorVersion(oldVersion, targetVersion string) bool {
+	ov, errOld := semver.NewVersion(oldVersion)
+	tv, errTarget := semver.NewVersion(targetVersion)
+	if errOld != nil || errTarget != nil {
+		return false
+	}
+	return ov.Major() == tv.Major()
+}
+
+// moveDataFromSameMajorInstall moves the data folder of the old installation at oldLocation to newDataLocation
+// and removes the old installation. If it returns an error the old installation is left untouched.
+func moveDataFromSameMajorInstall(ctx context.Context, oldLocation, newDataLocation string) error {
+	if err := killRunningDbInstance(ctx); err != nil {
+		return err
+	}
+
+	// an orphan killed above leaves the data folder needing recovery: start and stop the old server so the
+	// folder is moved with a clean shutdown checkpoint
+	runConfig, err := startDatabaseInLocation(ctx, oldLocation)
+	if err != nil {
+		return fmt.Errorf("could not start the database in %s: %w", oldLocation, err)
+	}
+	if err := runConfig.stop(ctx); err != nil {
+		return fmt.Errorf("could not stop the database in %s: %w", oldLocation, err)
+	}
+
+	return moveDataFolder(oldLocation, newDataLocation)
+}
+
+func moveDataFolder(oldLocation, newDataLocation string) error {
+	oldDataLocation := filepath.Join(oldLocation, "data")
+
+	// the new data folder may already exist, empty; a rename cannot replace a directory on every platform
+	if err := os.Remove(newDataLocation); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("could not prepare %s: %w", newDataLocation, err)
+	}
+	if err := os.Rename(oldDataLocation, newDataLocation); err != nil {
+		return fmt.Errorf("could not move %s to %s: %w", oldDataLocation, newDataLocation, err)
+	}
+
+	if err := os.RemoveAll(oldLocation); err != nil {
+		log.Printf("[WARN] Could not remove old installation at %s: %s", oldLocation, err)
+	}
+	return nil
 }
 
 // killRunningDbInstance searches for a postgres instance running in the install dir
