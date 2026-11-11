@@ -95,6 +95,10 @@ jobs:
             postgres-darwin-arm_64.txz:extracted-darwin-arm64 \
             postgres-linux-x86_64.txz:extracted-linux-amd64 \
             postgres-linux-arm_64.txz:extracted-linux-arm64; do
+            if [ ! -s "packages/${pair%%:*}" ]; then
+              echo "Missing or empty package: ${pair%%:*}"
+              exit 1
+            fi
             mkdir "${pair#*:}"
             tar -xf "packages/${pair%%:*}" --directory "${pair#*:}"
           done
