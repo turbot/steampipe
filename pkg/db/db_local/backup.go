@@ -269,7 +269,8 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 	if err != nil {
 		return nil, err
 	}
-	// whatever an older Steampipe left in the old data directory, the backup must connect as root
+	// the old data directory gets the same check as a start: Steampipe's file or an older default is
+	// written, the user's file is kept, and an edited file stops the backup before postgres starts
 	if err := preparePgHbaConf(dataLocation); err != nil {
 		return nil, err
 	}
