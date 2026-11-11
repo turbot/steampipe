@@ -157,6 +157,10 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 	if err != nil {
 		return nil, err
 	}
+	// whatever an older Steampipe left in the old data directory, the backup must connect as root
+	if err := writePgHbaConf(dataLocation); err != nil {
+		return nil, err
+	}
 	cmd := exec.CommandContext(
 		ctx,
 		binaryLocation,
