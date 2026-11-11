@@ -10,14 +10,14 @@
 # version only PG_VERSION changes.
 #
 # Required tools: macOS - Homebrew with openssl@3 (and icu4c for PG16+),
-# Xcode command line tools. Linux - build-essential, flex, bison, wget,
+# Xcode command line tools. Linux - build-essential, flex, bison, curl, pkg-config,
 # libreadline-dev, zlib1g-dev, libssl-dev, patchelf, file (and libicu-dev for
 # PG16+). Run it on the platform it builds for.
 #
 # Usage:
 #   scripts/build-embedded-pg.sh [PG_VERSION] [OUTPUT_DIR]
 #
-#   PG_VERSION   PostgreSQL source version, e.g. 14.19 (default) or 18.0
+#   PG_VERSION   PostgreSQL source version, e.g. 14.24 (default) or 18.0
 #   OUTPUT_DIR   where to place the built tree + .txz (default: ./pg-build)
 #
 # Output: $OUTPUT_DIR/<prefix>/{bin,lib,share} and the packed archive named
@@ -29,7 +29,7 @@
 #
 set -euo pipefail
 
-PG_VERSION="${1:-14.19}"
+PG_VERSION="${1:-14.24}"
 OUTPUT_DIR="${2:-$(pwd)/pg-build}"
 # absolute, because the script cd's into the source tree before packing
 mkdir -p "$OUTPUT_DIR"
@@ -101,7 +101,7 @@ if [[ "$OS" == "Darwin" ]]; then
     ICU_PREFIX="$(brew --prefix icu4c 2>/dev/null || true)"
     if [[ -z "$ICU_PREFIX" || ! -d "$ICU_PREFIX/lib/pkgconfig" ]]; then
       # fall back to the highest installed versioned icu4c keg
-      ICU_PREFIX="$(ls -d /opt/homebrew/opt/icu4c@* 2>/dev/null | sort -V | tail -1 || true)"
+      ICU_PREFIX="$(ls -d "$(brew --prefix)"/opt/icu4c@* 2>/dev/null | sort -V | tail -1 || true)"
     fi
     if [[ -z "$ICU_PREFIX" || ! -d "$ICU_PREFIX/lib/pkgconfig" ]]; then
       echo "ERROR: PostgreSQL $PG_VERSION needs ICU but icu4c was not found; run 'brew install icu4c'" >&2
@@ -394,7 +394,9 @@ else
   # patchelf'd above; ICU libs were patchelf'd in the bundling block. This
   # block covers the contrib `.so` files in between. The glob `*.so` matches
   # contribs but NOT bundled ICU (`libicu*.so.78`), so it's safe to run
-  # unconditionally and idempotent vs the ICU block.
+  # unconditionally and idempotent vs the ICU block. It also matches the
+  # libpq.so dev symlink, and patchelf follows it to libpq.so.5.x: that is
+  # what gives libpq its $ORIGIN RUNPATH, so keep the symlink.
   # No user-visible breakage today (shipped contribs only NEED libc/libm,
   # which the system loader finds), but the build-host absolute path in the
   # RUNPATH is wrong-on-its-face and any future contrib that links a
