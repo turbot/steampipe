@@ -190,9 +190,7 @@ EOF
   assert_output --partial "steampipe service stop --force"
 
   # stop only this install's processes: service stop --force would stop every service on the machine.
-  # The plugin manager's command line does not name the install, so it goes by the pid in its state file;
-  # postgres and the plugins run from the install.
-  kill "$(jq -r .pid "$STEAMPIPE_INSTALL_DIR/internal/plugin_manager.json")" || true
+  # Postgres, the plugin manager (--install-dir) and the plugins all name the install on their command lines.
   pkill -f "$STEAMPIPE_INSTALL_DIR" || true
   for _ in $(seq 50); do pgrep -f "$STEAMPIPE_INSTALL_DIR" > /dev/null || break; sleep 0.2; done
   run pgrep -f "$STEAMPIPE_INSTALL_DIR"
