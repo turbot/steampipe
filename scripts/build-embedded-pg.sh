@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
 #
-# build-embedded-pg.sh - build the embedded PostgreSQL binaries from source,
-# exactly per design/embedded_postgres_build_instructions.md, producing the
-# relocatable .txz archive Steampipe expects.
+# build-embedded-pg.sh - build the embedded PostgreSQL binaries from source
+# and pack the relocatable .txz archive Steampipe expects.
 #
-# This is a thin, version-parameterised wrapper around the committed recipe.
-# It does NOT invent build steps - it drives the documented macOS (§3.2-3.4)
-# and Linux (§3.5-3.6) steps. To build for a different PostgreSQL major
-# (e.g. the PG18 upgrade) only PG_VERSION changes.
+# Follows design/embedded_postgres_build_instructions.md (macOS §3.2-3.4,
+# Linux §3.5-3.6) and adds what that recipe lacks: pruning to the five shipped
+# binaries, bundling OpenSSL (and ICU for PG16+) with relocatable library
+# paths, and an ad-hoc re-sign on macOS. To build a different PostgreSQL
+# version only PG_VERSION changes.
+#
+# Required tools: macOS - Homebrew with openssl@3 (and icu4c for PG16+),
+# Xcode command line tools. Linux - build-essential, flex, bison, wget,
+# libreadline-dev, zlib1g-dev, libssl-dev, patchelf, file (and libicu-dev for
+# PG16+). Run it on the platform it builds for.
 #
 # Usage:
 #   scripts/build-embedded-pg.sh [PG_VERSION] [OUTPUT_DIR]
@@ -26,6 +31,9 @@ set -euo pipefail
 
 PG_VERSION="${1:-14.19}"
 OUTPUT_DIR="${2:-$(pwd)/pg-build}"
+# absolute, because the script cd's into the source tree before packing
+mkdir -p "$OUTPUT_DIR"
+OUTPUT_DIR="$(cd "$OUTPUT_DIR" && pwd)"
 
 OS="$(uname -s)"
 ARCH="$(uname -m)"
@@ -51,13 +59,13 @@ echo "  platform   : $OS/$ARCH  -> $TARFILE"
 echo "  prefix     : $PREFIX"
 echo "  output dir : $OUTPUT_DIR"
 
-mkdir -p "$OUTPUT_DIR"
 cd "$OUTPUT_DIR"
 
 # --- fetch + extract source (postgresql.org/ftp/source) ---
 if [[ ! -f "$SRC_TARBALL" ]]; then
   echo "== downloading $SRC_URL"
-  curl -fL --retry 3 -o "$SRC_TARBALL" "$SRC_URL"
+  curl -fL --retry 3 -o "$SRC_TARBALL.part" "$SRC_URL"
+  mv "$SRC_TARBALL.part" "$SRC_TARBALL"
 fi
 rm -rf "$SRC_DIR"
 tar -xf "$SRC_TARBALL"
@@ -83,7 +91,7 @@ if [[ "$OS" == "Darwin" ]]; then
 
   # PostgreSQL 16+ builds with ICU by default and `configure` hard-fails
   # without icu-uc/icu-i18n (PG18 in particular). PG14/15 build fine
-  # without it (and the proven PG14 path is left byte-identical). When
+  # without it (no ICU flag is passed). When
   # building >=16, require icu4c (keg-only on Homebrew) and put its
   # pkg-config on PKG_CONFIG_PATH, mirroring how Homebrew builds its own
   # postgresql@18 (--with-icu + icu4c pkgconfig).
@@ -103,7 +111,6 @@ if [[ "$OS" == "Darwin" ]]; then
     export PKG_CONFIG_PATH="$ICU_PREFIX/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
     ICU_CONFIGURE=(--with-icu)
   fi
-  # PG<16: no ICU flag at all - identical to the validated PG14 recipe.
 
   ./configure --prefix="$PREFIX" \
     --libdir="$PREFIX/lib/postgresql" \
@@ -143,6 +150,12 @@ if [[ "$OS" == "Darwin" ]]; then
     LIBPQ_PATH="$BUNDLE_ROOT/$LIB_SUBDIR/libpq.5.dylib"
     echo "🔧 Fixing libpq install name..."
     install_name_tool -id "@rpath/libpq.5.dylib" "$LIBPQ_PATH"
+    # contrib modules that link libpq (dblink, postgres_fdw) reference it at
+    # the build-host absolute path too.
+    for so in "$BUNDLE_ROOT/$LIB_SUBDIR"/*.so; do
+      [[ -f "$so" ]] || continue
+      install_name_tool -change "$LIBPQ_PATH" "@loader_path/libpq.5.dylib" "$so"
+    done
     echo "🔍 Processing binaries in bin/..."
     for binfile in "$BUNDLE_ROOT"/bin/*; do
       [[ -x "$binfile" && ! -d "$binfile" ]] || continue
@@ -154,7 +167,7 @@ if [[ "$OS" == "Darwin" ]]; then
     done
   )
 
-  # ---- macOS ICU bundling (PG16+; Option A: full unfiltered ICU) ----
+  # ---- macOS ICU bundling (PG16+; the full, unfiltered ICU) ----
   # PG18 is built --with-icu, so postgres links libicui18n/libicuuc/
   # libicudata at the build machine's absolute icu4c path - not
   # relocatable. Bundle the three ICU dylibs into lib/postgresql and
@@ -254,11 +267,11 @@ if [[ "$OS" == "Darwin" ]]; then
   # install_name_tool invalidates the Mach-O code signature; arm64 macOS
   # then SIGKILLs the binary/dylib on load ("Killed: 9", no output - NOT
   # a dyld 'library not loaded' error). Ad-hoc re-sign every Mach-O the
-  # rpath/ICU fixups touched. The committed recipe's fix_rpath.sh omits
-  # this; ICU bundling (many more install_name_tool ops) makes it fatal.
+  # rpath/ICU/OpenSSL fixups touched. The committed recipe's fix_rpath.sh
+  # omits this.
   (
     cd "$PREFIX"
-    for f in bin/* lib/postgresql/*.dylib; do
+    for f in bin/* lib/postgresql/*.dylib lib/postgresql/*.so; do
       [[ -f "$f" ]] || continue
       file "$f" | grep -q 'Mach-O' || continue
       codesign --force --sign - "$f" 2>/dev/null || true
@@ -271,11 +284,9 @@ if [[ "$OS" == "Darwin" ]]; then
   # module suffix follows PostgreSQL's DLSUFFIX: .so on Linux and PG<=17
   # macOS, but .dylib on macOS PG18 (src/Makefile.global). Accept either -
   # this check is for a *missing* module, not the suffix.
-  # NOTE: the macOS shipped-convention mismatch (Steampipe and the current
-  # artifact use .so; from-source PG18-macOS emits .dylib - the same
-  # family as the FDW `inst` .so/.dylib quirk) is a packaging decision
-  # for the release step, deliberately NOT forced here. The shipped
-  # builds are Linux, where DLSUFFIX is .so and this is moot.
+  # NOTE: Steampipe expects .so; a from-source PG18 build on macOS emits
+  # .dylib. That is a packaging decision, deliberately NOT forced here. For
+  # PG14 DLSUFFIX is .so and this is moot.
   for ext in ltree tablefunc; do
     { [[ -f "$PREFIX/lib/postgresql/${ext}.so" || -f "$PREFIX/lib/postgresql/${ext}.dylib" ]] \
       && [[ -f "$PREFIX/share/postgresql/extension/${ext}.control" ]]; } \
@@ -318,10 +329,8 @@ else
   make -C contrib -j"$(nproc)"
   make -C contrib install
 
-  # Keep only the 5 binaries Steampipe ships — mirror of the macOS
-  # prune (this file, "step 12: keep only the binaries the shipped
-  # artifact ships" block). The Linux branch previously skipped this,
-  # so the .txz carried ~30 unused binaries (clusterdb, pgbench,
+  # Keep only the 5 binaries Steampipe ships, as in the macOS prune above;
+  # otherwise the .txz carries ~30 unused binaries (clusterdb, pgbench,
   # pg_upgrade, psql, ...).
   ( cd "$PREFIX/bin"
     for b in *; do
@@ -339,13 +348,11 @@ else
       fi
     done
   )
-  # ---- Linux ICU bundling (PG16+; Option A) ----
+  # ---- Linux ICU bundling (PG16+) ----
   # ELF resolves by soname via rpath, so bundling = drop the 3 ICU
   # .so.<major> into lib/postgresql (bins already have
   # $ORIGIN/../lib/postgresql rpath) and give the ICU libs an $ORIGIN
-  # rpath so icu->icu resolves within the bundle. NOTE: this Linux path
-  # is implemented but has only been logic-reviewed, not run (built/
-  # proven on macOS only); verify it on a Linux build host/CI runner.
+  # rpath so icu->icu resolves within the bundle.
   PG_MAJOR_L="${PG_VERSION%%.*}"
   if [[ "$PG_MAJOR_L" -ge 16 ]]; then
     ICU_LIBDIR="$(pkg-config --variable=libdir icu-uc 2>/dev/null || echo /usr/lib/${ARCH}-linux-gnu)"
@@ -410,9 +417,8 @@ else
       || { echo "ERROR: required extension '$ext' missing after contrib build (no lib/postgresql/${ext}.{so,dylib} or share/postgresql/extension/${ext}.control)" >&2; exit 1; }
   done
 
-  # --hard-dereference: follow symlinks at archive time so the .txz
-  # carries plain files (matches zonky's Linux pack pattern; avoids
-  # downstream surprises when an upstream lib is a symlink).
+  # --hard-dereference stores repeated hard links once; symlinks are still
+  # archived as symlinks.
   ( cd "$PREFIX" && tar --hard-dereference -cJf "$OUTPUT_DIR/$TARFILE" bin lib share )
 fi
 
