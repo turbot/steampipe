@@ -17,10 +17,19 @@ setup_file() {
 
 teardown_file() {
   steampipe service stop
+  # a socket that the owner-check test left behind belongs to another user and blocks this port
+  if sudo -n true 2> /dev/null; then
+    sudo -n pkill -u nobody -f python3 || true
+    sudo -n rm -f /tmp/.s.PGSQL.$PG_PORT
+  fi
 }
 
 start_service() {
   STEAMPIPE_DATABASE_PASSWORD=$PG_PASSWORD steampipe service start --database-port $PG_PORT
+}
+
+connect_as_root_by_socket() {
+  psql -w -h /tmp -p $PG_PORT -U root postgres -tAc "select 1"
 }
 
 # connect over TCP from this machine and never ask for a password: -w fails instead of prompting
@@ -41,19 +50,38 @@ connect_as() {
   assert_output "$HBA_HEADER"
 
   run tail -n 3 "$HBA_FILE"
-  assert_line --index 0 --regexp '^host +all +root +samehost +trust$'
+  assert_line --index 0 --regexp '^local +all +root +trust$'
   assert_line --index 1 --regexp '^host +all +steampipe +samehost +trust$'
   assert_line --index 2 --regexp '^host +all +steampipe +all +scram-sha-256$'
 
   [ ! -e "$HBA_DIR/00-preserved.conf" ]
 }
 
-@test "root and steampipe connect from this machine with no password" {
-  run connect_as root postgres ""
+@test "root connects through the unix socket and is rejected over TCP" {
+  run connect_as_root_by_socket
   assert_success
+
+  run connect_as root postgres ""
+  assert_failure
+}
+
+@test "steampipe connects over TCP from this machine with no password" {
   run connect_as steampipe steampipe ""
   assert_success
 }
+
+@test "another OS user cannot connect as root through the socket" {
+  sudo -n true || skip "sudo -n does not work here"
+
+  # the service is up and root works for this OS user
+  run connect_as_root_by_socket
+  assert_success
+
+  run sudo -n -u nobody psql -w -h /tmp -p $PG_PORT -U root postgres -tAc "select 1"
+  assert_failure
+  assert_output --partial "Permission denied"
+}
+
 
 @test "steampipe cannot connect to the postgres database" {
   run connect_as steampipe postgres ""
@@ -128,4 +156,23 @@ EOF
   assert_success
   run connect_as root postgres ""
   assert_success
+}
+
+# this test is last: it leaves the service stopped
+@test "steampipe stops with an error when another OS user owns the socket" {
+  sudo -n true || skip "sudo -n does not work here"
+  command -v python3 > /dev/null || skip "python3 is required"
+
+  steampipe service stop
+  local socket=/tmp/.s.PGSQL.$PG_PORT
+  sudo -n rm -f $socket
+  # fd 3 is bats's own; closing it keeps bats from waiting for this process
+  sudo -n -u nobody python3 -c "import socket,time; s=socket.socket(socket.AF_UNIX); s.bind('$socket'); s.listen(1); time.sleep(120)" < /dev/null > /dev/null 2>&1 3>&- &
+  disown
+  for _ in $(seq 50); do [ -S $socket ] && break; sleep 0.1; done
+  [ -S $socket ]
+
+  run start_service
+  assert_failure
+  assert_output --partial "owned by another user"
 }

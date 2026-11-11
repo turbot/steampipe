@@ -222,6 +222,9 @@ func killRunningDbInstance(ctx context.Context) error {
 
 // backup the old pg instance public schema using pg_dump
 func takeBackup(ctx context.Context, config *pgRunningInfo) error {
+	if err := checkSocketOwner(rootSocketPath(config.port)); err != nil {
+		return err
+	}
 	cmd := pgDumpCmd(
 		ctx,
 		fmt.Sprintf("--file=%s", filepaths.DatabaseBackupFilePath()),
@@ -231,7 +234,7 @@ func takeBackup(ctx context.Context, config *pgRunningInfo) error {
 		// only backup the database used by steampipe
 		fmt.Sprintf("--dbname=%s", config.dbName),
 		// connection parameters
-		"--host=127.0.0.1",
+		fmt.Sprintf("--host=%s", constants.PostgresSocketDir),
 		fmt.Sprintf("--port=%d", config.port),
 		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
 	)
@@ -273,6 +276,7 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 		// Data Directory
 		"-D", dataLocation,
 	)
+	cmd.Args = append(cmd.Args, postgresSocketArgs()...)
 
 	log.Println("[TRACE]", cmd.String())
 
@@ -415,6 +419,9 @@ func restoreDBBackup(ctx context.Context) error {
 }
 
 func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listFile string) error {
+	if err := checkSocketOwner(rootSocketPath(info.Port)); err != nil {
+		return err
+	}
 	cmd := pgRestoreCmd(
 		ctx,
 		filepaths.DatabaseBackupFilePath(),
@@ -430,7 +437,7 @@ func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listF
 		// the database name
 		fmt.Sprintf("--dbname=%s", info.Database),
 		// connection parameters
-		"--host=127.0.0.1",
+		fmt.Sprintf("--host=%s", constants.PostgresSocketDir),
 		fmt.Sprintf("--port=%d", info.Port),
 		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
 	)

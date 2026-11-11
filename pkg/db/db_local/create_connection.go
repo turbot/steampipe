@@ -52,14 +52,23 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 		opts.DatabaseName = "postgres"
 	}
 
-	psqlInfoMap := map[string]string{
-		"host":   putils.GetFirstListenAddress(info.ResolvedListenAddresses),
-		"port":   fmt.Sprintf("%d", info.Port),
-		"user":   opts.Username,
-		"dbname": opts.DatabaseName,
+	var psqlInfoMap map[string]string
+	if opts.Username == constants.DatabaseSuperUser {
+		// root connects through the unix socket, and only to a socket that the current OS user owns
+		if err := checkSocketOwner(rootSocketPath(info.Port)); err != nil {
+			return "", err
+		}
+		psqlInfoMap = rootConnectionParams(info.Port)
+		psqlInfoMap["dbname"] = opts.DatabaseName
+	} else {
+		psqlInfoMap = map[string]string{
+			"host":   putils.GetFirstListenAddress(info.ResolvedListenAddresses),
+			"port":   fmt.Sprintf("%d", info.Port),
+			"user":   opts.Username,
+			"dbname": opts.DatabaseName,
+		}
+		psqlInfoMap = putils.MergeMaps(psqlInfoMap, dsnSSLParams())
 	}
-	log.Println("[TRACE] SQLInfoMap >>>", psqlInfoMap)
-	psqlInfoMap = putils.MergeMaps(psqlInfoMap, dsnSSLParams())
 	log.Println("[TRACE] SQLInfoMap >>>", psqlInfoMap)
 
 	psqlInfo := []string{}
@@ -100,9 +109,12 @@ func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.C
 	connConfig.Config.RuntimeParams = map[string]string{
 		constants.RuntimeParamsKeyApplicationName: runtime.ServiceConnectionAppName,
 	}
-	err = db_common.AddRootCertToConfig(&connConfig.Config, filepaths.GetRootCertLocation())
-	if err != nil {
-		return nil, err
+	// the unix socket that root uses does not use SSL
+	if connConfig.User != constants.DatabaseSuperUser {
+		err = db_common.AddRootCertToConfig(&connConfig.Config, filepaths.GetRootCertLocation())
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	conn, err := pgx.ConnectConfig(ctx, connConfig)
@@ -176,7 +188,13 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	putils.LogTime("db_local.createMaintenanceClient start")
 	defer putils.LogTime("db_local.createMaintenanceClient end")
 
-	connStr := fmt.Sprintf("host=127.0.0.1 port=%d user=%s dbname=postgres sslmode=disable application_name=%s", port, constants.DatabaseSuperUser, runtime.ServiceConnectionAppName)
+	// the socket appears when postgres starts listening; one that another OS user owns stops the wait
+	if err := waitForRootSocket(ctx, port); err != nil {
+		return nil, sperr.Wrap(err, sperr.WithMessage("connection setup failed"))
+	}
+
+	connParams := rootConnectionParams(port)
+	connStr := fmt.Sprintf("host=%s port=%d user=%s dbname=postgres sslmode=%s application_name=%s", connParams["host"], port, connParams["user"], connParams["sslmode"], runtime.ServiceConnectionAppName)
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(viper.GetInt(pconstants.ArgDatabaseStartTimeout))*time.Second)
 	defer cancel()

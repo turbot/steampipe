@@ -12,11 +12,15 @@ const PgHbaHeader = `# Written by Steampipe each time the database starts. DO NO
 // The database column is "all": at install, CONNECT is revoked from PUBLIC on the postgres
 // and template1 databases, so the steampipe user can reach only its own database. A database
 // that someone creates later is not covered by those grants.
-const PgHbaSteampipeRules = `host all root      samehost trust
-host all steampipe samehost trust
-host all steampipe all      scram-sha-256
+const PgHbaSteampipeRules = `local all root      trust
+host  all steampipe samehost trust
+host  all steampipe all      scram-sha-256
 `
 
 // PgHbaPreservedFileName is where a copy of a pg_hba.conf that someone else changed is
 // kept, inside pg_hba.conf.d. A later copy replaces it.
 const PgHbaPreservedFileName = "00-preserved.conf"
+
+// PostgresSocketDir is the directory of postgres's unix socket. Every postgres that Steampipe
+// starts is given it explicitly, so that the CLI and the server always agree.
+const PostgresSocketDir = "/tmp"

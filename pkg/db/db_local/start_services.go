@@ -466,6 +466,8 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cm
 		// Data Directory
 		"-D", filepaths.GetDataLocation())
 
+	postgresCmd.Args = append(postgresCmd.Args, postgresSocketArgs()...)
+
 	if sslpassword := viper.GetString(pconstants.ArgDatabaseSSLPassword); sslpassword != "" {
 		postgresCmd.Args = append(
 			postgresCmd.Args,
