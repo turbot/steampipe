@@ -42,8 +42,6 @@ IDLE_LIMIT=30       # seconds without output, once every planned test has report
 
 BIN_DIR=$(mktemp -d) || { echo "mktemp failed"; exit 1; }
 LOG_DIR=$(mktemp -d) || { echo "mktemp failed"; exit 1; }
-ORIG_TMP="${TMPDIR:-/tmp}"
-ORIG_TMP="${ORIG_TMP%/}"
 CUR_ROOT=""         # temporary root of the file being run; holds its install and working dirs
 CUR_PID=""
 TAIL_PID=""
@@ -115,9 +113,10 @@ FAILED=0
 
 for f in $FILES; do
   log=$LOG_DIR/$f.tap
-  # a short name directly under the original temp dir keeps socket paths under the OS length limit;
-  # an empty install dir would make run.sh fall back to the real ~/.steampipe
-  CUR_ROOT=$(mktemp -d "$ORIG_TMP/sp.XXXXXX") || { echo "mktemp failed"; exit 1; }
+  # a short name directly under /tmp keeps socket paths under the OS length limit, also for the installs
+  # that tests make in bats' own temporary directories. macOS's own temp dir (/var/folders/.../T/) is too
+  # long for that. An empty install dir would make run.sh fall back to the real ~/.steampipe
+  CUR_ROOT=$(mktemp -d /tmp/sp.XXXXXX) || { echo "mktemp failed"; exit 1; }
   export STEAMPIPE_INSTALL_DIR=$CUR_ROOT/install
   WD=$CUR_ROOT/wd
   mkdir $STEAMPIPE_INSTALL_DIR $WD || { echo "mkdir failed"; exit 1; }
