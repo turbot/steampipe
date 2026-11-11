@@ -41,6 +41,10 @@ connect_as() {
   PGPASSWORD="$3" psql -w -h 127.0.0.1 -p $PG_PORT -U "$1" "$2" -tAc "select 1"
 }
 
+query_as_steampipe() {
+  psql -w -h 127.0.0.1 -p $PG_PORT -U steampipe steampipe -tAc "$1"
+}
+
 # postgres runs with -D <data directory>, so its command line names the data directory
 assert_no_postgres() {
   run pgrep -f "$HBA_DATA_DIR"
@@ -282,6 +286,58 @@ EOF
   assert_no_postgres
 
   rm "$HBA_DIR/05-no-root.conf"
+}
+
+@test "a downgrade to v2.4.9 keeps the data with one rule added, and the next upgrade keeps it too" {
+  # v2.4.9's backup fails on macOS before it connects: it cannot read the command line of every process
+  [ "$(uname -s)" = Linux ] || skip "v2.4.9's database backup works only on Linux"
+  local arch
+  case "$(uname -m)" in x86_64) arch=amd64 ;; aarch64) arch=arm64 ;; *) skip "no v2.4.9 build for $(uname -m)" ;; esac
+  curl -fsSL -o "$BATS_FILE_TMPDIR/v249.tar.gz" "https://github.com/turbot/steampipe/releases/download/v2.4.9/steampipe_linux_$arch.tar.gz"
+  mkdir -p "$BATS_FILE_TMPDIR/v249"
+  tar -xzf "$BATS_FILE_TMPDIR/v249.tar.gz" -C "$BATS_FILE_TMPDIR/v249"
+  local v249="$BATS_FILE_TMPDIR/v249/steampipe"
+  # v2.4.9 uses Postgres 14.19.0, this version 14.24.0: a downgrade is a dump and restore
+  local v249_data="$STEAMPIPE_INSTALL_DIR/db/14.19.0/data"
+
+  run start_service
+  assert_success
+  run query_as_steampipe "create table public.downgrade_check (x int); insert into public.downgrade_check values (42)"
+  assert_success
+  steampipe service stop
+
+  # with no step, v2.4.9 starts with an empty public schema: its backup connects as root over TCP
+  STEAMPIPE_DATABASE_START_TIMEOUT=15 run "$v249" service start --database-port $PG_PORT
+  assert_success
+  run query_as_steampipe "select x from public.downgrade_check"
+  assert_failure
+  "$v249" service stop
+  # the data is still in this version's data directory
+  [ -f "$HBA_DATA_DIR/PG_VERSION" ]
+
+  # the step: let root connect over TCP, and remove the empty v2.4.9 install so that it runs the backup again
+  echo "host all root samehost trust" >> "$HBA_FILE"
+  rm -rf "$STEAMPIPE_INSTALL_DIR/db/14.19.0"
+  run "$v249" service start --database-port $PG_PORT
+  assert_success
+  run query_as_steampipe "select x from public.downgrade_check"
+  assert_output "42"
+  "$v249" service stop
+  # v2.4.9 removes the installation that it restored from
+  [ ! -e "$HBA_DATA_DIR" ]
+  [ -f "$v249_data/PG_VERSION" ]
+
+  # upgrade again: this version moves v2.4.9's data directory, and writes its pg_hba.conf over v2.4.9's
+  run start_service
+  assert_success
+  run query_as_steampipe "select x from public.downgrade_check"
+  assert_output "42"
+  run head -n 1 "$HBA_FILE"
+  assert_output "$HBA_HEADER"
+  [ ! -e "$STEAMPIPE_INSTALL_DIR/db/14.19.0" ]
+  run query_as_steampipe "drop table public.downgrade_check"
+  assert_success
+  steampipe service stop
 }
 
 @test "service start refuses an install directory that makes the socket path too long" {
