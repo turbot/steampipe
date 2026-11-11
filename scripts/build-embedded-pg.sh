@@ -389,8 +389,8 @@ else
   # Fix RUNPATH on contrib `.so` files (ltree, tablefunc, hstore, etc.).
   # PG's make eats `$O` from `$ORIGIN` in our LDFLAGS, so the linker writes
   # a broken `RIGIN/../lib/postgresql:<build-host-libdir>` RUNPATH that
-  # resolves nowhere on a user's machine (verified via readelf on
-  # `lib/postgresql/ltree.so` of an existing artifact). bin/* already gets
+  # resolves nowhere on a user's machine (see `readelf -d` on ltree.so
+  # without this block). bin/* already gets
   # patchelf'd above; ICU libs were patchelf'd in the bundling block. This
   # block covers the contrib `.so` files in between. The glob `*.so` matches
   # contribs but NOT bundled ICU (`libicu*.so.78`), so it's safe to run
