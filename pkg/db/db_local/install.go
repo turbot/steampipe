@@ -27,6 +27,8 @@ import (
 
 var ensureMux sync.Mutex
 
+var errDataFolderHoldsDatabase = errors.New("the data folder already holds a database")
+
 func noBackupWarning() string {
 	warningMessage := fmt.Sprintf(`Steampipe database has been upgraded to Postgres %s.
 
@@ -105,9 +107,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		if err != nil {
 			log.Printf("[ERROR] prepareBackup failed: %s", err.Error())
 			if errors.Is(err, errDbInstanceRunning) {
-				// remove the installation - otherwise, the backup won't get triggered, even if the user stops the service
-				os.RemoveAll(filepaths.DatabaseInstanceDir())
-				return err
+				return abortInstallAfterRunningInstance(err)
 			}
 			// ignore all other errors with the backup, displaying a warning instead
 			statushooks.Message(ctx, noBackupWarning())
@@ -140,6 +140,13 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	}
 
 	return nil
+}
+
+// abortInstallAfterRunningInstance removes the new installation - otherwise, the backup won't get triggered, even if
+// the user stops the service
+func abortInstallAfterRunningInstance(err error) error {
+	os.RemoveAll(filepaths.DatabaseInstanceDir())
+	return err
 }
 
 func downloadAndInstallDbFiles(ctx context.Context) error {
@@ -280,13 +287,18 @@ func needsInit() bool {
 	return !filehelpers.FileExists(filepaths.GetPgVersionLocation())
 }
 
+// prepareDataLocation empties the data folder, ready for initdb
+func prepareDataLocation(dataLocation string) error {
+	return putils.RemoveDirectoryContents(dataLocation)
+}
+
 func runInstall(ctx context.Context, oldDbName *string) error {
 	putils.LogTime("db_local.runInstall start")
 	defer putils.LogTime("db_local.runInstall end")
 
 	statushooks.SetStatus(ctx, "Cleaning up…")
 
-	err := putils.RemoveDirectoryContents(filepaths.GetDataLocation())
+	err := prepareDataLocation(filepaths.GetDataLocation())
 	if err != nil {
 		log.Printf("[TRACE] %v", err)
 		return fmt.Errorf("Prepare database install location... FAILED!")
