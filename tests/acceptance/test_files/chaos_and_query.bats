@@ -359,6 +359,21 @@ teardown() {
   rm -f $TEST_DATA_DIR/actual_1.json
 }
 
+@test "steampipe_plugin_column is filled once, not rebuilt on every start" {
+  # each query starts the database and the plugin manager, and stops them when it ends
+  run steampipe query "select 'steampipe_internal.steampipe_plugin_column'::regclass::oid" --output csv --header=false
+  assert_success
+  first_oid=$output
+
+  run steampipe query "select 'steampipe_internal.steampipe_plugin_column'::regclass::oid" --output csv --header=false
+  assert_success
+  # a rebuild drops and recreates the table, which gives it a new oid
+  assert_equal "$output" "$first_oid"
+
+  run steampipe query "select count(*) > 0 from steampipe_internal.steampipe_plugin_column where plugin like '%chaos%'" --output csv --header=false
+  assert_equal "$output" "true"
+}
+
 function teardown_file() {
   # list running processes
   ps -ef | grep steampipe
