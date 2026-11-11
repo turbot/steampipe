@@ -3,7 +3,6 @@ package db_local
 import (
 	"context"
 	"errors"
-	"io/fs"
 	"net"
 	"os"
 	"path/filepath"
@@ -11,22 +10,59 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/filepaths"
 )
 
 func TestPostgresSocketArgs(t *testing.T) {
-	want := []string{"-c", "unix_socket_directories=/tmp", "-c", "unix_socket_permissions=0700"}
-	if got := postgresSocketArgs(); !slices.Equal(got, want) {
+	got, err := postgresSocketArgs("/data", 9193)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"-c", "unix_socket_directories=/data", "-c", "unix_socket_permissions=0700"}
+	if !slices.Equal(got, want) {
 		t.Errorf("got %v, want %v", got, want)
 	}
 }
 
+func TestPostgresSocketArgs_RefusesTooLongPath(t *testing.T) {
+	dataDir := "/" + strings.Repeat("d", maxSocketPathLength())
+	got, err := postgresSocketArgs(dataDir, 9193)
+	if err == nil {
+		t.Fatalf("a socket path longer than %d bytes must be refused, got %v", maxSocketPathLength(), got)
+	}
+	if !strings.Contains(err.Error(), constants.EnvInstallDir) {
+		t.Errorf("the error must say to set %s: %v", constants.EnvInstallDir, err)
+	}
+}
+
+func TestCheckSocketPathLength_Limit(t *testing.T) {
+	// "/.s.PGSQL.9193" is 14 bytes
+	atLimit := "/" + strings.Repeat("d", maxSocketPathLength()-15)
+	if got := len(rootSocketPath(atLimit, 9193)); got != maxSocketPathLength() {
+		t.Fatalf("test setup: the path is %d bytes, not %d", got, maxSocketPathLength())
+	}
+	if err := checkSocketPathLength(atLimit, 9193); err != nil {
+		t.Errorf("a path of exactly the limit must be accepted: %v", err)
+	}
+	if err := checkSocketPathLength(atLimit+"d", 9193); err == nil {
+		t.Error("a path one byte over the limit must be refused")
+	}
+}
+
 func TestCreateCmd_HasSocketSettings(t *testing.T) {
-	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
-	cmd := createCmd(context.Background(), 9193, []string{"127.0.0.1"})
+	// a short install directory: t.TempDir can make the socket path too long
+	app_specific.InstallDir = filepath.Join(shortTempDir(t), ".steampipe")
+	cmd, err := createCmd(context.Background(), 9193, []string{"127.0.0.1"})
+	if err != nil {
+		t.Fatal(err)
+	}
 	args := strings.Join(cmd.Args, " ")
-	for _, setting := range []string{"unix_socket_directories=/tmp", "unix_socket_permissions=0700"} {
+	for _, setting := range []string{"unix_socket_directories=" + filepaths.GetDataLocation(), "unix_socket_permissions=0700"} {
 		if !strings.Contains(args, setting) {
 			t.Errorf("service start is missing %s: %s", setting, args)
 		}
@@ -34,12 +70,38 @@ func TestCreateCmd_HasSocketSettings(t *testing.T) {
 }
 
 func TestRootConnectionParams_UsesSocketWithoutSSL(t *testing.T) {
-	got := rootConnectionParams(9193)
-	if got["host"] != "/tmp" || got["port"] != "9193" || got["user"] != constants.DatabaseSuperUser || got["sslmode"] != "disable" {
+	got := rootConnectionParams("/data", 9193)
+	if got["host"] != "/data" || got["port"] != "9193" || got["user"] != constants.DatabaseSuperUser || got["sslmode"] != "disable" {
 		t.Errorf("unexpected params: %v", got)
 	}
-	if rootSocketPath(9193) != "/tmp/.s.PGSQL.9193" {
-		t.Errorf("unexpected socket path: %s", rootSocketPath(9193))
+	if rootSocketPath("/data", 9193) != "/data/.s.PGSQL.9193" {
+		t.Errorf("unexpected socket path: %s", rootSocketPath("/data", 9193))
+	}
+}
+
+func TestQuoteConnStringValue_KeepsPathWithSpacesAndQuotes(t *testing.T) {
+	dataDir := `/Users/me/Steampipe dir/it's\here/db/14.24.0/data`
+	config, err := pgx.ParseConfig("host=" + quoteConnStringValue(dataDir) + " port=9193 user=root")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if config.Host != dataDir {
+		t.Errorf("got host %q, want %q", config.Host, dataDir)
+	}
+}
+
+func TestBackupAndRestoreConnectThroughTheirDataDirectory(t *testing.T) {
+	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
+	oldDataDir := filepath.Join(t.TempDir(), "14.19.0", "data")
+
+	dump := strings.Join(backupCmd(context.Background(), &pgRunningInfo{dataDir: oldDataDir, port: 9876, dbName: "steampipe"}).Args, " ")
+	if !strings.Contains(dump, "--host="+oldDataDir+" ") {
+		t.Errorf("pg_dump must connect through the old installation's data directory: %s", dump)
+	}
+
+	restore := strings.Join(restoreCmd(context.Background(), &RunningDBInstanceInfo{Port: 9193, Database: "steampipe"}, "list").Args, " ")
+	if !strings.Contains(restore, "--host="+filepaths.GetDataLocation()+" ") {
+		t.Errorf("pg_restore must connect through the new installation's data directory: %s", restore)
 	}
 }
 
@@ -54,46 +116,38 @@ func shortTempDir(t *testing.T) string {
 	return dir
 }
 
-func TestCheckSocketOwner(t *testing.T) {
+func TestCheckRootSocket(t *testing.T) {
 	dir := shortTempDir(t)
 
-	t.Run("own socket", func(t *testing.T) {
-		path := filepath.Join(dir, "s")
-		l, err := net.Listen("unix", path)
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer l.Close()
-		if err := checkSocketOwner(path); err != nil {
-			t.Errorf("own socket was refused: %v", err)
-		}
-	})
+	if err := checkRootSocket(dir, 9193); !errors.Is(err, errStartedByOlderVersion) {
+		t.Errorf("a running service with no socket in the data directory was started by an older version, got %v", err)
+	}
 
-	t.Run("missing", func(t *testing.T) {
-		err := checkSocketOwner(filepath.Join(dir, "missing"))
-		if !errors.Is(err, fs.ErrNotExist) {
-			t.Errorf("want fs.ErrNotExist so that the caller can wait, got %v", err)
-		}
-	})
+	l, err := net.Listen("unix", rootSocketPath(dir, 9193))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer l.Close()
+	if err := checkRootSocket(dir, 9193); err != nil {
+		t.Errorf("the socket is there: %v", err)
+	}
+}
 
-	t.Run("not a socket", func(t *testing.T) {
-		path := filepath.Join(dir, "file")
-		if err := os.WriteFile(path, nil, 0600); err != nil {
-			t.Fatal(err)
-		}
-		err := checkSocketOwner(path)
-		if err == nil || errors.Is(err, fs.ErrNotExist) {
-			t.Errorf("a regular file must be refused, got %v", err)
-		}
-	})
+func TestWaitForRootSocket(t *testing.T) {
+	dir := shortTempDir(t)
+	viper.Set(pconstants.ArgDatabaseStartTimeout, 0)
+	t.Cleanup(func() { viper.Set(pconstants.ArgDatabaseStartTimeout, nil) })
 
-	t.Run("owned by another user", func(t *testing.T) {
-		if os.Getuid() == 0 {
-			t.Skip("a path owned by root is not another user's when running as root")
-		}
-		err := checkSocketOwner("/")
-		if err == nil || !strings.Contains(err.Error(), "owned by another user") {
-			t.Errorf("a path that root owns must be refused as another user's, got %v", err)
-		}
-	})
+	if err := waitForRootSocket(context.Background(), dir, 9193); err == nil || !strings.Contains(err.Error(), "timed out") {
+		t.Errorf("want a time-out while the socket is missing, got %v", err)
+	}
+
+	l, err := net.Listen("unix", rootSocketPath(dir, 9193))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer l.Close()
+	if err := waitForRootSocket(context.Background(), dir, 9193); err != nil {
+		t.Errorf("the socket is there: %v", err)
+	}
 }

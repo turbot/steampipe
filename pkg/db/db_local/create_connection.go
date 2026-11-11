@@ -54,11 +54,11 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 
 	var psqlInfoMap map[string]string
 	if opts.Username == constants.DatabaseSuperUser {
-		// root connects through the unix socket, and only to a socket that the current OS user owns
-		if err := checkSocketOwner(rootSocketPath(info.Port)); err != nil {
+		// root connects through the unix socket in the data directory
+		if err := checkRootSocket(filepaths.GetDataLocation(), info.Port); err != nil {
 			return "", err
 		}
-		psqlInfoMap = rootConnectionParams(info.Port)
+		psqlInfoMap = rootConnectionParams(filepaths.GetDataLocation(), info.Port)
 		psqlInfoMap["dbname"] = opts.DatabaseName
 	} else {
 		psqlInfoMap = map[string]string{
@@ -73,11 +73,19 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 
 	psqlInfo := []string{}
 	for k, v := range psqlInfoMap {
-		psqlInfo = append(psqlInfo, fmt.Sprintf("%s=%s", k, v))
+		psqlInfo = append(psqlInfo, fmt.Sprintf("%s=%s", k, quoteConnStringValue(v)))
 	}
 	log.Println("[TRACE] PSQLInfo >>>", psqlInfo)
 
 	return strings.Join(psqlInfo, " "), nil
+}
+
+// quoteConnStringValue quotes a value for a keyword/value connection string, so that
+// spaces, quotes and backslashes (in a path or the SSL passphrase) are kept as is
+func quoteConnStringValue(v string) string {
+	v = strings.ReplaceAll(v, `\`, `\\`)
+	v = strings.ReplaceAll(v, `'`, `\'`)
+	return `'` + v + `'`
 }
 
 type CreateDbOptions struct {
@@ -184,17 +192,17 @@ func CreateConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnect
 //
 // this is called immediately after the service process is started and hence
 // all special handling related to service startup failures SHOULD be handled here
-func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
+func createMaintenanceClient(ctx context.Context, dataDir string, port int) (*pgx.Conn, error) {
 	putils.LogTime("db_local.createMaintenanceClient start")
 	defer putils.LogTime("db_local.createMaintenanceClient end")
 
-	// the socket appears when postgres starts listening; one that another OS user owns stops the wait
-	if err := waitForRootSocket(ctx, port); err != nil {
+	// the socket appears in the data directory when postgres starts listening
+	if err := waitForRootSocket(ctx, dataDir, port); err != nil {
 		return nil, sperr.Wrap(err, sperr.WithMessage("connection setup failed"))
 	}
 
-	connParams := rootConnectionParams(port)
-	connStr := fmt.Sprintf("host=%s port=%d user=%s dbname=postgres sslmode=%s application_name=%s", connParams["host"], port, connParams["user"], connParams["sslmode"], runtime.ServiceConnectionAppName)
+	connParams := rootConnectionParams(dataDir, port)
+	connStr := fmt.Sprintf("host=%s port=%d user=%s dbname=postgres sslmode=%s application_name=%s", quoteConnStringValue(connParams["host"]), port, connParams["user"], connParams["sslmode"], runtime.ServiceConnectionAppName)
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(viper.GetInt(pconstants.ArgDatabaseStartTimeout))*time.Second)
 	defer cancel()

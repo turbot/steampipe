@@ -37,9 +37,10 @@ const (
 // backup archive, or to shut down cleanly before moving its data folder, and the name of
 // the installed database
 type pgRunningInfo struct {
-	cmd    *exec.Cmd
-	port   int
-	dbName string
+	cmd     *exec.Cmd
+	dataDir string
+	port    int
+	dbName  string
 }
 
 // stop is used for shutting down postgres instance spun up for extracting dump
@@ -222,22 +223,7 @@ func killRunningDbInstance(ctx context.Context) error {
 
 // backup the old pg instance public schema using pg_dump
 func takeBackup(ctx context.Context, config *pgRunningInfo) error {
-	if err := checkSocketOwner(rootSocketPath(config.port)); err != nil {
-		return err
-	}
-	cmd := pgDumpCmd(
-		ctx,
-		fmt.Sprintf("--file=%s", filepaths.DatabaseBackupFilePath()),
-		fmt.Sprintf("--format=%s", backupFormat),
-		// of the public schema only
-		"--schema=public",
-		// only backup the database used by steampipe
-		fmt.Sprintf("--dbname=%s", config.dbName),
-		// connection parameters
-		fmt.Sprintf("--host=%s", constants.PostgresSocketDir),
-		fmt.Sprintf("--port=%d", config.port),
-		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
-	)
+	cmd := backupCmd(ctx, config)
 	log.Println("[TRACE] starting pg_dump command:", cmd.String())
 
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -246,6 +232,24 @@ func takeBackup(ctx context.Context, config *pgRunningInfo) error {
 	}
 
 	return nil
+}
+
+// backupCmd is the pg_dump command that takes the backup. It connects as root through the socket
+// in the old installation's data directory.
+func backupCmd(ctx context.Context, config *pgRunningInfo) *exec.Cmd {
+	return pgDumpCmd(
+		ctx,
+		fmt.Sprintf("--file=%s", filepaths.DatabaseBackupFilePath()),
+		fmt.Sprintf("--format=%s", backupFormat),
+		// of the public schema only
+		"--schema=public",
+		// only backup the database used by steampipe
+		fmt.Sprintf("--dbname=%s", config.dbName),
+		// connection parameters
+		fmt.Sprintf("--host=%s", config.dataDir),
+		fmt.Sprintf("--port=%d", config.port),
+		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
+	)
 }
 
 // startDatabaseInLocation starts up the postgres binary in a specific installation directory
@@ -259,6 +263,10 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 	}
 	// whatever an older Steampipe left in the old data directory, the backup must connect as root
 	if err := writePgHbaConf(dataLocation); err != nil {
+		return nil, err
+	}
+	socketArgs, err := postgresSocketArgs(dataLocation, port)
+	if err != nil {
 		return nil, err
 	}
 	cmd := exec.CommandContext(
@@ -276,7 +284,7 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 		// Data Directory
 		"-D", dataLocation,
 	)
-	cmd.Args = append(cmd.Args, postgresSocketArgs()...)
+	cmd.Args = append(cmd.Args, socketArgs...)
 
 	log.Println("[TRACE]", cmd.String())
 
@@ -284,9 +292,9 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 		return nil, err
 	}
 
-	runConfig := &pgRunningInfo{cmd: cmd, port: port}
+	runConfig := &pgRunningInfo{cmd: cmd, dataDir: dataLocation, port: port}
 
-	dbName, err := getDatabaseName(ctx, port)
+	dbName, err := getDatabaseName(ctx, dataLocation, port)
 	if err != nil {
 		// best-effort cleanup - we are already returning the getDatabaseName error
 		_ = runConfig.stop(ctx)
@@ -419,10 +427,20 @@ func restoreDBBackup(ctx context.Context) error {
 }
 
 func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listFile string) error {
-	if err := checkSocketOwner(rootSocketPath(info.Port)); err != nil {
+	cmd := restoreCmd(ctx, info, listFile)
+	log.Println("[TRACE] pg_restore command:", cmd.String())
+
+	if output, err := cmd.CombinedOutput(); err != nil {
+		log.Println("[TRACE] runRestoreUsingList process:", string(output))
 		return err
 	}
-	cmd := pgRestoreCmd(
+	return nil
+}
+
+// restoreCmd is the pg_restore command that restores the backup into the new installation's
+// service. It connects as root through the socket in the new data directory.
+func restoreCmd(ctx context.Context, info *RunningDBInstanceInfo, listFile string) *exec.Cmd {
+	return pgRestoreCmd(
 		ctx,
 		filepaths.DatabaseBackupFilePath(),
 		fmt.Sprintf("--format=%s", backupFormat),
@@ -437,19 +455,11 @@ func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listF
 		// the database name
 		fmt.Sprintf("--dbname=%s", info.Database),
 		// connection parameters
-		fmt.Sprintf("--host=%s", constants.PostgresSocketDir),
+		// the restore goes into the new installation's service
+		fmt.Sprintf("--host=%s", filepaths.GetDataLocation()),
 		fmt.Sprintf("--port=%d", info.Port),
 		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
 	)
-
-	log.Println("[TRACE] pg_restore command:", cmd.String())
-
-	if output, err := cmd.CombinedOutput(); err != nil {
-		log.Println("[TRACE] runRestoreUsingList process:", string(output))
-		return err
-	}
-
-	return nil
 }
 
 // partitionTableOfContents writes back the TableOfContents into a two temporary TableOfContents files:

@@ -20,7 +20,3 @@ host  all steampipe all      scram-sha-256
 // PgHbaPreservedFileName is where a copy of a pg_hba.conf that someone else changed is
 // kept, inside pg_hba.conf.d. A later copy replaces it.
 const PgHbaPreservedFileName = "00-preserved.conf"
-
-// PostgresSocketDir is the directory of postgres's unix socket. Every postgres that Steampipe
-// starts is given it explicitly, so that the CLI and the server always agree.
-const PostgresSocketDir = "/tmp"

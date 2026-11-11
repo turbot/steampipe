@@ -17,11 +17,6 @@ setup_file() {
 
 teardown_file() {
   steampipe service stop
-  # a socket that the owner-check test left behind belongs to another user and blocks this port
-  if sudo -n true 2> /dev/null; then
-    sudo -n pkill -u nobody -f python3 || true
-    sudo -n rm -f /tmp/.s.PGSQL.$PG_PORT
-  fi
 }
 
 start_service() {
@@ -29,7 +24,7 @@ start_service() {
 }
 
 connect_as_root_by_socket() {
-  psql -w -h /tmp -p $PG_PORT -U root postgres -tAc "select 1"
+  psql -w -h "$HBA_DATA_DIR" -p $PG_PORT -U root postgres -tAc "select 1"
 }
 
 # connect over TCP from this machine and never ask for a password: -w fails instead of prompting
@@ -65,6 +60,14 @@ connect_as() {
   assert_failure
 }
 
+@test "the socket is in the data directory, only its owner can open it, and there is none in /tmp" {
+  local socket="$HBA_DATA_DIR/.s.PGSQL.$PG_PORT"
+  [ -S "$socket" ]
+  run ls -l "$socket"
+  assert_output --regexp '^srwx------'
+  [ ! -e /tmp/.s.PGSQL.$PG_PORT ]
+}
+
 @test "steampipe connects over TCP from this machine with no password" {
   run connect_as steampipe steampipe ""
   assert_success
@@ -77,7 +80,7 @@ connect_as() {
   run connect_as_root_by_socket
   assert_success
 
-  run sudo -n -u nobody psql -w -h /tmp -p $PG_PORT -U root postgres -tAc "select 1"
+  run sudo -n -u nobody psql -w -h "$HBA_DATA_DIR" -p $PG_PORT -U root postgres -tAc "select 1"
   assert_failure
   assert_output --partial "Permission denied"
 }
@@ -158,21 +161,41 @@ EOF
   assert_success
 }
 
-# this test is last: it leaves the service stopped
-@test "steampipe stops with an error when another OS user owns the socket" {
-  sudo -n true || skip "sudo -n does not work here"
-  command -v python3 > /dev/null || skip "python3 is required"
-
+@test "service start refuses an install directory that makes the socket path too long" {
   steampipe service stop
-  local socket=/tmp/.s.PGSQL.$PG_PORT
-  sudo -n rm -f $socket
-  # fd 3 is bats's own; closing it keeps bats from waiting for this process
-  sudo -n -u nobody python3 -c "import socket,time; s=socket.socket(socket.AF_UNIX); s.bind('$socket'); s.listen(1); time.sleep(120)" < /dev/null > /dev/null 2>&1 3>&- &
-  disown
-  for _ in $(seq 50); do [ -S $socket ] && break; sleep 0.1; done
-  [ -S $socket ]
+  # the same install, through a link with a long name: the socket path is over the OS's limit
+  local long_dir="$BATS_FILE_TMPDIR/$(printf 'x%.0s' $(seq 100))"
+  ln -s "$STEAMPIPE_INSTALL_DIR" "$long_dir"
 
-  run start_service
+  STEAMPIPE_INSTALL_DIR="$long_dir" run steampipe service start --database-port $PG_PORT
+  assert_equal "$status" 32
+  assert_output --partial "Set STEAMPIPE_INSTALL_DIR to a shorter path"
+
+  # postgres did not start
+  run pgrep -f "$long_dir"
   assert_failure
-  assert_output --partial "owned by another user"
+  rm "$long_dir"
+}
+
+# this test is last: it leaves no service running, and stops this install's processes itself
+@test "a running service with no socket in the data directory says to stop it once with --force" {
+  run start_service
+  assert_success
+  # a service that Steampipe 2.4 or earlier started has no socket in the data directory
+  rm "$HBA_DATA_DIR/.s.PGSQL.$PG_PORT"
+
+  run steampipe service stop
+  assert_failure
+  assert_output --partial "started by an older version of Steampipe"
+  assert_output --partial "steampipe service stop --force"
+
+  # stop only this install's processes: service stop --force would stop every service on the machine.
+  # The plugin manager's command line does not name the install, so it goes by the pid in its state file;
+  # postgres and the plugins run from the install.
+  kill "$(jq -r .pid "$STEAMPIPE_INSTALL_DIR/internal/plugin_manager.json")" || true
+  pkill -f "$STEAMPIPE_INSTALL_DIR" || true
+  for _ in $(seq 50); do pgrep -f "$STEAMPIPE_INSTALL_DIR" > /dev/null || break; sleep 0.2; done
+  run pgrep -f "$STEAMPIPE_INSTALL_DIR"
+  assert_failure
+  rm -f "$STEAMPIPE_INSTALL_DIR/internal/steampipe.json" "$STEAMPIPE_INSTALL_DIR/internal/plugin_manager.json"
 }

@@ -287,7 +287,7 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 		return res.SetError(err)
 	}
 
-	databaseName, err := getDatabaseName(ctx, port)
+	databaseName, err := getDatabaseName(ctx, filepaths.GetDataLocation(), port)
 	if err != nil {
 		return res.SetError(err)
 	}
@@ -348,8 +348,8 @@ func ensureService(ctx context.Context, databaseName string) error {
 }
 
 // getDatabaseName connects to the service and retrieves the database name
-func getDatabaseName(ctx context.Context, port int) (string, error) {
-	databaseName, err := retrieveDatabaseNameFromService(ctx, port)
+func getDatabaseName(ctx context.Context, dataDir string, port int) (string, error) {
+	databaseName, err := retrieveDatabaseNameFromService(ctx, dataDir, port)
 	if err != nil {
 		return "", err
 	}
@@ -387,11 +387,14 @@ func startPostgresProcess(ctx context.Context, listenAddresses []string, port in
 		return nil, err
 	}
 
-	postgresCmd := createCmd(ctx, port, listenAddresses)
+	postgresCmd, err := createCmd(ctx, port, listenAddresses)
+	if err != nil {
+		return nil, err
+	}
 	log.Printf("[TRACE] startPostgresProcess - postgres command: %s", postgresCmd)
 
 	setupLogCollection(postgresCmd)
-	err := postgresCmd.Start()
+	err = postgresCmd.Start()
 	if err != nil {
 		return nil, err
 	}
@@ -399,8 +402,8 @@ func startPostgresProcess(ctx context.Context, listenAddresses []string, port in
 	return postgresCmd, nil
 }
 
-func retrieveDatabaseNameFromService(ctx context.Context, port int) (string, error) {
-	connection, err := createMaintenanceClient(ctx, port)
+func retrieveDatabaseNameFromService(ctx context.Context, dataDir string, port int) (string, error) {
+	connection, err := createMaintenanceClient(ctx, dataDir, port)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to the database: %v - please try again or reset your steampipe database", err)
 	}
@@ -445,7 +448,12 @@ func updateDatabaseNameInRunningInfo(ctx context.Context, databaseName string) (
 	return runningInfo, runningInfo.Save()
 }
 
-func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cmd {
+func createCmd(ctx context.Context, port int, listenAddresses []string) (*exec.Cmd, error) {
+	socketArgs, err := postgresSocketArgs(filepaths.GetDataLocation(), port)
+	if err != nil {
+		return nil, err
+	}
+
 	postgresCmd := exec.Command( //nolint:gosec // G204: filepaths.GetPostgresBinaryExecutablePath() is steampipe's own installed postgres binary path, not user input
 		filepaths.GetPostgresBinaryExecutablePath(),
 		// by this time, we are sure that the port is free to listen to
@@ -466,7 +474,7 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cm
 		// Data Directory
 		"-D", filepaths.GetDataLocation())
 
-	postgresCmd.Args = append(postgresCmd.Args, postgresSocketArgs()...)
+	postgresCmd.Args = append(postgresCmd.Args, socketArgs...)
 
 	if sslpassword := viper.GetString(pconstants.ArgDatabaseSSLPassword); sslpassword != "" {
 		postgresCmd.Args = append(
@@ -498,7 +506,7 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cm
 		Foreground: false,
 	}
 
-	return postgresCmd
+	return postgresCmd, nil
 }
 
 func setupLogCollection(cmd *exec.Cmd) {

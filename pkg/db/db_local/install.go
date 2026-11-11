@@ -284,9 +284,19 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	putils.LogTime("db_local.runInstall start")
 	defer putils.LogTime("db_local.runInstall end")
 
+	port, err := putils.GetNextFreePort()
+	if err != nil {
+		log.Printf("[TRACE] getNextFreePort failed: %v", err)
+		return fmt.Errorf("Starting database... FAILED!")
+	}
+	// before initdb, which marks the database as installed
+	if err := checkSocketPathLength(filepaths.GetDataLocation(), port); err != nil {
+		return err
+	}
+
 	statushooks.SetStatus(ctx, "Cleaning up…")
 
-	err := putils.RemoveDirectoryContents(filepaths.GetDataLocation())
+	err = putils.RemoveDirectoryContents(filepaths.GetDataLocation())
 	if err != nil {
 		log.Printf("[TRACE] %v", err)
 		return fmt.Errorf("Prepare database install location... FAILED!")
@@ -300,12 +310,6 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	}
 
 	statushooks.SetStatus(ctx, "Starting database…")
-	port, err := putils.GetNextFreePort()
-	if err != nil {
-		log.Printf("[TRACE] getNextFreePort failed: %v", err)
-		return fmt.Errorf("Starting database... FAILED!")
-	}
-
 	process, err := startServiceForInstall(port)
 	if err != nil {
 		log.Printf("[TRACE] startServiceForInstall failed: %v", err)
@@ -313,7 +317,7 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	}
 
 	statushooks.SetStatus(ctx, "Connection to database…")
-	client, err := createMaintenanceClient(ctx, port)
+	client, err := createMaintenanceClient(ctx, filepaths.GetDataLocation(), port)
 	if err != nil {
 		log.Printf("[TRACE] createMaintenanceClient failed: %v", err)
 		return fmt.Errorf("Connection to database... FAILED!")
@@ -376,6 +380,10 @@ func startServiceForInstall(port int) (*psutils.Process, error) {
 	if err := writePgHbaConf(filepaths.GetDataLocation()); err != nil {
 		return nil, err
 	}
+	socketArgs, err := postgresSocketArgs(filepaths.GetDataLocation(), port)
+	if err != nil {
+		return nil, err
+	}
 
 	postgresCmd := exec.Command( //nolint:gosec // G204: filepaths.GetPostgresBinaryExecutablePath() is steampipe's own installed postgres binary path, not user input
 		filepaths.GetPostgresBinaryExecutablePath(),
@@ -393,11 +401,11 @@ func startServiceForInstall(port int) (*psutils.Process, error) {
 
 		// Data Directory
 		"-D", filepaths.GetDataLocation())
-	postgresCmd.Args = append(postgresCmd.Args, postgresSocketArgs()...)
+	postgresCmd.Args = append(postgresCmd.Args, socketArgs...)
 
 	setupLogCollection(postgresCmd)
 
-	err := postgresCmd.Start()
+	err = postgresCmd.Start()
 	if err != nil {
 		return nil, err
 	}
