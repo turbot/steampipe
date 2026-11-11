@@ -315,6 +315,7 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	statushooks.SetStatus(ctx, "Connection to database…")
 	client, err := createMaintenanceClient(ctx, port)
 	if err != nil {
+		log.Printf("[TRACE] createMaintenanceClient failed: %v", err)
 		return fmt.Errorf("Connection to database... FAILED!")
 	}
 	defer func() {
@@ -392,6 +393,7 @@ func startServiceForInstall(port int) (*psutils.Process, error) {
 
 		// Data Directory
 		"-D", filepaths.GetDataLocation())
+	postgresCmd.Args = append(postgresCmd.Args, postgresSocketArgs()...)
 
 	setupLogCollection(postgresCmd)
 
@@ -487,9 +489,6 @@ func installDatabaseWithPermissions(ctx context.Context, databaseName string, ra
 		// The root user gets full rights to the steampipe database, ensuring we can actually
 		// configure and manage it properly.
 		fmt.Sprintf("grant all on database %s to root", databaseName),
-
-		// The root user gets a password which will be used later on to connect
-		fmt.Sprintf(`alter user root with password '%s'`, generatePassword()),
 
 		//
 		// PERMISSIONS
