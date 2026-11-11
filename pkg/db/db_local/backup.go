@@ -110,8 +110,20 @@ func isSameMajorVersion(oldVersion, targetVersion string) bool {
 }
 
 // moveDataFromSameMajorInstall moves the data folder of the old installation at oldLocation to newDataLocation
-// and removes the old installation. If it returns an error the old installation's files are still in place.
-func moveDataFromSameMajorInstall(ctx context.Context, oldLocation, newDataLocation string) error {
+// and removes the old installation. If it returns an error the old installation's files are still in place and the
+// new installation is removed, so the next run installs it again and retries the move.
+func moveDataFromSameMajorInstall(ctx context.Context, oldLocation, newDataLocation string) (err error) {
+	defer func() {
+		if err == nil {
+			return
+		}
+		newLocation := filepaths.DatabaseInstanceDir()
+		if removeErr := os.RemoveAll(newLocation); removeErr != nil {
+			log.Printf("[WARN] Could not remove new installation at %s: %s", newLocation, removeErr)
+		}
+		err = fmt.Errorf("could not move the database from %s to %s, your data is unchanged in %s: %w", oldLocation, newLocation, oldLocation, err)
+	}()
+
 	if err := killRunningDbInstance(ctx); err != nil {
 		return err
 	}
