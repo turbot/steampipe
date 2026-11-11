@@ -175,3 +175,15 @@ func TestWritePgHbaConf_Idempotent(t *testing.T) {
 		t.Errorf("second write changed the file:\n%s\n---\n%s", first, second)
 	}
 }
+
+func TestSteampipeRules_RootOnlyOnUnixSocket(t *testing.T) {
+	var rootRules []string
+	for _, line := range strings.Split(constants.PgHbaSteampipeRules, "\n") {
+		if fields := strings.Fields(line); len(fields) > 2 && fields[2] == constants.DatabaseSuperUser {
+			rootRules = append(rootRules, strings.Join(fields, " "))
+		}
+	}
+	if len(rootRules) != 1 || rootRules[0] != "local all root trust" {
+		t.Errorf("root must have exactly one rule, for the unix socket: %v", rootRules)
+	}
+}
