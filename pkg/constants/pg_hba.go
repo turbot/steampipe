@@ -1,7 +1,10 @@
 package constants
 
-// PgHbaHeader starts every pg_hba.conf that Steampipe writes. Its first line is how
-// Steampipe recognises a file that it wrote itself. A checksum line follows it.
+// PgHbaHeader starts every pg_hba.conf that Steampipe writes. A checksum line follows it.
+// Steampipe recognises a file that it wrote by the first line, and reads the checksum only
+// from a file that starts with every line of the header followed by the checksum prefix: a
+// file with any other header counts as edited. Changing any header line must keep accepting
+// the old header, or every file written with it counts as edited.
 const PgHbaHeader = `# Written by Steampipe each time the database starts. DO NOT EDIT.
 # Put your own rules in pg_hba.conf.d/<name>.conf. They come first, so they win.
 # To manage this file yourself, delete these header lines. Steampipe then never changes it.

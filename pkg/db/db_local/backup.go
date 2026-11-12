@@ -329,9 +329,9 @@ func replaceFile(path string, content []byte, mode os.FileMode) error {
 }
 
 // startDatabaseInLocation starts up the postgres binary in a specific installation directory
-// returns a pgRunningInfo instance. The rewritten pg_hba.conf stays in place while the server runs: the caller
-// calls restoreHba on the result when the old data directory stays where it is, and nothing is left to restore
-// if this returns an error.
+// returns a pgRunningInfo instance. The old pg_hba.conf is rewritten only when it is Steampipe's, and stays
+// rewritten while the server runs: the caller calls restoreHba on the result when the old data directory stays
+// where it is, and nothing is left to restore if this returns an error.
 func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningInfo, error) {
 	binaryLocation := filepath.Join(location, "postgres", "bin", "postgres")
 	dataLocation := filepath.Join(location, "data")

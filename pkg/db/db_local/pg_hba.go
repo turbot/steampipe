@@ -112,20 +112,7 @@ func writeSteampipePgHba(dataDir string) error {
 	if err != nil {
 		return err
 	}
-	tmp, err := os.CreateTemp(dataDir, pgHbaFileName+".*.tmp")
-	if err != nil {
-		return err
-	}
-	// a no-op once the file is renamed
-	defer os.Remove(tmp.Name())
-	if _, err := tmp.WriteString(steampipePgHba(userRules)); err != nil {
-		tmp.Close()
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		return err
-	}
-	return os.Rename(tmp.Name(), filepath.Join(dataDir, pgHbaFileName))
+	return replaceFile(filepath.Join(dataDir, pgHbaFileName), []byte(steampipePgHba(userRules)), 0600)
 }
 
 type pgHbaRuleFile struct {
