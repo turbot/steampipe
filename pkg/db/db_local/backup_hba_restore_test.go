@@ -286,6 +286,40 @@ func TestSavePgHbaConf_RestoreKeepsAChainOfLinksToAMissingFile(t *testing.T) {
 	}
 }
 
+func TestPgHbaConfTarget_FollowsAMissingFileLinkUpFromALinkedFolder(t *testing.T) {
+	root := t.TempDir()
+	real := filepath.Join(root, "a", "b")
+	if err := os.MkdirAll(real, 0700); err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Join(root, "data")
+	if err := os.Mkdir(dir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(real, filepath.Join(dir, "sub")); err != nil {
+		t.Fatal(err)
+	}
+	// the OS goes up from a/b, the folder that sub links to, to a/missing_hba.conf
+	if err := os.Symlink(filepath.Join("..", "missing_hba.conf"), filepath.Join(real, "middle")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join("sub", "middle"), filepath.Join(dir, pgHbaFileName)); err != nil {
+		t.Fatal(err)
+	}
+
+	got, isLink, err := pgHbaConfTarget(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolvedA, err := filepath.EvalSymlinks(filepath.Join(root, "a"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := filepath.Join(resolvedA, "missing_hba.conf"); got != want || !isLink {
+		t.Errorf("want the link's end %s, got %s (link %v)", want, got, isLink)
+	}
+}
+
 // fakeOldInstall sets up an installation that an older Steampipe wrote, with a postgres binary that starts,
 // and returns its location and the path of its pg_hba.conf.
 func fakeOldInstall(t *testing.T, version string, stopFails bool) (oldLocation, hbaPath string) {
