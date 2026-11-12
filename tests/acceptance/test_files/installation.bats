@@ -127,6 +127,44 @@ load ../helpers/steampipe_processes
   [ -n "$(ls $target_install_directory/backups/database-*.dump)" ]
 }
 
+@test "an upgrade refused because the data folder holds a database dumps nothing that is restored later" {
+  target_install_directory="$BATS_TEST_TMPDIR/install"
+  mkdir -p "$target_install_directory"
+
+  steampipe service start --install-dir $target_install_directory
+  steampipe query "create table old_t(c text)" --install-dir $target_install_directory
+  steampipe service stop --install-dir $target_install_directory
+
+  # an older install of a different major version, holding the database with old_t
+  current_install=$(ls -d $target_install_directory/db/*/)
+  cp -R $current_install $target_install_directory/db/13.0.0
+
+  # this version's data folder holds a database of its own
+  steampipe service start --install-dir $target_install_directory
+  steampipe query "drop table old_t" --install-dir $target_install_directory
+  steampipe query "create table keep_me(c text)" --install-dir $target_install_directory
+  steampipe query "insert into keep_me values ('still here')" --install-dir $target_install_directory
+  steampipe service stop --install-dir $target_install_directory
+  rm -rf $current_install/postgres
+
+  run steampipe query "select 1" --install-dir $target_install_directory
+  assert_failure
+  assert_output --partial 'already holds a database'
+  [ ! -f $target_install_directory/db/backup.bk ]
+
+  rm -rf $target_install_directory/db/13.0.0
+
+  run steampipe query "select c from keep_me" --output csv --install-dir $target_install_directory
+  assert_success
+  assert_output --partial 'still here'
+
+  run steampipe query "select * from old_t" --install-dir $target_install_directory
+  assert_failure
+  assert_output --partial 'old_t'
+
+  [ ! -f $target_install_directory/db/backup.bk ]
+}
+
 function setup() {
   arch=$(uname -m)
   os=$(uname -s)

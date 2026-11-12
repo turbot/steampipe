@@ -29,9 +29,10 @@ var ensureMux sync.Mutex
 
 var errDataFolderHoldsDatabase = errors.New("the data folder already holds a database")
 
-// the download, FDW install and database initialisation steps of a database install; tests replace them
+// the download, backup, FDW install and database initialisation steps of a database install; tests replace them
 var (
 	installDbFiles  = downloadAndInstallDbFiles
+	backupOldDb     = prepareBackup
 	installFdwFiles = installFDW
 	initNewDatabase = runInstall
 )
@@ -119,11 +120,17 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 
 	var dbName *string
 	if !dataReady {
+		// refuse before anything is dumped: the refusal leaves no backup behind to be restored later
+		if !needsInit() {
+			removeNewInstall(filepaths.DatabaseInstanceDir(), filepaths.GetDataLocation())
+			return dataFolderHoldsDatabaseError(filepaths.GetDataLocation())
+		}
+
 		statushooks.SetStatus(ctx, "Preparing backups…")
 
 		// call prepareBackup to generate the db dump file if necessary
 		// NOTE: this returns the existing database name - we use this when creating the new database
-		dbName, err = prepareBackup(ctx)
+		dbName, err = backupOldDb(ctx)
 		if err != nil {
 			log.Printf("[ERROR] prepareBackup failed: %s", err.Error())
 			if errors.Is(err, errDbInstanceRunning) {
@@ -146,10 +153,6 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		// run the database installation
 		err = initNewDatabase(ctx, dbName)
 		if err != nil {
-			if errors.Is(err, errDataFolderHoldsDatabase) {
-				// with the binaries gone the next run installs again, instead of using this data folder as it is
-				removeNewInstall(filepaths.DatabaseInstanceDir(), filepaths.GetDataLocation())
-			}
 			return err
 		}
 	}
@@ -339,9 +342,13 @@ func needsInit() bool {
 // emptied: initdb writes PG_VERSION, so its presence means there is a database to keep.
 func prepareDataLocation(dataLocation string) error {
 	if filehelpers.FileExists(filepath.Join(dataLocation, "PG_VERSION")) {
-		return fmt.Errorf("%w: %s\n\nSteampipe will not replace it. Move %s somewhere else, then run Steampipe again. If a database from a previous version is installed it is upgraded into a new database, otherwise Steampipe creates an empty one. Keep the moved folder until you have checked which database you want", errDataFolderHoldsDatabase, dataLocation, dataLocation)
+		return dataFolderHoldsDatabaseError(dataLocation)
 	}
 	return putils.RemoveDirectoryContents(dataLocation)
+}
+
+func dataFolderHoldsDatabaseError(dataLocation string) error {
+	return fmt.Errorf("%w: %s\n\nSteampipe will not replace it. Move %s somewhere else, then run Steampipe again. If a database from a previous version is installed it is upgraded into a new database, otherwise Steampipe creates an empty one. Keep the moved folder until you have checked which database you want", errDataFolderHoldsDatabase, dataLocation, dataLocation)
 }
 
 func runInstall(ctx context.Context, oldDbName *string) error {

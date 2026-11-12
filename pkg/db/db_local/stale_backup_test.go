@@ -2,6 +2,7 @@ package db_local
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -82,6 +83,32 @@ func TestEnsureDBInstalled_BackupThatCannotBeSetAsideRemovesThePrograms(t *testi
 	assertExists(t, backupFile)
 	assertGone(t, programs)
 	assertExists(t, filepaths.GetPgVersionLocation())
+}
+
+func TestEnsureDBInstalled_RefusedInstallDumpsNothing(t *testing.T) {
+	dbDir := setCleanupInstallDir(t)
+	stubInstallSteps(t)
+	writeCurrentVersionDatabase(t)
+	oldInstall := filepath.Join(dbDir, "12.0.0")
+	writeFakeInstall(t, oldInstall)
+	programs := filepath.Join(filepaths.GetDatabaseLocation(), "programs")
+	installDbFiles = func(context.Context) error {
+		return os.WriteFile(programs, []byte(""), 0600)
+	}
+	backupOldDb = func(context.Context) (*string, error) {
+		t.Error("nothing may be dumped when the install is going to be refused")
+		return nil, nil
+	}
+
+	err := EnsureDBInstalled(context.Background())
+	if !errors.Is(err, errDataFolderHoldsDatabase) {
+		t.Fatalf("expected errDataFolderHoldsDatabase, got: %v", err)
+	}
+
+	assertGone(t, filepaths.DatabaseBackupFilePath())
+	assertGone(t, programs)
+	assertExists(t, filepaths.GetPgVersionLocation())
+	assertExists(t, filepath.Join(oldInstall, "data", "PG_VERSION"))
 }
 
 func TestEnsureDBInstalled_KeptDatabaseWithNoBackupKeepsNothing(t *testing.T) {
