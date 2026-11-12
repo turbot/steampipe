@@ -1,6 +1,7 @@
 package db_local
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -32,7 +33,7 @@ const (
 	pgHbaSteampipe pgHbaOwner = iota
 	// pgHbaEdited: Steampipe wrote the file, and someone changed it. Postgres must not start.
 	pgHbaEdited
-	// pgHbaUser: anything else. Steampipe never changes it.
+	// pgHbaUser: anything else. Steampipe does not change it.
 	pgHbaUser
 )
 
@@ -65,11 +66,24 @@ func preparePgHbaConf(dataDir string) error {
 }
 
 // CheckPgHbaConf returns the error that would stop the next start because of pg_hba.conf: someone
-// edited the file that Steampipe wrote, or the user's own file has no rule that lets root in. A
-// restart calls it before it stops the running service. A rule that comes before the root rule and
-// refuses it is found only when postgres starts.
-func CheckPgHbaConf() error {
-	dataDir := filepaths.GetDataLocation()
+// edited the file that Steampipe wrote, or the user's own file does not let root in. A restart calls
+// it before it stops the running service. When this version's database is not installed yet, the
+// start first starts the newest older install to carry its data over, so that is the file checked.
+// A rule in pg_hba.conf.d that refuses root is found only when postgres starts.
+func CheckPgHbaConf(ctx context.Context) error {
+	var dataDir string
+	if !IsDBInstalled() {
+		found, location, err := findDifferentPgInstallation(ctx)
+		if err != nil {
+			return err
+		}
+		if found {
+			dataDir = filepath.Join(location, "data")
+		}
+	}
+	if dataDir == "" {
+		dataDir = filepaths.GetDataLocation()
+	}
 	owner, err := pgHbaOwnerOf(dataDir)
 	if err != nil {
 		return err
@@ -90,23 +104,44 @@ func CheckPgHbaConf() error {
 }
 
 // mayLetRootIn reports whether a user's pg_hba.conf could let Steampipe connect as root through the
-// unix socket: it has a local rule that trusts root, or it includes other files, which are not read.
+// unix socket. Postgres uses the first rule that matches, so this is false when a local rule that
+// matches root on every database comes before any local rule that trusts root. A rule that may match
+// root (a group, a file of names, some databases only) and trusts it counts as letting root in. An
+// include line makes it false: Postgres 14 does not read them, and does not start.
 func mayLetRootIn(text string) bool {
 	for _, r := range pgHbaRules(text) {
 		f := r.fields
 		if strings.HasPrefix(f[0], "include") {
-			return true
+			return false
 		}
-		if len(f) < 4 || f[0] != "local" || f[3] != "trust" {
+		if len(f) < 4 || f[0] != "local" {
 			continue
 		}
-		for _, user := range strings.Split(f[2], ",") {
-			if user == "all" || user == constants.DatabaseSuperUser || user == `"`+constants.DatabaseSuperUser+`"` {
-				return true
-			}
+		matches, certain := pgHbaUserMatchesRoot(f[2])
+		if !matches {
+			continue
+		}
+		if f[3] == "trust" {
+			return true
+		}
+		if certain && f[1] == "all" {
+			return false
 		}
 	}
 	return false
+}
+
+// pgHbaUserMatchesRoot reports whether a rule's user field may match root, and whether it surely does.
+func pgHbaUserMatchesRoot(field string) (matches, certain bool) {
+	for _, user := range strings.Split(field, ",") {
+		switch {
+		case user == "all" || user == constants.DatabaseSuperUser || user == `"`+constants.DatabaseSuperUser+`"`:
+			return true, true
+		case strings.HasPrefix(user, "+") || strings.HasPrefix(user, "@"):
+			matches = true
+		}
+	}
+	return matches, false
 }
 
 func pgHbaOwnerOf(dataDir string) (pgHbaOwner, error) {
@@ -118,6 +153,10 @@ func pgHbaOwnerOf(dataDir string) (pgHbaOwner, error) {
 		return 0, err
 	}
 	text := string(content)
+	// a file with no rules lets nobody in, so nobody manages it
+	if len(pgHbaRules(text)) == 0 {
+		return pgHbaSteampipe, nil
+	}
 	if firstLine(text) == firstLine(constants.PgHbaHeader) {
 		if sum, body, ok := splitPgHbaChecksum(text); ok && sum == pgHbaChecksum(body) {
 			return pgHbaSteampipe, nil
@@ -170,7 +209,7 @@ func writeSteampipePgHba(dataDir string) error {
 	}
 	content := []byte(steampipePgHba(userRules))
 	if isLink {
-		return os.WriteFile(path, content, 0600) //nolint:gosec // G703: the file the data directory's own pg_hba.conf links to
+		return os.WriteFile(path, content, 0600)
 	}
 	return replaceFile(path, content, 0600)
 }
@@ -373,32 +412,43 @@ func editedPgHbaError(dataDir string) error {
 	message := fmt.Sprintf(`%[1]s was changed after Steampipe wrote it. Steampipe will not overwrite your change. Choose one:
 
   1. Move your change to %[2]s/ (recommended)
-     Put your rules in %[3]s, then delete %[4]s.
+     Put your rules in %[3]s, then empty %[4]s.
      Steampipe writes a new %[1]s at the next start.
 
   2. Manage %[1]s yourself
-     Delete the header lines at the top of %[1]s. Steampipe then never changes it.
+     Delete the header lines at the top of %[1]s. Steampipe then does not change it, until a Postgres major
+     version upgrade starts a new data folder with Steampipe's file.
      It must keep this rule, so that Steampipe can connect:
          %[5]s
 
   3. Discard your change
-     Delete %[4]s. Steampipe writes it again at the next start.
+     Empty %[4]s. Steampipe writes it again at the next start.
+
+Empty the file rather than delete it: Steampipe 2.4 and earlier take a missing %[1]s for a new
+install, and delete the database.
 `, pgHbaFileName, pgHbaDirName, filepath.Join(hbaDir, "10-mine.conf"), path, constants.PgHbaRootRule)
-	message += ruleList("Rules in the file that Steampipe would not write:", added)
-	message += ruleList("Rules that Steampipe would write and that are missing from the file:", missing)
+	message += upgradeNote(dataDir)
+	// both lists compare the file with what Steampipe would write now, so they also show a change to
+	// pg_hba.conf.d since the file was written
+	message += ruleList("Rules in the file that Steampipe would not write now:", added)
+	message += ruleList("Rules that Steampipe would write now and that are missing from the file:", missing)
 	if len(added) == 0 && len(missing) == 0 {
-		if slices.Equal(inFileNormalised, wouldWrite) {
+		inFileSorted, wouldWriteSorted := slices.Sorted(slices.Values(inFileNormalised)), slices.Sorted(slices.Values(wouldWrite))
+		switch {
+		case slices.Equal(inFileNormalised, wouldWrite):
 			message += "\nThe rules are the same as the ones Steampipe would write. Only comments, blank lines, white space or line endings were changed.\n"
-		} else {
+		case slices.Equal(inFileSorted, wouldWriteSorted):
 			message += "\nThe rules are the same as the ones Steampipe would write, in a different order. Postgres uses the first rule that matches, so the order matters.\n"
+		default:
+			message += "\nThe rules are the ones Steampipe would write, but some are in the file more than once, or fewer times.\n"
 		}
 	}
 	message += "\nFile: " + path
 	return &pgHbaStopError{message: message}
 }
 
-// rootRefusedError explains a start that stops because postgres refused Steampipe's root
-// connection through the unix socket. Steampipe has already stopped postgres.
+// rootRefusedError explains a start that stops because pg_hba.conf does not let Steampipe connect
+// as root through the unix socket: postgres refused it, or a restart found the file would.
 func rootRefusedError(dataDir string) error {
 	path := filepath.Join(dataDir, pgHbaFileName)
 	hbaDir := filepath.Join(dataDir, pgHbaDirName)
@@ -414,6 +464,7 @@ Change that rule, or put this rule before it:
     %s
 `, hbaDir, constants.DatabaseSuperUser, constants.PgHbaRootRule)
 		message += ruleList("Files in "+pgHbaDirName+":", pgHbaRuleFileNames(dataDir))
+		message += upgradeNote(dataDir)
 		return &pgHbaStopError{message: message}
 	}
 
@@ -431,21 +482,39 @@ Change that rule, or put this rule before it:
 	message := fmt.Sprintf(`%[1]s has rules that Steampipe did not write, and they do not let Steampipe connect. Steampipe will not change your file. Choose one:
 
   1. Move your rules into Steampipe's setup (recommended)
-     Put your rules in %[2]s, then delete %[3]s.
+     Put your rules in %[2]s, then empty %[3]s.
      Steampipe writes a new %[1]s at the next start.
+     Your rules come before Steampipe's, so leave out or change any local rule that would refuse %[5]s.
 
   2. Keep managing %[1]s yourself
      Add this rule to it, before any rule that rejects %[5]s: postgres uses the first rule that matches.
-     Steampipe never changes a %[1]s it did not write.
          %[4]s
      If your file lets %[5]s connect over TCP, it still will.
+     Steampipe does not change a %[1]s it did not write, until a Postgres major version
+     upgrade starts a new data folder with Steampipe's file.
 
   3. Use Steampipe's defaults
-     Delete %[3]s. Your rules are lost.
+     Empty %[3]s. Your rules are lost.
+
+Empty the file rather than delete it: Steampipe 2.4 and earlier take a missing %[1]s for a new
+install, and delete the database.
 `, pgHbaFileName, filepath.Join(hbaDir, "10-mine.conf"), path, constants.PgHbaRootRule, constants.DatabaseSuperUser)
+	message += upgradeNote(dataDir)
 	message += ruleList("Your rules (the rules that older Steampipe versions did not write):", yours)
 	message += "\nFile: " + path
 	return &pgHbaStopError{message: message}
+}
+
+// upgradeNote says, about the data folder of an older install that an upgrade starts to carry its
+// data over, that its pg_hba.conf and pg_hba.conf.d stay behind. It is empty for any other folder.
+func upgradeNote(dataDir string) string {
+	if filepath.Dir(filepath.Dir(dataDir)) != filepaths.EnsureDatabaseDir() || dataDir == filepaths.GetDataLocation() {
+		return ""
+	}
+	return fmt.Sprintf(`
+This is the data folder of an older Postgres version, which Steampipe is upgrading to %s.
+Neither %s nor %s is carried over: after the upgrade, make the same change there.
+`, filepaths.GetDataLocation(), pgHbaFileName, pgHbaDirName)
 }
 
 // ruleList is a title and the rules under it, or nothing when there are no rules.

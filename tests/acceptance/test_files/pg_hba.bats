@@ -265,7 +265,7 @@ EOF
   run steampipe service restart
   assert_equal "$status" 32
   assert_output --partial "pg_hba.conf was changed after Steampipe wrote it"
-  assert_output --partial "Rules in the file that Steampipe would not write:
+  assert_output --partial "Rules in the file that Steampipe would not write now:
     host all bob all md5
 "
   # the running service keeps running

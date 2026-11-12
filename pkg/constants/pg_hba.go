@@ -7,7 +7,8 @@ package constants
 // the old header, or every file written with it counts as edited.
 const PgHbaHeader = `# Written by Steampipe each time the database starts. DO NOT EDIT.
 # Put your own rules in pg_hba.conf.d/<name>.conf. They come first, so they win.
-# To manage this file yourself, delete these header lines. Steampipe then never changes it.
+# To manage this file yourself, delete these header lines. Steampipe then does not change it,
+# until a Postgres major version upgrade starts a new data folder with Steampipe's file.
 `
 
 // PgHbaChecksumPrefix starts the line after PgHbaHeader. The rest of the line is the hex

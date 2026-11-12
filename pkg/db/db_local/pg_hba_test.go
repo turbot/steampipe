@@ -1,6 +1,7 @@
 package db_local
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -327,8 +328,8 @@ func TestEditedPgHbaError_ShowsTheDifference(t *testing.T) {
 		"2. Manage pg_hba.conf yourself",
 		"3. Discard your change",
 		"\n         local all root trust\n",
-		"Rules in the file that Steampipe would not write:\n    host all bob 10.0.0.0/8 md5\n",
-		"Rules that Steampipe would write and that are missing from the file:\n    host  all steampipe all      scram-sha-256\n",
+		"Rules in the file that Steampipe would not write now:\n    host all bob 10.0.0.0/8 md5\n",
+		"Rules that Steampipe would write now and that are missing from the file:\n    host  all steampipe all      scram-sha-256\n",
 		"File: " + filepath.Join(dir, "pg_hba.conf"),
 	}
 	for _, w := range want {
@@ -446,47 +447,47 @@ func TestCheckPgHbaConf_UsersFileWithoutTheRootRuleStopsARestart(t *testing.T) {
 	path := filepath.Join(filepaths.GetDataLocation(), "pg_hba.conf")
 
 	writeFile(t, path, "host all bob 10.0.0.0/8 md5\nlocal all postgres peer\n")
-	err := CheckPgHbaConf()
+	err := CheckPgHbaConf(context.Background())
 	var stop *pgHbaStopError
 	if !errors.As(err, &stop) || !strings.Contains(err.Error(), "local all root trust") {
 		t.Errorf("a file with no rule for root must stop the restart with the rule to add, got %v", err)
 	}
 
 	for name, text := range map[string]string{
-		"the root rule":     "local all root trust\n",
-		"all users":         "local all all trust\n",
-		"a quoted root":     "local all \"root\" trust\n",
-		"a list with root":  "local all bob,root trust\n",
-		"an include":        "include_dir hba.d\n",
+		"the root rule":    "local all root trust\n",
+		"all users":        "local all all trust\n",
+		"a quoted root":    "local all \"root\" trust\n",
+		"a list with root": "local all bob,root trust\n",
+
 		"after other rules": "host all bob all md5\n# a comment\nlocal   all   root   trust  # why\n",
 	} {
 		writeFile(t, path, text)
-		if err := CheckPgHbaConf(); err != nil {
+		if err := CheckPgHbaConf(context.Background()); err != nil {
 			t.Errorf("%s: a file that may let root in must not stop the restart: %v", name, err)
 		}
 	}
 }
 
-func TestCheckPgHbaConf_OnlyAnEditedFileStopsARestart(t *testing.T) {
+func TestCheckPgHbaConf_StopsARestartOnAnEditedFile(t *testing.T) {
 	installDir := app_specific.InstallDir
 	t.Cleanup(func() { app_specific.InstallDir = installDir })
 	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
 	dataDir := filepaths.GetDataLocation()
 
-	if err := CheckPgHbaConf(); err != nil {
+	if err := CheckPgHbaConf(context.Background()); err != nil {
 		t.Errorf("no file: %v", err)
 	}
 	writeFile(t, filepath.Join(dataDir, "pg_hba.conf"), "local all root trust\nlocal all all reject\n")
-	if err := CheckPgHbaConf(); err != nil {
+	if err := CheckPgHbaConf(context.Background()); err != nil {
 		t.Errorf("the user's file: %v", err)
 	}
 	steampipeFileWith(t, dataDir, nil)
-	if err := CheckPgHbaConf(); err != nil {
+	if err := CheckPgHbaConf(context.Background()); err != nil {
 		t.Errorf("Steampipe's file: %v", err)
 	}
 	writeFile(t, filepath.Join(dataDir, "pg_hba.conf"), readHba(t, dataDir)+"host all bob all md5\n")
 	var stop *pgHbaStopError
-	if err := CheckPgHbaConf(); !errors.As(err, &stop) {
+	if err := CheckPgHbaConf(context.Background()); !errors.As(err, &stop) {
 		t.Errorf("an edited file must stop the restart, got %v", err)
 	}
 }
@@ -514,7 +515,7 @@ func TestCheckPgHbaConf_ChecksTheOlderInstallThatTheUpgradeStarts(t *testing.T) 
 	writeFile(t, filepath.Join(older, "data", "pg_hba.conf"), "host all bob 10.0.0.0/8 md5\n")
 
 	var stop *pgHbaStopError
-	err := CheckPgHbaConf()
+	err := CheckPgHbaConf(context.Background())
 	if !errors.As(err, &stop) || !strings.Contains(err.Error(), filepath.Join(older, "data", "pg_hba.conf")) {
 		t.Errorf("the restart must check the data folder that the upgrade starts, got %v", err)
 	}
@@ -592,10 +593,10 @@ func TestPgHbaMessages_OnAnOlderInstallSayTheRulesAreNotCarriedOver(t *testing.T
 	writeFile(t, filepath.Join(older, "pg_hba.conf"), "local all all peer\n")
 
 	msg := rootRefusedError(older).Error()
-	if !strings.Contains(msg, filepaths.GetDataLocation()) || !strings.Contains(msg, "not carried over") {
+	if !strings.Contains(msg, filepaths.GetDataLocation()) || !strings.Contains(msg, "Neither pg_hba.conf nor pg_hba.conf.d is carried over") {
 		t.Errorf("the message must say the rules are not carried to %s:\n%s", filepaths.GetDataLocation(), msg)
 	}
-	if strings.Contains(rootRefusedError(filepaths.GetDataLocation()).Error(), "not carried over") {
+	if strings.Contains(rootRefusedError(filepaths.GetDataLocation()).Error(), "Neither pg_hba.conf nor pg_hba.conf.d is carried over") {
 		t.Errorf("this version's own data folder is not being upgraded")
 	}
 }

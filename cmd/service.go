@@ -330,8 +330,8 @@ func restartService(ctx context.Context) (_ *db_local.StartResult) {
 		return
 	}
 
-	// an edited pg_hba.conf would stop the start: find that out before the running service stops
-	if err := db_local.CheckPgHbaConf(); err != nil {
+	// find out before the running service stops whether pg_hba.conf would stop the start
+	if err := db_local.CheckPgHbaConf(ctx); err != nil {
 		exitCode = constants.ExitCodeServiceStartupFailure
 		error_helpers.ShowError(ctx, err)
 		return
