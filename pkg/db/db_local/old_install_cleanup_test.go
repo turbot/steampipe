@@ -242,6 +242,9 @@ func TestEnsureDBInstalled_SuccessRemovesFoldersWithoutDatabase(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	// programs but no database: the install does not pick it to carry over, so this cleanup must remove it
+	programsOnly := filepath.Join(dbDir, "14.18.0")
+	writeProgramsOnlyInstall(t, programsOnly)
 	withData := filepath.Join(dbDir, "14.17.0", "data")
 	if err := os.MkdirAll(withData, 0700); err != nil {
 		t.Fatal(err)
@@ -262,6 +265,7 @@ func TestEnsureDBInstalled_SuccessRemovesFoldersWithoutDatabase(t *testing.T) {
 
 	assertGone(t, empty)
 	assertGone(t, emptyData)
+	assertGone(t, programsOnly)
 	assertExists(t, filepath.Join(withData, "PG_VERSION"))
 }
 
