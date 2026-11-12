@@ -129,8 +129,8 @@ func TestFindSteampipePostgresInstancesDoesNotRetryOldProcessWithEmptyCmdline(t 
 	// the first process of the system has normally run for far longer than the window; its age is checked, not assumed
 	oldProcess := &psutils.Process{Pid: 1}
 	createdMs, err := oldProcess.CreateTime()
-	if err != nil || time.Since(time.UnixMilli(createdMs)) < time.Minute {
-		t.Skipf("process 1 has not run for a minute (created %d, err %v)", createdMs, err)
+	if err != nil || time.Since(time.UnixMilli(createdMs)) < 20*time.Second {
+		t.Skipf("process 1 has not run for 20 seconds (created %d, err %v)", createdMs, err)
 	}
 
 	previousReader := readProcessCmdline
