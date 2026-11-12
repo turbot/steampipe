@@ -12,8 +12,10 @@ import (
 
 func stubInstallSteps(t *testing.T) {
 	t.Helper()
-	origDownload, origFdw, origInit := installDbFiles, installFdwFiles, initNewDatabase
-	t.Cleanup(func() { installDbFiles, installFdwFiles, initNewDatabase = origDownload, origFdw, origInit })
+	origDownload, origBackup, origFdw, origInit := installDbFiles, backupOldDb, installFdwFiles, initNewDatabase
+	t.Cleanup(func() {
+		installDbFiles, backupOldDb, installFdwFiles, initNewDatabase = origDownload, origBackup, origFdw, origInit
+	})
 	installDbFiles = func(context.Context) error { return nil }
 	installFdwFiles = func(context.Context, bool) (string, error) { return "", nil }
 	initNewDatabase = func(context.Context, *string) error {
