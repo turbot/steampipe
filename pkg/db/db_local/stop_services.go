@@ -129,7 +129,7 @@ func GetClientCount(ctx context.Context) (*ClientCount, error) {
 }
 
 // countClients is GetClientCount, connected with opts. Root sees every session. Any other user sees only the
-// name and application name of another role's sessions, so those are counted by a non-empty application name.
+// database, user and application name of another role's sessions, so those are counted by their database and user.
 func countClients(ctx context.Context, opts *CreateDbOptions) (*ClientCount, error) {
 	client, err := CreateLocalDbConnection(ctx, opts)
 	if err != nil {
@@ -148,8 +148,9 @@ WHERE
 	-- network client processes which are client backends
     (client_port IS NOT NULL AND backend_type=$1)
 	OR
-	-- another role's session, seen by a user that is not root
-    (backend_type IS NULL AND application_name!='')
+	-- another role's session in a database, seen by a user that is not root. Postgres's own processes have
+	-- no database or no user
+    (backend_type IS NULL AND datid IS NOT NULL AND usesysid IS NOT NULL)
   )
 	AND
 	-- which are not connections from this application
