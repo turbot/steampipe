@@ -29,7 +29,7 @@ var ensureMux sync.Mutex
 
 var errDataFolderHoldsDatabase = errors.New("the data folder already holds a database")
 
-// the download, backup, FDW install and database initialisation steps of a database install; tests replace them
+// the download, data move, backup, FDW install and database initialisation steps of a database install; tests replace them
 var (
 	installDbFiles  = downloadAndInstallDbFiles
 	moveOldData     = moveDataFromSameMajorInstall
@@ -192,7 +192,7 @@ func setAsideStaleBackup(ctx context.Context) error {
 	}
 	err := retainBackup(ctx)
 	if filehelpers.FileExists(backupFile) {
-		return fmt.Errorf("could not move the backup %s out of the way of the database being kept: %w", backupFile, err)
+		return fmt.Errorf("could not move the backup %s out of the way of the existing database: %w", backupFile, err)
 	}
 	if err != nil {
 		log.Printf("[WARN] Could not convert the kept backup to text: %s", err)

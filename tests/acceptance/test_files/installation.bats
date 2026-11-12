@@ -180,7 +180,8 @@ load ../helpers/steampipe_processes
 
   # the database now lives in an older install of the same major version
   current_install=$(ls -d $target_install_directory/db/*/)
-  mv $current_install $target_install_directory/db/14.0.1
+  current_major=$(basename $current_install | cut -d. -f1)
+  mv $current_install $target_install_directory/db/$current_major.0.1
 
   run steampipe query "select c from keep_me" --output csv --install-dir $target_install_directory
   assert_success
@@ -188,7 +189,7 @@ load ../helpers/steampipe_processes
 
   [ ! -f $target_install_directory/db/backup.bk ]
   [ -n "$(ls $target_install_directory/backups/database-*.dump)" ]
-  [ ! -d $target_install_directory/db/14.0.1 ]
+  [ ! -d $target_install_directory/db/$current_major.0.1 ]
 }
 
 function setup() {
