@@ -29,7 +29,7 @@ var ensureMux sync.Mutex
 
 var errDataFolderHoldsDatabase = errors.New("the data folder already holds a database")
 
-// the download, FDW install and database initialisation steps of a first-time install; tests replace them
+// the download, FDW install and database initialisation steps of a database install; tests replace them
 var (
 	installDbFiles  = downloadAndInstallDbFiles
 	installFdwFiles = installFDW
