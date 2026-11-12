@@ -40,7 +40,6 @@ func TestIsSameMajorVersion(t *testing.T) {
 	}
 }
 
-// writeFakeInstall creates a version folder holding a postgres binary and a data folder with one marker file
 // skipProcessScan makes the search for running steampipe services find none: no test postgres is one, and
 // listing every process takes seconds on macOS
 func skipProcessScan(t *testing.T) {
@@ -49,6 +48,8 @@ func skipProcessScan(t *testing.T) {
 	t.Cleanup(func() { listAllProcesses = original })
 }
 
+// writeFakeInstall creates a version folder holding a postgres binary and a data folder with one marker file.
+// For the rest of the test, the search for running steampipe services finds none.
 func writeFakeInstall(t *testing.T, location string) {
 	t.Helper()
 	skipProcessScan(t)

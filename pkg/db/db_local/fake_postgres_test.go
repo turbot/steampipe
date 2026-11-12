@@ -27,7 +27,8 @@ const (
 
 // writeFakePostgres replaces the postgres binary of the installation at location with one that runs this test
 // binary as a server: it listens on the unix socket in the data directory and answers the queries that
-// startDatabaseInLocation sends. With stopFails, the server ignores the signals that stop it, so stopping it fails.
+// startDatabaseInLocation sends. With stopFails, the server ignores the signals that stop it, so stopping it fails,
+// and each wait of the three-step stop is shortened to 100ms.
 func writeFakePostgres(t *testing.T, location string, stopFails bool) {
 	t.Helper()
 	if runtime.GOOS == "windows" {
