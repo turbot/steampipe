@@ -154,6 +154,8 @@ func TestWaitForRootSocket(t *testing.T) {
 
 func TestStartDatabaseInLocation_TooLongSocketPathLeavesOldDataUntouched(t *testing.T) {
 	installDir := filepath.Join(t.TempDir(), strings.Repeat("x", 100), ".steampipe")
+	originalInstallDir := app_specific.InstallDir
+	t.Cleanup(func() { app_specific.InstallDir = originalInstallDir })
 	app_specific.InstallDir = installDir
 	oldLocation := filepath.Join(installDir, "db", "14.19.0")
 	oldDataDir := filepath.Join(oldLocation, "data")
@@ -161,8 +163,7 @@ func TestStartDatabaseInLocation_TooLongSocketPathLeavesOldDataUntouched(t *test
 		t.Fatal(err)
 	}
 	hbaPath := filepath.Join(oldDataDir, pgHbaFileName)
-	const original = "# written by an older Steampipe\nhost all all 127.0.0.1/32 trust\n"
-	if err := os.WriteFile(hbaPath, []byte(original), 0600); err != nil {
+	if err := os.WriteFile(hbaPath, []byte(olderSteampipeHba), 0600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -175,7 +176,7 @@ func TestStartDatabaseInLocation_TooLongSocketPathLeavesOldDataUntouched(t *test
 	if readErr != nil {
 		t.Fatal(readErr)
 	}
-	if string(got) != original {
+	if string(got) != olderSteampipeHba {
 		t.Errorf("the old data directory's pg_hba.conf must not be rewritten before the socket path is checked, got:\n%s", got)
 	}
 	if _, statErr := os.Stat(filepath.Join(oldDataDir, pgHbaDirName)); statErr == nil {
