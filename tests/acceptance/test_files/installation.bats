@@ -104,7 +104,7 @@ load ../helpers/steampipe_processes
   # a running service lets us take a real dump holding a table that the kept database will not have
   steampipe service start --install-dir $target_install_directory
   steampipe query "create table stale_t(c text)" --install-dir $target_install_directory
-  $(ls $target_install_directory/db/*/postgres/bin/pg_dump) --file=$target_install_directory/db/backup.bk --format=custom --schema=public --dbname=steampipe --host=/tmp --port=9193 --username=root
+  $(ls $target_install_directory/db/*/postgres/bin/pg_dump) --file=$target_install_directory/db/backup.bk --format=custom --schema=public --dbname=steampipe --host=$(ls -d $target_install_directory/db/*/data) --port=9193 --username=root
   steampipe query "drop table stale_t" --install-dir $target_install_directory
   steampipe query "create table keep_me(c text)" --install-dir $target_install_directory
   steampipe query "insert into keep_me values ('still here')" --install-dir $target_install_directory
@@ -174,7 +174,7 @@ load ../helpers/steampipe_processes
   steampipe query "insert into keep_me values ('still here')" --install-dir $target_install_directory
 
   # a dump of the database as it is now: restoring it into this database would clash with its tables
-  $(ls $target_install_directory/db/*/postgres/bin/pg_dump) --file=$target_install_directory/db/backup.bk --format=custom --schema=public --dbname=steampipe --host=/tmp --port=9193 --username=root
+  $(ls $target_install_directory/db/*/postgres/bin/pg_dump) --file=$target_install_directory/db/backup.bk --format=custom --schema=public --dbname=steampipe --host=$(ls -d $target_install_directory/db/*/data) --port=9193 --username=root
   steampipe service stop --install-dir $target_install_directory
   [ -f $target_install_directory/db/backup.bk ]
 
