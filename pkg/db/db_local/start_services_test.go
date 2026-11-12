@@ -123,8 +123,8 @@ func TestFindSteampipePostgresInstancesFindsProcessWithBrieflyEmptyCmdline(t *te
 	}
 }
 
-// A process with an empty command line that started more than 10 seconds ago is a kernel thread or a zombie,
-// which always reads empty. It must be read once and not retried.
+// A process with an empty command line that started before the recently-started window may be a kernel thread
+// or a zombie, which always read empty. It must be read once and not retried.
 func TestFindSteampipePostgresInstancesDoesNotRetryOldProcessWithEmptyCmdline(t *testing.T) {
 	// the first process of the system has normally run for far longer than the window; its age is checked, not assumed
 	oldProcess := &psutils.Process{Pid: 1}

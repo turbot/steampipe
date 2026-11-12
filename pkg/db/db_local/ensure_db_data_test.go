@@ -35,25 +35,20 @@ func writeCurrentVersionData(t *testing.T) string {
 }
 
 // the current version's programs are missing but its data folder holds a database, and no other version is
-// installed: the programs are installed again and the database is used as it is
+// installed: the database is used as it is, so initialising a new one, which would fail here, is never attempted
 func TestEnsureDBInstalled_ReusesCurrentVersionDatabaseWhenOnlyProgramsAreMissing(t *testing.T) {
 	setCleanupInstallDir(t)
 	stubDownloads(t)
 	pgVersion := writeCurrentVersionData(t)
 
-	initialised := false
 	origInit := initNewDatabase
 	t.Cleanup(func() { initNewDatabase = origInit })
 	initNewDatabase = func(context.Context, *string) error {
-		initialised = true
 		return errors.New("the existing database must not be initialised again")
 	}
 
 	if err := EnsureDBInstalled(context.Background()); err != nil {
 		t.Fatal(err)
-	}
-	if initialised {
-		t.Error("the database was initialised again")
 	}
 	assertExists(t, pgVersion)
 }
@@ -89,7 +84,7 @@ func TestEnsureDBInstalled_NeverEmptiesADatabaseWhenAnotherVersionIsInstalled(t 
 	if err != nil {
 		t.Fatal(err)
 	}
-	// a different major version: its data is dumped, never moved
+	// a different major version, so its data is not moved into the current version's data folder
 	other := filepath.Join(dbDir, fmt.Sprintf("%d.0.0", target.Major()-1))
 	writeFakeInstall(t, other)
 

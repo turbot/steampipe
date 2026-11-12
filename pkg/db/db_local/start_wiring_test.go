@@ -91,7 +91,7 @@ func setWiringInstallDir(t *testing.T) {
 func TestStartPostgresProcess_WritesPgHbaAndSetsSocket(t *testing.T) {
 	setWiringInstallDir(t)
 	recordDir := writeRecordingPostgres(t, filepaths.GetPostgresBinaryExecutablePath())
-	_ = filepaths.GetDataLocation()
+	_ = filepaths.GetDataLocation() // creates the data folder
 
 	cmd, err := startPostgresProcess(context.Background(), []string{"127.0.0.1"}, 9193, constants.InvokerService)
 	if err != nil {
@@ -108,7 +108,7 @@ func TestStartPostgresProcess_WritesPgHbaAndSetsSocket(t *testing.T) {
 func TestStartServiceForInstall_WritesPgHbaAndSetsSocket(t *testing.T) {
 	setWiringInstallDir(t)
 	recordDir := writeRecordingPostgres(t, filepaths.GetPostgresBinaryExecutablePath())
-	_ = filepaths.GetDataLocation()
+	_ = filepaths.GetDataLocation() // creates the data folder
 
 	process, err := startServiceForInstall(9193)
 	if err != nil {
