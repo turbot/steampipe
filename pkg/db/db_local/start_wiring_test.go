@@ -16,9 +16,9 @@ import (
 	"github.com/turbot/steampipe/v2/pkg/filepaths"
 )
 
-// every place Steampipe starts a postgres server must write pg_hba.conf first and pass the socket settings.
-// Each case starts the real code path with a stand-in postgres, a script that records its command line and
-// whether pg_hba.conf already existed in its data folder when it started.
+// every place Steampipe starts a postgres server must write pg_hba.conf first, never start postgres if that
+// write fails, and pass the socket settings. Each case runs the real code path with a stand-in postgres, a script
+// that records its command line, a copy of the pg_hba.conf in its data folder when it started, and that it ran.
 
 // writeRecordingPostgres writes a stand-in postgres at binaryPath and returns the folder it records into
 func writeRecordingPostgres(t *testing.T, binaryPath string) string {
