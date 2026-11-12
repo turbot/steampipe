@@ -165,6 +165,32 @@ load ../helpers/steampipe_processes
   [ ! -f $target_install_directory/db/backup.bk ]
 }
 
+@test "a leftover backup is not restored into a database moved from an older install of the same major version" {
+  target_install_directory="$BATS_TEST_TMPDIR/install"
+  mkdir -p "$target_install_directory"
+
+  steampipe service start --install-dir $target_install_directory
+  steampipe query "create table keep_me(c text)" --install-dir $target_install_directory
+  steampipe query "insert into keep_me values ('still here')" --install-dir $target_install_directory
+
+  # a dump of the database as it is now: restoring it into this database would clash with its tables
+  $(ls $target_install_directory/db/*/postgres/bin/pg_dump) --file=$target_install_directory/db/backup.bk --format=custom --schema=public --dbname=steampipe --host=/tmp --port=9193 --username=root
+  steampipe service stop --install-dir $target_install_directory
+  [ -f $target_install_directory/db/backup.bk ]
+
+  # the database now lives in an older install of the same major version
+  current_install=$(ls -d $target_install_directory/db/*/)
+  mv $current_install $target_install_directory/db/14.0.1
+
+  run steampipe query "select c from keep_me" --output csv --install-dir $target_install_directory
+  assert_success
+  assert_output --partial 'still here'
+
+  [ ! -f $target_install_directory/db/backup.bk ]
+  [ -n "$(ls $target_install_directory/backups/database-*.dump)" ]
+  [ ! -d $target_install_directory/db/14.0.1 ]
+}
+
 function setup() {
   arch=$(uname -m)
   os=$(uname -s)
