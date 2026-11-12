@@ -76,6 +76,67 @@ func TestFindDifferentPgInstallation_SameMajor(t *testing.T) {
 	}
 }
 
+func TestFindDifferentPgInstallation_ChoosesNewestOldDatabase(t *testing.T) {
+	original := app_specific.InstallDir
+	defer func() { app_specific.InstallDir = original }()
+	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
+	dbDir := filepath.Join(app_specific.InstallDir, "db")
+	target, err := semver.NewVersion(constants.DatabaseVersion)
+	if err != nil {
+		t.Fatal(err)
+	}
+	older := target.Major() - 1
+	newer := target.Major() + 1
+
+	// a database in an older folder that sorts first, one in the newest older folder,
+	// binaries with no database in a folder newer than that one but still older than the target,
+	// and a database in a folder newer than the target
+	writeFakeInstall(t, filepath.Join(dbDir, fmt.Sprintf("%d.17.0", older)))
+	writeFakeInstall(t, filepath.Join(dbDir, fmt.Sprintf("%d.19.0", older)))
+	noDatabase := filepath.Join(dbDir, fmt.Sprintf("%d.20.0", older), "postgres", "bin")
+	if err := os.MkdirAll(noDatabase, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(noDatabase, "postgres"), []byte(""), 0600); err != nil {
+		t.Fatal(err)
+	}
+	writeFakeInstall(t, filepath.Join(dbDir, fmt.Sprintf("%d.0.0", newer)))
+
+	found, location, err := findDifferentPgInstallation(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.Join(dbDir, fmt.Sprintf("%d.19.0", older))
+	if !found || location != want {
+		t.Fatalf("findDifferentPgInstallation = %v, %q; want true, %q", found, location, want)
+	}
+}
+
+func TestFindDifferentPgInstallation_IgnoresFolderWithoutDatabase(t *testing.T) {
+	original := app_specific.InstallDir
+	defer func() { app_specific.InstallDir = original }()
+	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
+	target, err := semver.NewVersion(constants.DatabaseVersion)
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldLocation := filepath.Join(app_specific.InstallDir, "db", fmt.Sprintf("%d.19.0", target.Major()-1))
+	if err := os.MkdirAll(filepath.Join(oldLocation, "postgres", "bin"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(oldLocation, "postgres", "bin", "postgres"), []byte(""), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	found, location, err := findDifferentPgInstallation(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if found {
+		t.Fatalf("findDifferentPgInstallation chose %q, which holds no database", location)
+	}
+}
+
 func TestMoveDataFolder(t *testing.T) {
 	dbDir := t.TempDir()
 	oldLocation := filepath.Join(dbDir, "14.19.0")
