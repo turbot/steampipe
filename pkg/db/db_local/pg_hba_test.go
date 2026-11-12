@@ -521,22 +521,25 @@ func TestCheckPgHbaConf_ChecksTheOlderInstallThatTheUpgradeStarts(t *testing.T) 
 	}
 }
 
-func TestMayLetRootIn_FirstMatchingRuleDecides(t *testing.T) {
+func TestMayLetRootIn_FirstMatchingRuleForEachDatabaseDecides(t *testing.T) {
 	for text, want := range map[string]bool{
-		"local all root trust\n":                                true,
-		"local all all peer\nlocal all root trust\n":            false,
-		"local all root reject\nlocal all all trust\n":          false,
-		"local all bob peer\nlocal all root trust\n":            true,
-		"local mydb all reject\nlocal all root trust\n":         true,
-		"local all +admins trust\nlocal all all reject\n":       true,
-		"include_dir hba.d\nlocal all root trust\n":             false,
-		"include hba.extra\n":                                   false,
-		"local all root trust\ninclude hba.extra\n":             false,
-		"local postgres root reject\nlocal all all trust\n":     false,
-		"local foo,postgres all reject\nlocal all root trust\n": false,
-		"local steampipe root trust\nlocal all all reject\n":    false,
-		"local samerole root trust\nlocal all all reject\n":     false,
-		"local @dbs root trust\nlocal all all reject\n":         true,
+		"local all root trust\n":                                      true,
+		"local all all peer\nlocal all root trust\n":                  false,
+		"local all root reject\nlocal all all trust\n":                false,
+		"local all bob peer\nlocal all root trust\n":                  true,
+		"local mydb all reject\nlocal all root trust\n":               true,
+		"local all +admins trust\nlocal all all reject\n":             true,
+		"include_dir hba.d\nlocal all root trust\n":                   false,
+		"include hba.extra\n":                                         false,
+		"local all root trust\ninclude hba.extra\n":                   false,
+		"local postgres root reject\nlocal all all trust\n":           false,
+		"local foo,postgres all reject\nlocal all root trust\n":       false,
+		"local steampipe root trust\nlocal all all reject\n":          false,
+		"local samerole root trust\nlocal all all reject\n":           false,
+		"local steampipe root reject\nlocal all root trust\n":         false,
+		"local postgres root trust\nlocal all all reject\n":           false,
+		"local postgres,steampipe root trust\nlocal all all reject\n": true,
+		"local @dbs root trust\nlocal all all reject\n":               true,
 	} {
 		if got := mayLetRootIn(text); got != want {
 			t.Errorf("mayLetRootIn(%q) = %v, want %v", text, got, want)
@@ -618,7 +621,11 @@ func TestPgHbaMessages_OnAnOlderMajorInstallSayTheRulesAreNotCarriedOver(t *test
 func TestRootRefusedError_AnIncludeLineMustBeRemoved(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, filepath.Join(dir, "pg_hba.conf"), "local all root trust\ninclude hba.extra\n")
-	if msg := rootRefusedError(dir).Error(); !strings.Contains(msg, "does not read include lines") {
+	msg := rootRefusedError(dir).Error()
+	if !strings.Contains(msg, "has include lines") {
 		t.Errorf("adding the root rule cannot fix a file with an include line; the message must say to remove it:\n%s", msg)
+	}
+	if strings.Contains(msg, "Add this rule") {
+		t.Errorf("the file already lets root in; the message must not tell the user to add the root rule:\n%s", msg)
 	}
 }

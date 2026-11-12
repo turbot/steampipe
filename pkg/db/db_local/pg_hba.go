@@ -67,10 +67,10 @@ func preparePgHbaConf(dataDir string) error {
 }
 
 // CheckPgHbaConf returns the error that would stop the next start because of pg_hba.conf: someone
-// edited the file that Steampipe wrote, or the user's own file does not let root in. A restart calls
-// it before it stops the running service. When this version's database is not installed yet, the
-// start first starts the newest older install to carry its data over, so that is the file checked.
-// A rule in pg_hba.conf.d that refuses root is found only when postgres starts.
+// edited the file that Steampipe wrote, or the user's own file does not let root in or has an include
+// line. A restart calls it before it stops the running service. When this version's database is not
+// installed yet, the start first carries the newest older install's data over, so that is the file
+// checked. A rule in pg_hba.conf.d that refuses root is found only when postgres starts.
 func CheckPgHbaConf(ctx context.Context) error {
 	var dataDir string
 	if !IsDBInstalled() {
@@ -104,24 +104,29 @@ func CheckPgHbaConf(ctx context.Context) error {
 	return nil
 }
 
-// mayLetRootIn reports whether a user's pg_hba.conf could let Steampipe's first connection, as root
-// to the postgres database through the unix socket, in. Postgres uses the first rule that matches, so
-// this is false when a local rule that surely matches that connection comes before any local rule
-// that trusts root. A rule that may match it (a group, a file of names) and trusts it counts as
-// letting root in. An include line anywhere makes it false: Postgres 14 does not read them, and does
-// not start.
+// mayLetRootIn reports whether a user's pg_hba.conf could let Steampipe connect as root through the
+// unix socket to each database a start connects to: postgres, then Steampipe's own. An include line
+// anywhere makes it false: Postgres 14 does not read them, and does not start.
 func mayLetRootIn(text string) bool {
 	rules := pgHbaRules(text)
 	if hasPgHbaInclude(rules) {
 		return false
 	}
+	return mayLetRootInto(rules, "postgres") && mayLetRootInto(rules, constants.DatabaseName)
+}
+
+// mayLetRootInto reports whether the rules could let root into database through the unix socket.
+// Postgres uses the first rule that matches, so this is false when a local rule that surely matches
+// comes before any local rule that trusts root. A rule that may match (a group, a file of names) and
+// trusts root counts as letting root in.
+func mayLetRootInto(rules []pgHbaRule, database string) bool {
 	for _, r := range rules {
 		f := r.fields
 		if len(f) < 4 || f[0] != "local" {
 			continue
 		}
 		userMatches, userCertain := pgHbaUserMatchesRoot(f[2])
-		dbMatches, dbCertain := pgHbaDatabaseMatchesPostgres(f[1])
+		dbMatches, dbCertain := pgHbaDatabaseMatches(f[1], database)
 		if !userMatches || !dbMatches {
 			continue
 		}
@@ -139,14 +144,14 @@ func hasPgHbaInclude(rules []pgHbaRule) bool {
 	return slices.ContainsFunc(rules, func(r pgHbaRule) bool { return strings.HasPrefix(r.fields[0], "include") })
 }
 
-// pgHbaDatabaseMatchesPostgres reports whether a rule's database field may match the postgres
-// database, and whether it surely does.
-func pgHbaDatabaseMatchesPostgres(field string) (matches, certain bool) {
+// pgHbaDatabaseMatches reports whether a rule's database field may match database when root
+// connects, and whether it surely does.
+func pgHbaDatabaseMatches(field, database string) (matches, certain bool) {
 	for _, db := range strings.Split(field, ",") {
 		switch {
-		case db == "all" || db == "postgres" || db == `"postgres"`:
+		case db == "all" || db == database || db == `"`+database+`"`:
 			return true, true
-		// samerole does not match a superuser that was not granted the role postgres
+		// samerole does not match a superuser that was not granted a role of that name
 		case strings.HasPrefix(db, "@"):
 			matches = true
 		}
@@ -471,7 +476,8 @@ install, and delete the database.
 }
 
 // rootRefusedError explains a start that stops because pg_hba.conf does not let Steampipe connect
-// as root through the unix socket: postgres refused it, or a restart found the file would.
+// as root through the unix socket: postgres refused it, or a restart found the file would, or found
+// an include line that stops postgres starting.
 func rootRefusedError(dataDir string) error {
 	path := filepath.Join(dataDir, pgHbaFileName)
 	hbaDir := filepath.Join(dataDir, pgHbaDirName)
@@ -496,6 +502,13 @@ Change that rule, or put this rule before it:
 		return err
 	}
 	rules := pgHbaRules(string(content))
+	if hasPgHbaInclude(rules) {
+		message := fmt.Sprintf(`%[1]s has include lines. Postgres before version 16 does not read them, and does not start with one.
+Replace each include line with the rules it includes. Steampipe will not change your file.
+
+File: %[2]s`, pgHbaFileName, path)
+		return &pgHbaStopError{message: message}
+	}
 	var yours []string
 	for _, r := range rules {
 		if !isOlderSteampipeRule(r.fields) {
@@ -523,10 +536,6 @@ Change that rule, or put this rule before it:
 Empty the file rather than delete it: Steampipe 2.4 and earlier take a missing %[1]s for a new
 install, and delete the database.
 `, pgHbaFileName, filepath.Join(hbaDir, "10-mine.conf"), path, constants.PgHbaRootRule, constants.DatabaseSuperUser)
-	if hasPgHbaInclude(rules) {
-		message += fmt.Sprintf("\nPostgres %s does not read include lines in %s and does not start with one. Remove them, whichever you choose.\n",
-			constants.DatabaseVersion, pgHbaFileName)
-	}
 	message += upgradeNote(dataDir)
 	message += ruleList("Your rules (the rules that older Steampipe versions did not write):", yours)
 	message += "\nFile: " + path
