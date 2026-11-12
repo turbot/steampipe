@@ -139,6 +139,8 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return fmt.Errorf("Updating install records... FAILED!")
 	}
 
+	removeOldInstallsWithoutDatabase()
+
 	return nil
 }
 
