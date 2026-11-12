@@ -426,7 +426,8 @@ func getDuplicateConnectionError(existingConnection, newConnection *modconfig.St
 }
 
 func optionsBlockPermitted(block *hcl.Block, blockMap map[string]bool, opts *loadConfigOptions) error {
-	// keep track of duplicate block types
+	// reject a block type which has already been loaded
+	// (the caller adds it to blockMap once the block has decoded without error)
 	blockType := block.Labels[0]
 	if _, ok := blockMap[blockType]; ok {
 		return fmt.Errorf("multiple instances of '%s' options block", blockType)
