@@ -2,6 +2,7 @@ package db_local
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"slices"
@@ -119,5 +120,94 @@ func TestFindSteampipePostgresInstancesFindsProcessWithBrieflyEmptyCmdline(t *te
 	}
 	if len(instances) != 1 || instances[0].Pid != postgres.Pid {
 		t.Errorf("expected only the fake postgres process (pid %d), got %v", postgres.Pid, instances)
+	}
+}
+
+// A process with an empty command line that started before the recently-started window may be a kernel thread
+// or a zombie, which always read empty. It must be read once and not retried.
+func TestFindSteampipePostgresInstancesDoesNotRetryOldProcessWithEmptyCmdline(t *testing.T) {
+	// the first process of the system has normally run for far longer than the window; its age is checked, not assumed
+	oldProcess := &psutils.Process{Pid: 1}
+	createdMs, err := oldProcess.CreateTime()
+	if err != nil || time.Since(time.UnixMilli(createdMs)) < 20*time.Second {
+		t.Skipf("process 1 has not run for 20 seconds (created %d, err %v)", createdMs, err)
+	}
+
+	previousReader := readProcessCmdline
+	t.Cleanup(func() { readProcessCmdline = previousReader })
+	reads := 0
+	readProcessCmdline = func(ctx context.Context, p *psutils.Process) ([]string, error) {
+		reads++
+		return []string{}, nil
+	}
+
+	listProcesses := func(context.Context) ([]*psutils.Process, error) {
+		return []*psutils.Process{oldProcess}, nil
+	}
+
+	instances, err := findSteampipePostgresInstances(context.Background(), listProcesses)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(instances) != 0 {
+		t.Errorf("expected no instances, got %v", instances)
+	}
+	if reads != 1 {
+		t.Errorf("a process older than %s should be read once, was read %d times", recentlyStartedWindow, reads)
+	}
+}
+
+// A cancelled context stops the wait for a recently started process to show its command line, and the matches
+// found so far come back with the context's error.
+func TestFindSteampipePostgresInstancesReturnsContextErrorWhenCancelled(t *testing.T) {
+	startChild := func() *exec.Cmd {
+		cmd := exec.Command("sleep", "60")
+		if err := cmd.Start(); err != nil {
+			t.Fatalf("failed to start child process: %v", err)
+		}
+		t.Cleanup(func() {
+			_ = cmd.Process.Kill()
+			_ = cmd.Wait()
+		})
+		return cmd
+	}
+	matching := startChild()
+	justStarted := startChild()
+	matchingProcess := &psutils.Process{Pid: int32(matching.Process.Pid)}       //nolint:gosec // G115: test child PID
+	justStartedProcess := &psutils.Process{Pid: int32(justStarted.Process.Pid)} //nolint:gosec // G115: test child PID
+
+	// the process remembers its start time once read, so the scan can still read it after the context ends
+	if _, err := justStartedProcess.CreateTime(); err != nil {
+		t.Fatalf("failed to read the start time of the child process: %v", err)
+	}
+
+	previousAppName := app_specific.AppName
+	app_specific.AppName = "steampipe"
+	t.Cleanup(func() { app_specific.AppName = previousAppName })
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	previousReader := readProcessCmdline
+	t.Cleanup(func() { readProcessCmdline = previousReader })
+	readProcessCmdline = func(_ context.Context, p *psutils.Process) ([]string, error) {
+		if p.Pid == matchingProcess.Pid {
+			return []string{"postgres", "-c", fakePostgresArg}, nil
+		}
+		// the process still reads empty, and the context ends before it is read again
+		cancel()
+		return []string{}, nil
+	}
+
+	listProcesses := func(context.Context) ([]*psutils.Process, error) {
+		return []*psutils.Process{matchingProcess, justStartedProcess}, nil
+	}
+
+	instances, err := findSteampipePostgresInstances(ctx, listProcesses)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected the context's error, got %v", err)
+	}
+	if len(instances) != 1 || instances[0].Pid != matchingProcess.Pid {
+		t.Errorf("expected the matches found before the cancel (pid %d), got %v", matchingProcess.Pid, instances)
 	}
 }

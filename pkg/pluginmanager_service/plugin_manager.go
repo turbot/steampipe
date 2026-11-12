@@ -384,8 +384,10 @@ func (m *PluginManager) startPluginIfNeeded(pluginInstance string, connectionCon
 
 			// NOTE: ensure the connections assigned to this plugin are correct
 			// (may be out of sync if a connection is being added)
+			// use the current connections, not connectionConfigs, which may have been read before
+			// a change that startPlugin has since applied
 			m.mut.Lock()
-			startingPlugin.reattach.UpdateConnections(connectionConfigs)
+			startingPlugin.reattach.UpdateConnections(m.pluginConnectionConfigMap[pluginInstance])
 			m.mut.Unlock()
 
 			log.Printf("[TRACE] waitForPluginLoad succeeded %s (%p)", pluginInstance, req)
@@ -452,7 +454,9 @@ func (m *PluginManager) startPlugin(pluginInstance string, connectionConfigs []*
 		return nil, err
 	}
 
+	m.mut.Lock()
 	startingPlugin.client = client
+	m.mut.Unlock()
 
 	// set the connection configs and build a ReattachConfig
 	reattach, err := m.initializePlugin(connectionConfigs, client, req)
@@ -460,7 +464,13 @@ func (m *PluginManager) startPlugin(pluginInstance string, connectionConfigs []*
 		log.Printf("[WARN] initializePlugin failed: %s (%p)", err.Error(), req)
 		return nil, err
 	}
+
+	// config changes which arrived while the plugin was starting were not sent to it,
+	// so send them now. Holding the lock means any later change sees the started plugin and is sent as normal
+	m.mut.Lock()
 	startingPlugin.reattach = reattach
+	m.applyChangesMadeWhileStarting(startingPlugin, connectionConfigs)
+	m.mut.Unlock()
 
 	// close initialized chan to advertise that this plugin is ready
 	close(startingPlugin.initialized)
