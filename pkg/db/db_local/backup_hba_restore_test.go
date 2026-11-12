@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/turbot/pipe-fittings/v2/app_specific"
 	"github.com/turbot/steampipe/v2/pkg/constants"
@@ -85,6 +86,143 @@ func TestMoveDataFromSameMajorInstall_FailureRestoresOldPgHba(t *testing.T) {
 	}
 }
 
+func TestSavePgHbaConf_RestoreLeavesAnUnchangedFileAlone(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, pgHbaFileName)
+	if err := os.WriteFile(path, []byte(olderSteampipeHba), 0600); err != nil {
+		t.Fatal(err)
+	}
+	past := time.Now().Add(-time.Hour).Truncate(time.Second)
+	if err := os.Chtimes(path, past, past); err != nil {
+		t.Fatal(err)
+	}
+
+	restore, err := savePgHbaConf(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	restore()
+
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !info.ModTime().Equal(past) {
+		t.Errorf("an unchanged pg_hba.conf must not be rewritten, modified at %s", info.ModTime())
+	}
+}
+
+func TestSavePgHbaConf_RestoreReplacesAChangedFileKeepingItsMode(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, pgHbaFileName)
+	if err := os.WriteFile(path, []byte(olderSteampipeHba), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(path, 0640); err != nil {
+		t.Fatal(err)
+	}
+
+	restore, err := savePgHbaConf(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("host all all all trust\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	restore()
+
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != olderSteampipeHba {
+		t.Errorf("the changed pg_hba.conf must be put back, got:\n%s", got)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0640 {
+		t.Errorf("the original mode must be kept, got %v", info.Mode().Perm())
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 {
+		t.Errorf("no temporary file may be left behind, found %d entries", len(entries))
+	}
+}
+
+// fakeOldInstall sets up an installation that an older Steampipe wrote, with a postgres binary that starts,
+// and returns its location and the path of its pg_hba.conf.
+func fakeOldInstall(t *testing.T, version string, stopFails bool) (oldLocation, hbaPath string) {
+	t.Helper()
+	original := app_specific.InstallDir
+	t.Cleanup(func() { app_specific.InstallDir = original })
+	app_specific.InstallDir = filepath.Join(shortTempDir(t), ".steampipe")
+
+	oldLocation = filepath.Join(app_specific.InstallDir, "db", version)
+	writeFakeInstall(t, oldLocation)
+	writeFakePostgres(t, oldLocation, stopFails)
+	hbaPath = filepath.Join(oldLocation, "data", pgHbaFileName)
+	if err := os.WriteFile(hbaPath, []byte(olderSteampipeHba), 0600); err != nil {
+		t.Fatal(err)
+	}
+	return oldLocation, hbaPath
+}
+
+func assertOldPgHbaRestored(t *testing.T, hbaPath string) {
+	t.Helper()
+	got, err := os.ReadFile(hbaPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != olderSteampipeHba {
+		t.Errorf("the old pg_hba.conf must be restored exactly, got:\n%s", got)
+	}
+}
+
+func TestMoveDataFromSameMajorInstall_StopFailureRestoresOldPgHba(t *testing.T) {
+	oldLocation, hbaPath := fakeOldInstall(t, "14.19.0", true)
+
+	err := moveDataFromSameMajorInstall(context.Background(), oldLocation, filepaths.GetDataLocation())
+	if err == nil || !strings.Contains(err.Error(), "could not stop the database") {
+		t.Fatalf("expected the stop to fail, got: %v", err)
+	}
+	assertOldPgHbaRestored(t, hbaPath)
+}
+
+func TestMoveDataFromSameMajorInstall_MoveFailureRestoresOldPgHba(t *testing.T) {
+	oldLocation, hbaPath := fakeOldInstall(t, "14.19.0", false)
+
+	// a new data folder that holds data cannot be replaced, so the move fails after the server has stopped
+	newDataLocation := filepaths.GetDataLocation()
+	if err := os.WriteFile(filepath.Join(newDataLocation, "PG_VERSION"), []byte("14\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	err := moveDataFromSameMajorInstall(context.Background(), oldLocation, newDataLocation)
+	if err == nil || !strings.Contains(err.Error(), "could not prepare") {
+		t.Fatalf("expected the move to fail, got: %v", err)
+	}
+	assertOldPgHbaRestored(t, hbaPath)
+}
+
+func TestPrepareBackup_RestoresOldPgHbaWhenTheBackupFails(t *testing.T) {
+	_, hbaPath := fakeOldInstall(t, "13.0.0", false)
+
+	// there is no pg_dump binary, so the backup fails once the old server is running
+	name, err := prepareBackup(context.Background())
+	if err == nil {
+		t.Fatal("expected the backup to fail")
+	}
+	if name == nil || *name != fakeDatabaseName {
+		t.Fatalf("the old server was running, so its database name is expected, got: %v", name)
+	}
+	assertOldPgHbaRestored(t, hbaPath)
+}
+
 func TestAbortInstallAfterBackupError_SocketPathTooLongStopsTheInstall(t *testing.T) {
 	original := app_specific.InstallDir
 	defer func() { app_specific.InstallDir = original }()
@@ -111,8 +249,32 @@ func TestAbortInstallAfterBackupError_SocketPathTooLongStopsTheInstall(t *testin
 	}
 }
 
+func TestAbortInstallAfterBackupError_SocketPathTooLongKeepsNewDataThatHoldsData(t *testing.T) {
+	original := app_specific.InstallDir
+	defer func() { app_specific.InstallDir = original }()
+	app_specific.InstallDir = filepath.Join(t.TempDir(), strings.Repeat("x", 100), ".steampipe")
+
+	newDataLocation := filepaths.GetDataLocation()
+	if err := os.WriteFile(filepath.Join(newDataLocation, "PG_VERSION"), []byte("14\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	oldDataDir := filepath.Join(app_specific.InstallDir, "db", "14.19.0", "data")
+	backupErr := checkSocketPathLengthForUpgrade(oldDataDir, 9193)
+
+	err := abortInstallAfterBackupError(backupErr)
+	if !errors.Is(err, errSocketPathTooLong) {
+		t.Fatalf("the install must stop with the socket path error: %v", err)
+	}
+	if !strings.Contains(err.Error(), newDataLocation+" holds data and was kept") {
+		t.Errorf("the error must say the new data folder was kept: %v", err)
+	}
+	if _, statErr := os.Stat(filepath.Join(newDataLocation, "PG_VERSION")); statErr != nil {
+		t.Errorf("new data should have been kept: %v", statErr)
+	}
+}
+
 func TestAbortInstallAfterBackupError_OtherErrorsCarryOn(t *testing.T) {
 	if err := abortInstallAfterBackupError(errors.New("pg_dump failed")); err != nil {
-		t.Errorf("a failed backup does not stop the install: %v", err)
+		t.Errorf("an error with no upgrade advice does not stop the install: %v", err)
 	}
 }
