@@ -125,7 +125,7 @@ func isSameMajorVersion(oldVersion, targetVersion string) bool {
 // folder is removed only when it is empty: one that holds data is kept, and the error tells the user how to recover.
 // If the old server cannot be used, the error carries the cause and, unless both data folders were kept, says how to
 // look into it and how to move the old installation aside; it never moves or deletes the old installation itself. A
-// socket path that is too long gives only its own advice, to move the install directory.
+// socket path that is too long is not the old server's fault, so it gets no advice about the old installation.
 func moveDataFromSameMajorInstall(ctx context.Context, oldLocation, newDataLocation string) (err error) {
 	var oldInstallHint string
 	defer func() {
@@ -364,15 +364,27 @@ func pgHbaConfTarget(dataDir string) (path string, isLink bool, err error) {
 	if target, err := filepath.EvalSymlinks(path); err == nil {
 		return target, true, nil
 	}
-	// a link to a missing file
-	target, err := os.Readlink(path)
-	if err != nil {
-		return "", false, err
+	// links that end at a missing file: follow them to it. Links that loop never end.
+	for hops := 0; ; hops++ {
+		if hops == 255 {
+			return "", false, fmt.Errorf("%s: too many links", filepath.Join(dataDir, pgHbaFileName))
+		}
+		target, err := os.Readlink(path)
+		if err != nil {
+			return "", false, err
+		}
+		if !filepath.IsAbs(target) {
+			target = filepath.Join(filepath.Dir(path), target)
+		}
+		path = target
+		info, err := os.Lstat(path)
+		if errors.Is(err, fs.ErrNotExist) || (err == nil && info.Mode()&os.ModeSymlink == 0) {
+			return path, true, nil
+		}
+		if err != nil {
+			return "", false, err
+		}
 	}
-	if !filepath.IsAbs(target) {
-		target = filepath.Join(dataDir, target)
-	}
-	return target, true, nil
 }
 
 // replaceFile writes content to a temporary file next to path and renames it over path, so path is never
@@ -399,8 +411,9 @@ func replaceFile(path string, content []byte, mode os.FileMode) error {
 
 // startDatabaseInLocation starts up the postgres binary in a specific installation directory
 // returns a pgRunningInfo instance. The rewritten pg_hba.conf stays in place while the server runs: the caller
-// calls restoreHba on the result when the old data directory stays where it is, and nothing is left to restore
-// if this returns an error.
+// calls restoreHba on the result when the old data directory stays where it is, and pg_hba.conf is already
+// restored if this returns an error. The pg_hba.conf.d folder that writing it creates is left, as an older version
+// does not read it.
 func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningInfo, error) {
 	binaryLocation := filepath.Join(location, "postgres", "bin", "postgres")
 	dataLocation := filepath.Join(location, "data")

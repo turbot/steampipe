@@ -335,7 +335,7 @@ func TestStartDatabaseInLocation_TooLongSocketPathLeavesOldDataUntouched(t *test
 	}
 }
 
-func TestMoveDataFromSameMajorInstall_TooLongSocketPathSaysOnlyToMoveTheInstallDirectory(t *testing.T) {
+func TestMoveDataFromSameMajorInstall_TooLongSocketPathGivesNoOldInstallAdvice(t *testing.T) {
 	installDir := filepath.Join(t.TempDir(), strings.Repeat("x", 100), ".steampipe")
 	originalInstallDir := app_specific.InstallDir
 	t.Cleanup(func() { app_specific.InstallDir = originalInstallDir })

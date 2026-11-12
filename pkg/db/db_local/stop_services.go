@@ -33,8 +33,9 @@ const (
 	ServiceStopTimedOut
 )
 
-// ShutdownService stops the database instance if the given 'invoker' matches and no other Steampipe client is
-// connected. A service an older version started is left running if its clients cannot be counted.
+// ShutdownService stops a database service that was not started by `steampipe service`, unless other Steampipe
+// clients are connected to it. A service an older version started is left running if its clients cannot be
+// counted.
 func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	putils.LogTime("db_local.ShutdownService start")
 	defer putils.LogTime("db_local.ShutdownService end")
@@ -55,14 +56,9 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	// under a fresh context
 	clientCounts, err := GetClientCount(context.Background())
 	if errors.Is(err, errStartedByOlderVersion) {
-		// root cannot reach a service an older version started. Steampipe's clients connect as the steampipe
-		// user, which sees their sessions.
-		clientCounts, err = countClients(context.Background(), constants.DatabaseUser)
-		if err != nil {
-			// another session may be using it
-			log.Printf("[INFO] ShutdownService not closing database service an older version started - could not count its clients: %s", err)
-			return
-		}
+		// another session may be using it
+		log.Printf("[INFO] ShutdownService not closing database service - %s", err)
+		return
 	}
 	// if there are other clients connected
 	// and if there's no error
@@ -114,7 +110,17 @@ func GetClientCount(ctx context.Context) (*ClientCount, error) {
 	putils.LogTime("db_local.GetClientCount start")
 	defer putils.LogTime("db_local.GetClientCount end")
 
-	return countClients(ctx, constants.DatabaseSuperUser)
+	counts, err := countClients(ctx, constants.DatabaseSuperUser)
+	if !errors.Is(err, errStartedByOlderVersion) {
+		return counts, err
+	}
+	// root cannot reach a service an older version started. Steampipe's clients connect as the steampipe user,
+	// which sees their sessions.
+	counts, err = countClients(ctx, constants.DatabaseUser)
+	if err != nil {
+		return nil, fmt.Errorf("%w. Could not count its clients as %s: %w", errStartedByOlderVersion, constants.DatabaseUser, err)
+	}
+	return counts, nil
 }
 
 // countClients is GetClientCount, connected as username. Only root sees every session; any other user sees
