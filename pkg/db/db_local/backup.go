@@ -167,6 +167,10 @@ Then run Steampipe again`,
 	// recovers on the binaries that wrote it. If the stop escalates to an immediate shutdown, the new server
 	// of the same major replays what is left.
 	runConfig, err := startDatabaseInLocation(ctx, oldLocation)
+	if errors.Is(err, errSocketPathTooLong) {
+		// the old server never ran, and the error already says what to do
+		return err
+	}
 	if err != nil {
 		// every run stops here until the user acts, so say what they can do without losing data. The command
 		// uses a free port and no unix socket, so a PostgreSQL already holding 5432 or the default socket folder
