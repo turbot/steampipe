@@ -106,7 +106,16 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 
 	// no other version is installed and this version's data folder already holds a database: only its programs
 	// were missing, and the database needs nothing further
-	dataReady := moved || (err == nil && !found && !needsInit())
+	kept := !moved && err == nil && !found && !needsInit()
+	dataReady := moved || kept
+
+	if kept {
+		if err := setAsideStaleBackup(ctx); err != nil {
+			// with the programs in place the next run starts and restores the backup into this database
+			removeNewInstall(filepaths.DatabaseInstanceDir(), filepaths.GetDataLocation())
+			return err
+		}
+	}
 
 	var dbName *string
 	if !dataReady {
@@ -167,6 +176,24 @@ func abortInstallAfterRunningInstance(err error) error {
 		return fmt.Errorf("%w\n\n%s holds data and was kept. Once the old server is stopped, the next run upgrades the old database. If %s holds a database, it asks you to move it somewhere else first", err, newDataLocation, newDataLocation)
 	}
 	return err
+}
+
+// setAsideStaleBackup keeps a backup left by an earlier attempt to upgrade an older installation in the backups
+// folder. Starting restores a backup into the database it finds, which must not happen to a database that was
+// kept rather than upgraded into.
+func setAsideStaleBackup(ctx context.Context) error {
+	backupFile := filepaths.DatabaseBackupFilePath()
+	if !filehelpers.FileExists(backupFile) {
+		return nil
+	}
+	err := retainBackup(ctx)
+	if filehelpers.FileExists(backupFile) {
+		return fmt.Errorf("could not move the backup %s out of the way of the database being kept: %w", backupFile, err)
+	}
+	if err != nil {
+		log.Printf("[WARN] Could not convert the kept backup to text: %s", err)
+	}
+	return nil
 }
 
 func downloadAndInstallDbFiles(ctx context.Context) error {
