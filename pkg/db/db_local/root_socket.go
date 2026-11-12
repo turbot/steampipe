@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	"github.com/turbot/pipe-fittings/v2/app_specific"
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 )
@@ -49,9 +50,19 @@ func maxSocketPathLength() int {
 // checkSocketPathLength refuses a socket path that is too long for the OS. Postgres would fail to
 // start with "could not create any Unix-domain sockets", which does not say what to do.
 func checkSocketPathLength(dataDir string, port int) error {
+	return checkSocketPathLengthWithAdvice(dataDir, port, fmt.Sprintf("Set %s to a shorter path", constants.EnvInstallDir))
+}
+
+// checkSocketPathLengthForUpgrade is checkSocketPathLength for the data directory of an existing
+// installation. A new install directory would be empty, so the advice is to move this one.
+func checkSocketPathLengthForUpgrade(oldDataDir string, port int) error {
+	return checkSocketPathLengthWithAdvice(oldDataDir, port, fmt.Sprintf("Move %s to a shorter path and set %s to it", app_specific.InstallDir, constants.EnvInstallDir))
+}
+
+func checkSocketPathLengthWithAdvice(dataDir string, port int, advice string) error {
 	path := rootSocketPath(dataDir, port)
 	if limit := maxSocketPathLength(); len(path) > limit {
-		return fmt.Errorf("the database socket path %s is %d bytes, and %s allows at most %d. Set %s to a shorter path", path, len(path), runtime.GOOS, limit, constants.EnvInstallDir)
+		return fmt.Errorf("the database socket path %s is %d bytes, and %s allows at most %d. %s", path, len(path), runtime.GOOS, limit, advice)
 	}
 	return nil
 }
