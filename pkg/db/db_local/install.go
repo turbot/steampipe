@@ -105,7 +105,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	}
 
 	// no other version is installed and this version's data folder already holds a database: only its programs
-	// were missing, and the database needs nothing further
+	// were missing, so the database is neither created nor restored into
 	kept := !moved && err == nil && !found && !needsInit()
 	dataReady := moved || kept
 
@@ -193,6 +193,7 @@ func setAsideStaleBackup(ctx context.Context) error {
 	if err != nil {
 		log.Printf("[WARN] Could not convert the kept backup to text: %s", err)
 	}
+	statushooks.Message(ctx, fmt.Sprintf("A backup left by an earlier upgrade attempt was not restored into the existing database. It was moved to %s.", filepaths.EnsureBackupsDir()))
 	return nil
 }
 

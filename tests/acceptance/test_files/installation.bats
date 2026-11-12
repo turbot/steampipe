@@ -97,6 +97,36 @@ load ../helpers/steampipe_processes
   assert_output --partial 'still here'
 }
 
+@test "a leftover backup is not restored into the kept database" {
+  target_install_directory="$BATS_TEST_TMPDIR/install"
+  mkdir -p "$target_install_directory"
+
+  # a running service lets us take a real dump holding a table that the kept database will not have
+  steampipe service start --install-dir $target_install_directory
+  steampipe query "create table stale_t(c text)" --install-dir $target_install_directory
+  $(ls $target_install_directory/db/*/postgres/bin/pg_dump) --file=$target_install_directory/db/backup.bk --format=custom --schema=public --dbname=steampipe --host=/tmp --port=9193 --username=root
+  steampipe query "drop table stale_t" --install-dir $target_install_directory
+  steampipe query "create table keep_me(c text)" --install-dir $target_install_directory
+  steampipe query "insert into keep_me values ('still here')" --install-dir $target_install_directory
+  steampipe service stop --install-dir $target_install_directory
+
+  # lose the programs, but not the data folder or the dump
+  rm -rf $target_install_directory/db/*/postgres
+  [ -f $target_install_directory/db/*/data/PG_VERSION ]
+  [ -f $target_install_directory/db/backup.bk ]
+
+  run steampipe query "select c from keep_me" --output csv --install-dir $target_install_directory
+  assert_success
+  assert_output --partial 'still here'
+
+  run steampipe query "select * from stale_t" --install-dir $target_install_directory
+  assert_failure
+  assert_output --partial 'stale_t'
+
+  [ ! -f $target_install_directory/db/backup.bk ]
+  [ -n "$(ls $target_install_directory/backups/database-*.dump)" ]
+}
+
 function setup() {
   arch=$(uname -m)
   os=$(uname -s)
