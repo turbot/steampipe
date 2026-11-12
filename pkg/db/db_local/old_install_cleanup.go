@@ -14,8 +14,8 @@ import (
 // installed version and hold no database.
 //
 // A folder is removed only when it is a real folder named as a version older than constants.DatabaseVersion, and
-// holds nothing but a "postgres" folder and a "data" folder that is absent or an empty real folder. Anything else
-// is left alone, including every folder that may hold a database.
+// holds nothing but a "postgres" folder, a "data" folder that is absent or an empty real folder, and the file that
+// marks a setup that did not finish. Anything else is left alone, including every folder that may hold a database.
 func removeOldInstallsWithoutDatabase() {
 	target, err := semver.NewVersion(constants.DatabaseVersion)
 	if err != nil {
@@ -45,7 +45,8 @@ func removeOldInstallsWithoutDatabase() {
 	}
 }
 
-// holdsNoDatabase reports whether a version folder holds only database programs and no data. Any doubt reports false.
+// holdsNoDatabase reports whether a version folder holds only database programs and no data; the file that marks an
+// unfinished setup is not data. Any doubt reports false.
 func holdsNoDatabase(location string) bool {
 	entries, err := os.ReadDir(location)
 	if err != nil {
@@ -53,6 +54,10 @@ func holdsNoDatabase(location string) bool {
 	}
 	for _, e := range entries {
 		switch e.Name() {
+		case filepaths.SetupUnfinishedMarkerName:
+			if !e.Type().IsRegular() {
+				return false
+			}
 		case "postgres":
 			if !e.IsDir() {
 				return false

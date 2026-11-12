@@ -67,11 +67,36 @@ func TestRemoveOldInstallsWithoutDatabase_RemovesFoldersHoldingNoDatabase(t *tes
 		t.Fatal(err)
 	}
 
+	// a setup that stopped before initdb started leaves its marker beside the programs and no data
+	markerOnly := filepath.Join(dbDir, "14.16.0")
+	writeProgramsOnlyInstall(t, markerOnly)
+	if err := os.WriteFile(filepath.Join(markerOnly, "setup-unfinished"), nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+
 	removeOldInstallsWithoutDatabase()
 
 	assertGone(t, programsOnly)
 	assertGone(t, emptyData)
 	assertGone(t, empty)
+	assertGone(t, markerOnly)
+}
+
+func TestRemoveOldInstallsWithoutDatabase_KeepsFolderWhoseMarkerIsNotAFile(t *testing.T) {
+	dbDir := setCleanupInstallDir(t)
+
+	notAFile := filepath.Join(dbDir, "14.16.0")
+	writeProgramsOnlyInstall(t, notAFile)
+	if err := os.MkdirAll(filepath.Join(notAFile, "setup-unfinished"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(notAFile, "setup-unfinished", "rows"), []byte("data"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	removeOldInstallsWithoutDatabase()
+
+	assertExists(t, filepath.Join(notAFile, "setup-unfinished", "rows"))
 }
 
 func TestRemoveOldInstallsWithoutDatabase_NeverRemovesFolderHoldingDatabase(t *testing.T) {

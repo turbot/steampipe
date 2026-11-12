@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/fatih/color"
@@ -48,7 +49,9 @@ If you need to restore the contents of your public schema, please open an issue 
 	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
 }
 
-// EnsureDBInstalled makes sure that the embedded postgres database is installed and ready to run
+// EnsureDBInstalled makes sure that the embedded postgres database is installed and ready to run. It refuses to
+// start on a data folder from another Postgres major version, or one that holds a database whose setup did not
+// finish.
 func EnsureDBInstalled(ctx context.Context) (err error) {
 	putils.LogTime("db_local.EnsureDBInstalled start")
 
@@ -64,6 +67,10 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		ensureMux.Unlock()
 		close(doneChan)
 	}()
+
+	if err := checkDataFolderUsable(); err != nil {
+		return err
+	}
 
 	if IsDBInstalled() {
 		// check if the FDW need updating, and init the db if required
@@ -152,7 +159,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	// a moved or kept data folder is already initialised
 	if !dataReady {
 		// run the database installation
-		err = initNewDatabase(ctx, dbName)
+		err = installDatabase(ctx, dbName)
 		if err != nil {
 			return err
 		}
@@ -307,7 +314,7 @@ func prepareDb(ctx context.Context) error {
 	if needsInit() {
 		statushooks.SetStatus(ctx, "Cleanup any Steampipe processes…")
 		killInstanceIfAny(ctx)
-		if err := runInstall(ctx, nil); err != nil {
+		if err := installDatabase(ctx, nil); err != nil {
 			return err
 		}
 	}
@@ -353,7 +360,7 @@ func needsInit() bool {
 }
 
 // prepareDataLocation empties the data folder, ready for initdb. A data folder that holds a database is never
-// emptied: initdb writes PG_VERSION, so its presence means there is a database to keep.
+// emptied: initdb writes PG_VERSION first, so its presence means there may be a database to keep.
 func prepareDataLocation(dataLocation string) error {
 	if filehelpers.FileExists(filepath.Join(dataLocation, "PG_VERSION")) {
 		return dataFolderHoldsDatabaseError(dataLocation)
@@ -363,6 +370,57 @@ func prepareDataLocation(dataLocation string) error {
 
 func dataFolderHoldsDatabaseError(dataLocation string) error {
 	return fmt.Errorf("%w: %s\n\nSteampipe will not replace it. Move %s somewhere else, then run Steampipe again. If a database from a previous version is installed it is upgraded into a new database, otherwise Steampipe creates an empty one. Keep the moved folder until you have checked which database you want", errDataFolderHoldsDatabase, dataLocation, dataLocation)
+}
+
+// installDatabase runs the database setup, and records that it has not finished from just before the data folder is
+// initialised until it has: initdb writes PG_VERSION first, so PG_VERSION alone does not show a finished setup.
+// A data folder set up by an older version has no such record and counts as finished.
+func installDatabase(ctx context.Context, oldDbName *string) error {
+	marker := filepaths.GetSetupUnfinishedMarkerLocation()
+	if err := os.WriteFile(marker, nil, 0600); err != nil {
+		return fmt.Errorf("could not write the file %s that records an unfinished setup: %w", marker, err)
+	}
+	err := initNewDatabase(ctx, oldDbName)
+	// a data folder that already held a database was not touched, so it is as finished as it was
+	if err == nil || errors.Is(err, errDataFolderHoldsDatabase) {
+		if removeErr := os.Remove(marker); removeErr != nil && !os.IsNotExist(removeErr) {
+			if err == nil {
+				return fmt.Errorf("setup finished, but the file %s could not be removed: %w. Delete it, then run Steampipe again", marker, removeErr)
+			}
+			log.Printf("[WARN] could not remove %s: %v", marker, removeErr)
+		}
+	}
+	return err
+}
+
+// checkDataFolderUsable stops a start on a data folder that holds a database that cannot be used as it is, and
+// leaves that folder as it found it. With no database in the data folder it only removes the file a stopped setup
+// left behind, and it creates the data folder if it is missing.
+func checkDataFolderUsable() error {
+	dataLocation := filepaths.GetDataLocation()
+	marker := filepaths.GetSetupUnfinishedMarkerLocation()
+	raw, err := os.ReadFile(filepaths.GetPgVersionLocation())
+	if os.IsNotExist(err) {
+		// no database there: a marker left by a stopped setup, or by a folder moved away, refers to nothing
+		if removeErr := os.Remove(marker); removeErr != nil && !os.IsNotExist(removeErr) {
+			return fmt.Errorf("could not remove the file %s left by an earlier setup: %w", marker, removeErr)
+		}
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("could not read the Postgres version of the data folder %s: %w", dataLocation, err)
+	}
+
+	found := strings.TrimSpace(string(raw))
+	expected := strings.Split(constants.DatabaseVersion, ".")[0]
+	if found != expected {
+		return fmt.Errorf("The data folder %s holds a database from Postgres %s, but this version of Steampipe needs Postgres %s.\n\nSteampipe has not changed it. Move %s somewhere else, then run Steampipe again", dataLocation, found, expected, dataLocation)
+	}
+
+	if filehelpers.FileExists(marker) {
+		return fmt.Errorf("Setting up the data folder %s did not finish, so Steampipe will not use it. If another Steampipe is still setting it up, wait for it to finish.\n\nOtherwise move or delete %s, then run Steampipe again to set up a new one. If you put a finished data folder there instead, delete the file %s as well", dataLocation, dataLocation, marker)
+	}
+	return nil
 }
 
 func runInstall(ctx context.Context, oldDbName *string) error {
