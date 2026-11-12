@@ -79,6 +79,24 @@ load ../helpers/steampipe_processes
   assert_output --partial 'ASCII text'
 }
 
+@test "reinstalling the programs of the current version keeps its database" {
+  target_install_directory="$BATS_TEST_TMPDIR/install"
+  mkdir -p "$target_install_directory"
+
+  # install the database, then put data in it
+  steampipe query "create table keep_me(c text)" --install-dir $target_install_directory
+  steampipe query "insert into keep_me values ('still here')" --install-dir $target_install_directory
+
+  # lose the programs, but not the data folder
+  rm -rf $target_install_directory/db/*/postgres
+  [ -f $target_install_directory/db/*/data/PG_VERSION ]
+
+  # starting again reinstalls the programs and uses the existing database
+  run steampipe query "select c from keep_me" --output csv --install-dir $target_install_directory
+  assert_success
+  assert_output --partial 'still here'
+}
+
 function setup() {
   arch=$(uname -m)
   os=$(uname -s)
