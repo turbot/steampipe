@@ -125,6 +125,13 @@ func moveDataFromSameMajorInstall(ctx context.Context, oldLocation, newDataLocat
 		if err == nil {
 			return
 		}
+		// the message says what to do, and the user can do it before the next run
+		var hbaStop *pgHbaStopError
+		if errors.As(err, &hbaStop) {
+			err = abortInstallRemovingNewInstall(hbaStop, "pg_hba.conf is fixed")
+			return
+		}
+
 		newLocation := filepaths.DatabaseInstanceDir()
 		err = fmt.Errorf("could not move the database from %s to %s: %w", oldLocation, newLocation, err)
 

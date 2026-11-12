@@ -87,6 +87,41 @@ func TestMoveDataFromSameMajorInstall_FailureRestoresOldPgHba(t *testing.T) {
 	}
 }
 
+func TestMoveDataFromSameMajorInstall_EditedPgHbaMessageIsShownAsItIs(t *testing.T) {
+	original := app_specific.InstallDir
+	defer func() { app_specific.InstallDir = original }()
+	app_specific.InstallDir = filepath.Join(shortTempDir(t), ".steampipe")
+
+	oldLocation := filepath.Join(app_specific.InstallDir, "db", "14.19.0")
+	writeFakeInstall(t, oldLocation)
+	oldDataDir := filepath.Join(oldLocation, "data")
+	steampipeFileWith(t, oldDataDir, nil)
+	edited := readHba(t, oldDataDir) + "host all bob all md5\n"
+	writeFile(t, filepath.Join(oldDataDir, pgHbaFileName), edited)
+	newBinaries := filepath.Join(filepaths.DatabaseInstanceDir(), "postgres")
+	if err := os.MkdirAll(newBinaries, 0700); err != nil {
+		t.Fatal(err)
+	}
+
+	err := moveDataFromSameMajorInstall(context.Background(), oldLocation, filepaths.GetDataLocation())
+	var stop *pgHbaStopError
+	if !errors.As(err, &stop) {
+		t.Fatalf("want a pgHbaStopError, got %v", err)
+	}
+	if !strings.HasPrefix(err.Error(), stop.message) {
+		t.Errorf("the message must start with the instructions, not a wrapper:\n%s", err)
+	}
+	if strings.Contains(err.Error(), "could not move the database") || strings.Contains(err.Error(), "could not start") {
+		t.Errorf("the message must not be wrapped:\n%s", err)
+	}
+	if _, statErr := os.Stat(newBinaries); !os.IsNotExist(statErr) {
+		t.Errorf("the new binaries must be removed so the next run retries the move, stat err: %v", statErr)
+	}
+	if got := readHba(t, oldDataDir); got != edited {
+		t.Errorf("the edited file changed:\n%s", got)
+	}
+}
+
 func TestSavePgHbaConf_RestoreLeavesAnUnchangedFileAlone(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, pgHbaFileName)

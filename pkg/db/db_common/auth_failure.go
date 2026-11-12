@@ -8,8 +8,12 @@ import (
 )
 
 // IsAuthFailure reports whether postgres refused a login: SQLSTATE class 28, which covers
-// "no pg_hba.conf entry", a rule that rejects the connection, and a wrong password.
+// "no pg_hba.conf entry", a rule that rejects the connection, and a wrong password. A login for a
+// role that does not exist has the same class, but no rule refused it.
 func IsAuthFailure(err error) bool {
 	var pgErr *pgconn.PgError
-	return errors.As(err, &pgErr) && strings.HasPrefix(pgErr.Code, "28")
+	if !errors.As(err, &pgErr) || !strings.HasPrefix(pgErr.Code, "28") {
+		return false
+	}
+	return !(strings.HasPrefix(pgErr.Message, "role ") && strings.HasSuffix(pgErr.Message, " does not exist"))
 }

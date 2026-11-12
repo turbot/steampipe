@@ -342,6 +342,60 @@ func TestEditedPgHbaError_ShowsTheDifference(t *testing.T) {
 	}
 }
 
+func TestPgHbaOwnerOf_FileFromADevelopBuildIsSteampipes(t *testing.T) {
+	dir := t.TempDir()
+	steampipeFileWith(t, dir, map[string]string{"10-mine.conf": "host all carol all reject\n"})
+	rules, err := readPgHbaUserRules(filepath.Join(dir, "pg_hba.conf.d"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(dir, "pg_hba.conf"), unchecksummedPgHbaHeader+pgHbaBody(rules))
+
+	owner, err := pgHbaOwnerOf(dir)
+	if err != nil || owner != pgHbaSteampipe {
+		t.Errorf("a file written without a checksum by a build from develop is Steampipe's, got %v, %v", owner, err)
+	}
+
+	writeFile(t, filepath.Join(dir, "pg_hba.conf"), unchecksummedPgHbaHeader+pgHbaBody(rules)+"host all bob all md5\n")
+	if owner, _ := pgHbaOwnerOf(dir); owner != pgHbaEdited {
+		t.Errorf("an edit of that file is still an edit, got %v", owner)
+	}
+}
+
+func TestEditedPgHbaError_SaysWhenOnlyFormattingChanged(t *testing.T) {
+	dir := t.TempDir()
+	steampipeFileWith(t, dir, nil)
+	crlf := strings.ReplaceAll(readHba(t, dir), "\n", "\r\n")
+	writeFile(t, filepath.Join(dir, "pg_hba.conf"), crlf)
+
+	var stop *pgHbaStopError
+	if !errors.As(preparePgHbaConf(dir), &stop) {
+		t.Fatal("a file with changed line endings is an edited file")
+	}
+	msg := stop.Error()
+	if !strings.Contains(msg, "Only comments, blank lines, white space or line endings were changed.") {
+		t.Errorf("the message must say what is different:\n%s", msg)
+	}
+	if strings.Contains(msg, "Rules in the file that Steampipe would not write") || strings.Contains(msg, "missing from the file") {
+		t.Errorf("there are no rules to list:\n%s", msg)
+	}
+}
+
+func TestEditedPgHbaError_SaysWhenOnlyTheOrderChanged(t *testing.T) {
+	dir := t.TempDir()
+	steampipeFileWith(t, dir, map[string]string{"10-a.conf": "host all alice all md5\n", "20-b.conf": "host all bob all md5\n"})
+	text := readHba(t, dir)
+	text = strings.Replace(text, "host all alice all md5", "host all TMP all md5", 1)
+	text = strings.Replace(text, "host all bob all md5", "host all alice all md5", 1)
+	text = strings.Replace(text, "host all TMP all md5", "host all bob all md5", 1)
+	writeFile(t, filepath.Join(dir, "pg_hba.conf"), text)
+
+	msg := editedPgHbaError(dir).Error()
+	if !strings.Contains(msg, "in a different order") {
+		t.Errorf("the message must say that the order changed:\n%s", msg)
+	}
+}
+
 func TestRootRefusedError_UsersFileListsOnlyTheirRules(t *testing.T) {
 	dir := t.TempDir()
 	content := "host all bob 10.0.0.0/8 md5\n" +
@@ -358,6 +412,7 @@ func TestRootRefusedError_UsersFileListsOnlyTheirRules(t *testing.T) {
 	for _, w := range []string{
 		"1. Move your rules into Steampipe's setup (recommended)",
 		"2. Keep managing pg_hba.conf yourself",
+		"before any rule that rejects root: postgres uses the first rule that matches.",
 		"3. Use Steampipe's defaults",
 		"\n         local all root trust\n",
 		"File: " + filepath.Join(dir, "pg_hba.conf"),
@@ -384,6 +439,34 @@ func TestRootRefusedError_SteampipesFileNamesTheRuleFiles(t *testing.T) {
 	}
 }
 
+func TestCheckPgHbaConf_UsersFileWithoutTheRootRuleStopsARestart(t *testing.T) {
+	installDir := app_specific.InstallDir
+	t.Cleanup(func() { app_specific.InstallDir = installDir })
+	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
+	path := filepath.Join(filepaths.GetDataLocation(), "pg_hba.conf")
+
+	writeFile(t, path, "host all bob 10.0.0.0/8 md5\nlocal all postgres peer\n")
+	err := CheckPgHbaConf()
+	var stop *pgHbaStopError
+	if !errors.As(err, &stop) || !strings.Contains(err.Error(), "local all root trust") {
+		t.Errorf("a file with no rule for root must stop the restart with the rule to add, got %v", err)
+	}
+
+	for name, text := range map[string]string{
+		"the root rule":     "local all root trust\n",
+		"all users":         "local all all trust\n",
+		"a quoted root":     "local all \"root\" trust\n",
+		"a list with root":  "local all bob,root trust\n",
+		"an include":        "include_dir hba.d\n",
+		"after other rules": "host all bob all md5\n# a comment\nlocal   all   root   trust  # why\n",
+	} {
+		writeFile(t, path, text)
+		if err := CheckPgHbaConf(); err != nil {
+			t.Errorf("%s: a file that may let root in must not stop the restart: %v", name, err)
+		}
+	}
+}
+
 func TestCheckPgHbaConf_OnlyAnEditedFileStopsARestart(t *testing.T) {
 	installDir := app_specific.InstallDir
 	t.Cleanup(func() { app_specific.InstallDir = installDir })
@@ -393,7 +476,7 @@ func TestCheckPgHbaConf_OnlyAnEditedFileStopsARestart(t *testing.T) {
 	if err := CheckPgHbaConf(); err != nil {
 		t.Errorf("no file: %v", err)
 	}
-	writeFile(t, filepath.Join(dataDir, "pg_hba.conf"), "local all all reject\n")
+	writeFile(t, filepath.Join(dataDir, "pg_hba.conf"), "local all root trust\nlocal all all reject\n")
 	if err := CheckPgHbaConf(); err != nil {
 		t.Errorf("the user's file: %v", err)
 	}

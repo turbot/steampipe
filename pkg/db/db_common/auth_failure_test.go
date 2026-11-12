@@ -16,6 +16,7 @@ func TestIsAuthFailure(t *testing.T) {
 	}{
 		{"no pg_hba.conf entry", &pgconn.PgError{Code: "28000"}, true},
 		{"wrong password", &pgconn.PgError{Code: "28P01"}, true},
+		{"the role does not exist", &pgconn.PgError{Code: "28000", Message: `role "root" does not exist`}, false},
 		{"wrapped", fmt.Errorf("connect: %w", &pgconn.PgError{Code: "28000"}), true},
 		{"the database is starting up", &pgconn.PgError{Code: "57P03"}, false},
 		{"not a postgres error", errors.New("connection refused"), false},

@@ -64,18 +64,49 @@ func preparePgHbaConf(dataDir string) error {
 	}
 }
 
-// CheckPgHbaConf returns the error that would stop the next start because someone edited the
-// pg_hba.conf that Steampipe wrote. A restart calls it before it stops the running service.
+// CheckPgHbaConf returns the error that would stop the next start because of pg_hba.conf: someone
+// edited the file that Steampipe wrote, or the user's own file has no rule that lets root in. A
+// restart calls it before it stops the running service. A rule that comes before the root rule and
+// refuses it is found only when postgres starts.
 func CheckPgHbaConf() error {
 	dataDir := filepaths.GetDataLocation()
 	owner, err := pgHbaOwnerOf(dataDir)
 	if err != nil {
 		return err
 	}
-	if owner == pgHbaEdited {
+	switch owner {
+	case pgHbaEdited:
 		return editedPgHbaError(dataDir)
+	case pgHbaUser:
+		content, err := os.ReadFile(filepath.Join(dataDir, pgHbaFileName))
+		if err != nil {
+			return err
+		}
+		if !mayLetRootIn(string(content)) {
+			return rootRefusedError(dataDir)
+		}
 	}
 	return nil
+}
+
+// mayLetRootIn reports whether a user's pg_hba.conf could let Steampipe connect as root through the
+// unix socket: it has a local rule that trusts root, or it includes other files, which are not read.
+func mayLetRootIn(text string) bool {
+	for _, r := range pgHbaRules(text) {
+		f := r.fields
+		if strings.HasPrefix(f[0], "include") {
+			return true
+		}
+		if len(f) < 4 || f[0] != "local" || f[3] != "trust" {
+			continue
+		}
+		for _, user := range strings.Split(f[2], ",") {
+			if user == "all" || user == constants.DatabaseSuperUser || user == `"`+constants.DatabaseSuperUser+`"` {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func pgHbaOwnerOf(dataDir string) (pgHbaOwner, error) {
@@ -91,12 +122,32 @@ func pgHbaOwnerOf(dataDir string) (pgHbaOwner, error) {
 		if sum, body, ok := splitPgHbaChecksum(text); ok && sum == pgHbaChecksum(body) {
 			return pgHbaSteampipe, nil
 		}
+		if hasUnchecksummedHeaderOnly(dataDir, text) {
+			return pgHbaSteampipe, nil
+		}
 		return pgHbaEdited, nil
 	}
 	if isOlderSteampipePgHba(text) {
 		return pgHbaSteampipe, nil
 	}
 	return pgHbaUser, nil
+}
+
+// unchecksummedPgHbaHeader is the header that builds from develop wrote before the checksum line and
+// the third header line existed. Those builds are not a release, but a data directory they started
+// holds a file written exactly as it was.
+const unchecksummedPgHbaHeader = `# Written by Steampipe each time the database starts. DO NOT EDIT.
+# Put your own rules in pg_hba.conf.d/<name>.conf. They come first, so they win.
+`
+
+// hasUnchecksummedHeaderOnly reports whether text is exactly the file that a build from develop wrote
+// for the rule files in pg_hba.conf.d now.
+func hasUnchecksummedHeaderOnly(dataDir, text string) bool {
+	userRules, err := readPgHbaUserRules(filepath.Join(dataDir, pgHbaDirName))
+	if err != nil {
+		return false
+	}
+	return text == unchecksummedPgHbaHeader+pgHbaBody(userRules)
 }
 
 // writeSteampipePgHba writes Steampipe's pg_hba.conf: the header, the checksum, the rule files in
@@ -326,6 +377,13 @@ func editedPgHbaError(dataDir string) error {
 `, pgHbaFileName, pgHbaDirName, filepath.Join(hbaDir, "10-mine.conf"), path, constants.PgHbaRootRule)
 	message += ruleList("Rules in the file that Steampipe would not write:", added)
 	message += ruleList("Rules that Steampipe would write and that are missing from the file:", missing)
+	if len(added) == 0 && len(missing) == 0 {
+		if slices.Equal(inFileNormalised, wouldWrite) {
+			message += "\nThe rules are the same as the ones Steampipe would write. Only comments, blank lines, white space or line endings were changed.\n"
+		} else {
+			message += "\nThe rules are the same as the ones Steampipe would write, in a different order. Postgres uses the first rule that matches, so the order matters.\n"
+		}
+	}
 	message += "\nFile: " + path
 	return &pgHbaStopError{message: message}
 }
@@ -368,7 +426,8 @@ Change that rule, or put this rule before it:
      Steampipe writes a new %[1]s at the next start.
 
   2. Keep managing %[1]s yourself
-     Add this rule to it. Steampipe never changes a %[1]s it did not write.
+     Add this rule to it, before any rule that rejects %[5]s: postgres uses the first rule that matches.
+     Steampipe never changes a %[1]s it did not write.
          %[4]s
      If your file lets %[5]s connect over TCP, it still will.
 
