@@ -140,6 +140,23 @@ write_hba_from_body() {
   assert_success
 }
 
+@test "an install directory with a comma and a double quote starts, answers a query and stops" {
+  steampipe service stop
+  # postgres, pgx and libpq all split a socket directory on commas unless it is quoted
+  local odd_dir="$BATS_FILE_TMPDIR/a,b\"c"
+  ln -s "$STEAMPIPE_INSTALL_DIR" "$odd_dir"
+
+  STEAMPIPE_INSTALL_DIR="$odd_dir" STEAMPIPE_DATABASE_PASSWORD=$PG_PASSWORD run steampipe service start --database-port $PG_PORT
+  assert_success
+  STEAMPIPE_INSTALL_DIR="$odd_dir" STEAMPIPE_DATABASE_PASSWORD=$PG_PASSWORD run steampipe query "select 1 as one" --output csv
+  assert_success
+  assert_output --partial "1"
+  [ -S "$odd_dir"/db/*/data/.s.PGSQL.$PG_PORT ]
+  STEAMPIPE_INSTALL_DIR="$odd_dir" run steampipe service stop
+  assert_success
+  rm "$odd_dir"
+}
+
 @test "an install with the old default pg_hba.conf gets the new file at its next start" {
   steampipe service stop
   cat > "$HBA_FILE" <<'EOF'

@@ -58,7 +58,7 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 		if err := checkRootSocket(filepaths.GetDataLocation(), info.Port); err != nil {
 			return "", err
 		}
-		psqlInfoMap = rootConnectionParams(filepaths.GetDataLocation(), info.Port)
+		psqlInfoMap = rootConnectionParams(info.Port)
 		psqlInfoMap["dbname"] = opts.DatabaseName
 	} else {
 		psqlInfoMap = map[string]string{
@@ -92,6 +92,10 @@ type CreateDbOptions struct {
 	DatabaseName, Username string
 }
 
+func isRootConnection(opts *CreateDbOptions) bool {
+	return opts != nil && opts.Username == constants.DatabaseSuperUser
+}
+
 // CreateLocalDbConnection connects and returns a connection to the given database using
 // the provided username
 // if the database is not provided (empty), it connects to the default database in the service
@@ -109,6 +113,10 @@ func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.C
 	connConfig, err := pgx.ParseConfig(psqlInfo)
 	if err != nil {
 		return nil, err
+	}
+
+	if isRootConnection(opts) {
+		setRootSocketHost(connConfig, filepaths.GetDataLocation())
 	}
 
 	// set an app name so that we can track database connections from this Steampipe execution
@@ -150,6 +158,10 @@ func CreateConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnect
 	poolConfig, err := pgxpool.ParseConfig(psqlInfo)
 	if err != nil {
 		return nil, err
+	}
+
+	if isRootConnection(opts) {
+		setRootSocketHost(poolConfig.ConnConfig, filepaths.GetDataLocation())
 	}
 
 	const (
@@ -201,8 +213,13 @@ func createMaintenanceClient(ctx context.Context, dataDir string, port int) (*pg
 		return nil, sperr.Wrap(err, sperr.WithMessage("connection setup failed"))
 	}
 
-	connParams := rootConnectionParams(dataDir, port)
-	connStr := fmt.Sprintf("host=%s port=%d user=%s dbname=postgres sslmode=%s application_name=%s", quoteConnStringValue(connParams["host"]), port, connParams["user"], connParams["sslmode"], runtime.ServiceConnectionAppName)
+	connParams := rootConnectionParams(port)
+	connStr := fmt.Sprintf("port=%d user=%s dbname=postgres sslmode=%s application_name=%s", port, connParams["user"], connParams["sslmode"], runtime.ServiceConnectionAppName)
+	connConfig, err := pgx.ParseConfig(connStr)
+	if err != nil {
+		return nil, sperr.Wrap(err, sperr.WithMessage("connection setup failed"))
+	}
+	setRootSocketHost(connConfig, dataDir)
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(viper.GetInt(pconstants.ArgDatabaseStartTimeout))*time.Second)
 	defer cancel()
@@ -210,7 +227,7 @@ func createMaintenanceClient(ctx context.Context, dataDir string, port int) (*pg
 	statushooks.SetStatus(ctx, "Waiting for connection")
 	conn, err := db_common.WaitForConnection(
 		timeoutCtx,
-		connStr,
+		connConfig,
 		db_common.WithRetryInterval(constants.DBConnectionRetryBackoff),
 		db_common.WithTimeout(time.Duration(viper.GetInt(pconstants.ArgDatabaseStartTimeout))*time.Second),
 	)

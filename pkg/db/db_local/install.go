@@ -570,8 +570,6 @@ func installDatabaseWithPermissions(ctx context.Context, databaseName string, ra
 		fmt.Sprintf("grant %s to %s", constants.DatabaseUsersRole, constants.DatabaseUser),
 	}
 	for _, statement := range statements {
-		// not logging here, since the password may get logged
-		// we don't want that
 		if _, err := rawClient.Exec(ctx, statement); err != nil {
 			return err
 		}

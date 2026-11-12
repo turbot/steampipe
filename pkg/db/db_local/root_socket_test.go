@@ -3,6 +3,7 @@ package db_local
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"net"
 	"os"
 	"path/filepath"
@@ -23,7 +24,7 @@ func TestPostgresSocketArgs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"-c", "unix_socket_directories=/data", "-c", "unix_socket_permissions=0700"}
+	want := []string{"-c", `unix_socket_directories="/data"`, "-c", "unix_socket_permissions=0700"}
 	if !slices.Equal(got, want) {
 		t.Errorf("got %v, want %v", got, want)
 	}
@@ -62,7 +63,7 @@ func TestCreateCmd_HasSocketSettings(t *testing.T) {
 		t.Fatal(err)
 	}
 	args := strings.Join(cmd.Args, " ")
-	for _, setting := range []string{"unix_socket_directories=" + filepaths.GetDataLocation(), "unix_socket_permissions=0700"} {
+	for _, setting := range []string{`unix_socket_directories="` + filepaths.GetDataLocation() + `"`,"unix_socket_permissions=0700"} {
 		if !strings.Contains(args, setting) {
 			t.Errorf("service start is missing %s: %s", setting, args)
 		}
@@ -70,8 +71,8 @@ func TestCreateCmd_HasSocketSettings(t *testing.T) {
 }
 
 func TestRootConnectionParams_UsesSocketWithoutSSL(t *testing.T) {
-	got := rootConnectionParams("/data", 9193)
-	if got["host"] != "/data" || got["port"] != "9193" || got["user"] != constants.DatabaseSuperUser || got["sslmode"] != "disable" {
+	got := rootConnectionParams(9193)
+	if _, ok := got["host"]; ok || got["port"] != "9193" || got["user"] != constants.DatabaseSuperUser || got["sslmode"] != "disable" {
 		t.Errorf("unexpected params: %v", got)
 	}
 	if rootSocketPath("/data", 9193) != "/data/.s.PGSQL.9193" {
@@ -94,14 +95,97 @@ func TestBackupAndRestoreConnectThroughTheirDataDirectory(t *testing.T) {
 	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
 	oldDataDir := filepath.Join(t.TempDir(), "14.19.0", "data")
 
-	dump := strings.Join(backupCmd(context.Background(), &pgRunningInfo{dataDir: oldDataDir, port: 9876, dbName: "steampipe"}).Args, " ")
+	oldDir, cleanupOld, err := libpqSocketDir(oldDataDir, 9876)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cleanupOld()
+	dump := strings.Join(backupCmd(context.Background(), &pgRunningInfo{dataDir: oldDataDir, port: 9876, dbName: "steampipe"}, oldDir).Args, " ")
 	if !strings.Contains(dump, "--host="+oldDataDir+" ") {
 		t.Errorf("pg_dump must connect through the old installation's data directory: %s", dump)
 	}
 
-	restore := strings.Join(restoreCmd(context.Background(), &RunningDBInstanceInfo{Port: 9193, Database: "steampipe"}, "list").Args, " ")
+	newDir, cleanupNew, err := libpqSocketDir(filepaths.GetDataLocation(), 9193)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cleanupNew()
+	restore := strings.Join(restoreCmd(context.Background(), &RunningDBInstanceInfo{Port: 9193, Database: "steampipe"}, "list", newDir).Args, " ")
 	if !strings.Contains(restore, "--host="+filepaths.GetDataLocation()+" ") {
 		t.Errorf("pg_restore must connect through the new installation's data directory: %s", restore)
+	}
+}
+
+func TestLibpqSocketDir_CommaPathGoesThroughPrivateLink(t *testing.T) {
+	dataDir := filepath.Join(shortTempDir(t), "a,b", "data")
+	dir, cleanup, err := libpqSocketDir(dataDir, 9193)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(dir, ",") {
+		t.Errorf("libpq splits a host on commas: %s", dir)
+	}
+	info, err := os.Stat(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o700 {
+		t.Errorf("the link directory must be private, got %v", info.Mode().Perm())
+	}
+	target, err := os.Readlink(rootSocketPath(dir, 9193))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if target != rootSocketPath(dataDir, 9193) {
+		t.Errorf("the link points at %s, want %s", target, rootSocketPath(dataDir, 9193))
+	}
+	cleanup()
+	if _, err := os.Stat(dir); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("cleanup must remove the link directory, got %v", err)
+	}
+}
+
+func TestPostgresSocketArgs_DoublesQuotesAndKeepsCommas(t *testing.T) {
+	got, err := postgresSocketArgs(`/d/a,b"c`, 9193)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := `unix_socket_directories="/d/a,b""c"`; got[1] != want {
+		t.Errorf("got %s, want %s", got[1], want)
+	}
+}
+
+func TestLibpqSocketDir_CommaInTempDirUsesSlashTmp(t *testing.T) {
+	t.Setenv("TMPDIR", "/x,y")
+	dir, cleanup, err := libpqSocketDir("/data/a,b", 9193)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cleanup()
+	if strings.Contains(dir, ",") || filepath.Dir(dir) != "/tmp" {
+		t.Errorf("the link directory must be in /tmp, got %s", dir)
+	}
+}
+
+func TestLibpqSocketDir_PathWithoutCommaIsUsedAsIs(t *testing.T) {
+	dir, cleanup, err := libpqSocketDir("/data", 9193)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cleanup()
+	if dir != "/data" {
+		t.Errorf("got %s", dir)
+	}
+}
+
+func TestSetRootSocketHost_KeepsCommaInPath(t *testing.T) {
+	config, err := pgx.ParseConfig("port=9193 user=root sslmode=disable")
+	if err != nil {
+		t.Fatal(err)
+	}
+	setRootSocketHost(config, "/Users/me/a,b/data")
+	if config.Host != "/Users/me/a,b/data" || len(config.Fallbacks) != 0 {
+		t.Errorf("got host %q with %d fallbacks", config.Host, len(config.Fallbacks))
 	}
 }
 
