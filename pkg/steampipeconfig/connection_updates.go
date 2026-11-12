@@ -244,17 +244,30 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 	return updates, res
 }
 
-// takeConnectionsToKeep removes the named connections that have a schema from both state maps
-// and returns their state, set to ready: startup sets ready connections to pending, and
-// without an update nothing else would move them on.
+// takeConnectionsToKeep removes the named connections that may have a schema from both state maps
+// and returns their state: startup sets ready connections to pending, and without an update
+// nothing else would move them on. A connection that cannot be resolved is kept in error,
+// with the reason it is in error, as the plugin manager has no config for it. Startup sets
+// that error state to pending-incomplete, so those states may hold a schema too.
 func takeConnectionsToKeep(names map[string]struct{}, required, current ConnectionStateMap) ConnectionStateMap {
 	kept := make(ConnectionStateMap)
 	for name := range names {
 		state, ok := current[name]
-		if !ok || (state.State != constants.ConnectionStateReady && state.State != constants.ConnectionStatePending) {
+		if !ok {
 			continue
 		}
-		state.State = constants.ConnectionStateReady
+		requiredState := required[name]
+		inError := requiredState != nil && requiredState.State == constants.ConnectionStateError
+		mayHaveSchema := state.State == constants.ConnectionStateReady || state.State == constants.ConnectionStatePending ||
+			(inError && (state.State == constants.ConnectionStateError || state.State == constants.ConnectionStatePendingIncomplete))
+		if !mayHaveSchema {
+			continue
+		}
+		if inError {
+			state.SetError(requiredState.Error())
+		} else {
+			state.State = constants.ConnectionStateReady
+		}
 		kept[name] = state
 		delete(required, name)
 		delete(current, name)
