@@ -20,6 +20,8 @@ import (
 // in the data directory: Steampipe 2.4 and earlier put the socket in /tmp, and allowed root over TCP.
 var errStartedByOlderVersion = errors.New("the running service was started by an older version of Steampipe. Run `steampipe service stop --force` once")
 
+var errSocketPathTooLong = errors.New("the database socket path is too long")
+
 // postgresSocketArgs are the settings that every postgres Steampipe starts gets: the socket goes in
 // the data directory, and only the OS user who runs postgres can open it. Postgres does not start
 // unless the data directory belongs to that user and nobody else can read it, so no other user can
@@ -62,7 +64,7 @@ func checkSocketPathLengthForUpgrade(oldDataDir string, port int) error {
 func checkSocketPathLengthWithAdvice(dataDir string, port int, advice string) error {
 	path := rootSocketPath(dataDir, port)
 	if limit := maxSocketPathLength(); len(path) > limit {
-		return fmt.Errorf("the database socket path %s is %d bytes, and %s allows at most %d. %s", path, len(path), runtime.GOOS, limit, advice)
+		return fmt.Errorf("%w: %s is %d bytes, and %s allows at most %d. %s", errSocketPathTooLong, path, len(path), runtime.GOOS, limit, advice)
 	}
 	return nil
 }
