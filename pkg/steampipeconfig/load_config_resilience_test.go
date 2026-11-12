@@ -294,3 +294,89 @@ func TestLoadConfig_UndecodableOptionsBlockDoesNotBlockLaterOne(t *testing.T) {
 		t.Errorf("the valid database options block should have been applied, got %+v", config.DatabaseOptions)
 	}
 }
+
+// The error on a connection that refers to a missing plugin block must say what is known:
+// that the block failed to load, or only that it may be in a file that did.
+func TestLoadConfig_MissingPluginBlockErrorSaysWhatIsKnown(t *testing.T) {
+	tests := []struct {
+		name    string
+		badFile string
+		want    string
+	}{
+		{name: "undecodable_block", badFile: `plugin "chaos_one" {
+  source = ["chaos"]
+}`, want: "plugin block 'plugin.chaos_one' failed to load"},
+		{name: "block_in_dropped_file", badFile: `plugin "chaos_one" {
+  source = "chaos"
+`, want: "plugin.chaos_one' was not found and may be in a config file that failed to load"},
+		{name: "unrelated_dropped_file", badFile: `connection "broken" {
+`, want: "plugin.chaos_one' was not found and may be in a config file that failed to load"},
+		{name: "no_file_dropped", badFile: `# nothing skipped`, want: "does not exist"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setInstallDir(t)
+			dir := t.TempDir()
+			writeConfigFile(t, dir, "bad.spc", tt.badFile)
+			writeConfigFile(t, dir, "good.spc", `connection "conn_instance" {
+  plugin = plugin.chaos_one
+}
+`)
+
+			config := NewSteampipeConfig("")
+			res := loadConfig(context.TODO(), dir, config, &loadConfigOptions{include: []string{"*.spc"}})
+
+			if err := res.GetError(); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			connErr := config.Connections["conn_instance"].Error
+			if connErr == nil || !strings.Contains(connErr.Error(), tt.want) {
+				t.Errorf("conn_instance error = %v, want it to contain %q", connErr, tt.want)
+			}
+		})
+	}
+}
+
+// From a skipped plugin block through the required state to the connection a refresh keeps:
+// the kept connection is in error and names the plugin block, and unrelated connections are left alone.
+func TestLoadConfig_ConnectionWithSkippedPluginBlockIsKeptInError(t *testing.T) {
+	setInstallDir(t)
+	dir := t.TempDir()
+	writeConfigFile(t, dir, "bad.spc", `plugin "chaos_one" {
+  source = ["chaos"]
+}`)
+	writeConfigFile(t, dir, "good.spc", connectionConfig("conn_alias")+`
+connection "conn_instance" {
+  plugin = plugin.chaos_one
+}
+`)
+	config := NewSteampipeConfig("")
+	res := loadConfig(context.TODO(), dir, config, &loadConfigOptions{include: []string{"*.spc"}})
+	if err := res.GetError(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	current := ConnectionStateMap{
+		"conn_instance": {ConnectionName: "conn_instance", State: constants.ConnectionStateReady, SchemaHash: "hash"},
+		"conn_alias":    {ConnectionName: "conn_alias", State: constants.ConnectionStateReady, SchemaHash: "hash"},
+	}
+	required, _, stateRes := GetRequiredConnectionStateMap(config.Connections, current)
+	if stateRes.Error != nil {
+		t.Fatalf("unexpected error: %v", stateRes.Error)
+	}
+
+	kept := takeConnectionsToKeep(config.ConnectionsWithSkippedPlugin, required, current)
+
+	state, ok := kept["conn_instance"]
+	if !ok {
+		t.Fatal("conn_instance should be kept")
+	}
+	if state.State != constants.ConnectionStateError || !strings.Contains(state.Error(), "plugin block 'plugin.chaos_one' failed to load") {
+		t.Errorf("kept state = %q with error %q, want error naming the plugin block", state.State, state.Error())
+	}
+	if _, ok := kept["conn_alias"]; ok {
+		t.Error("conn_alias does not use the skipped plugin block and must not be kept")
+	}
+	if _, ok := required["conn_alias"]; !ok {
+		t.Error("conn_alias must stay in the comparison")
+	}
+}

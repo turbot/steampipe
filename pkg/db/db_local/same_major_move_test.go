@@ -5,11 +5,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 	"github.com/turbot/steampipe/v2/pkg/filepaths"
 )
@@ -191,6 +195,67 @@ func TestMoveDataFromSameMajorInstall_FailureRemovesNewInstall(t *testing.T) {
 	}
 	if _, statErr := os.Stat(newLocation); !os.IsNotExist(statErr) {
 		t.Errorf("new installation %s should have been removed, stat err: %v", newLocation, statErr)
+	}
+}
+
+// an old installation that cannot be used leaves the user an action that keeps the data: how to see why it does
+// not start, and how to start with a new database by moving the old folder aside
+func TestMoveDataFromSameMajorInstall_UnusableOldInstallSaysWhatToDo(t *testing.T) {
+	tests := map[string]string{
+		// cmd.Start fails: the binary cannot be executed
+		"cannot execute": "",
+		// the process starts but never accepts a connection
+		"exits at once": "#!/bin/sh\necho boom >&2\nexit 1\n",
+	}
+	for name, script := range tests {
+		t.Run(name, func(t *testing.T) {
+			if script != "" && runtime.GOOS == "windows" {
+				t.Skip("needs a shell script as the postgres binary")
+			}
+			original := app_specific.InstallDir
+			defer func() { app_specific.InstallDir = original }()
+			app_specific.InstallDir = filepath.Join(shortTempDir(t), ".steampipe")
+			// the wait for the server's socket gives up at once at the default of 0, before the script has printed
+			originalTimeout := viper.Get(pconstants.ArgDatabaseStartTimeout)
+			viper.Set(pconstants.ArgDatabaseStartTimeout, 3)
+			defer viper.Set(pconstants.ArgDatabaseStartTimeout, originalTimeout)
+
+			oldLocation := filepath.Join(app_specific.InstallDir, "db", "14.19.0")
+			writeFakeInstall(t, oldLocation)
+			binary := filepath.Join(oldLocation, "postgres", "bin", "postgres")
+			if script != "" {
+				if err := os.WriteFile(binary, []byte(script), 0600); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Chmod(binary, 0700); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			err := moveDataFromSameMajorInstall(context.Background(), oldLocation, filepaths.GetDataLocation())
+			if err == nil {
+				t.Fatal("expected an error")
+			}
+			oldDataLocation := filepath.Join(oldLocation, "data")
+			for _, want := range []string{
+				"could not use the database in " + oldLocation,
+				"Your data is unchanged in " + oldLocation,
+				strconv.Quote(binary) + " -D " + strconv.Quote(oldDataLocation),
+				"read the newest file in " + filepath.Join(oldDataLocation, "log"),
+				"move " + oldLocation + " out of " + filepath.Dir(oldLocation),
+			} {
+				if !strings.Contains(err.Error(), want) {
+					t.Errorf("error should contain %q: %v", want, err)
+				}
+			}
+			// what the server printed before it exited is the cause
+			if script != "" && !strings.Contains(err.Error(), "boom") {
+				t.Errorf("error should carry what the server printed: %v", err)
+			}
+			if _, statErr := os.Stat(filepath.Join(oldDataLocation, "PG_VERSION")); statErr != nil {
+				t.Errorf("old data folder was changed: %v", statErr)
+			}
+		})
 	}
 }
 

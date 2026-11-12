@@ -3,6 +3,7 @@ package db_local
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -348,6 +349,8 @@ func ensureService(ctx context.Context, databaseName string) error {
 	return nil
 }
 
+var errNoSteampipeDatabase = errors.New("the server holds no Steampipe database to connect to")
+
 // getDatabaseName connects to the service and retrieves the database name
 func getDatabaseName(ctx context.Context, dataDir string, port int) (string, error) {
 	databaseName, err := retrieveDatabaseNameFromService(ctx, dataDir, port)
@@ -355,7 +358,7 @@ func getDatabaseName(ctx context.Context, dataDir string, port int) (string, err
 		return "", err
 	}
 	if len(databaseName) == 0 {
-		return "", fmt.Errorf("could not find database to connect to")
+		return "", errNoSteampipeDatabase
 	}
 	return databaseName, nil
 }
@@ -406,7 +409,7 @@ func startPostgresProcess(ctx context.Context, listenAddresses []string, port in
 func retrieveDatabaseNameFromService(ctx context.Context, dataDir string, port int) (string, error) {
 	connection, err := createMaintenanceClient(ctx, dataDir, port)
 	if err != nil {
-		return "", fmt.Errorf("failed to connect to the database: %v - please try again or reset your steampipe database", err)
+		return "", fmt.Errorf("failed to connect to the database: %v", err)
 	}
 	defer connection.Close(ctx)
 
@@ -415,6 +418,10 @@ func retrieveDatabaseNameFromService(ctx context.Context, dataDir string, port i
 	var databaseName string
 	err = out.Scan(&databaseName)
 	if err != nil {
+		// no row means the server holds no Steampipe database: getDatabaseName reports that
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", nil
+		}
 		return "", err
 	}
 
