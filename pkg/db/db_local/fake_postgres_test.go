@@ -11,6 +11,7 @@ import (
 	"strings"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgproto3"
 	"github.com/spf13/viper"
@@ -26,7 +27,8 @@ const (
 
 // writeFakePostgres replaces the postgres binary of the installation at location with one that runs this test
 // binary as a server: it listens on the unix socket in the data directory and answers the queries that
-// startDatabaseInLocation sends. With stopFails, the server ignores the signals that stop it, so stopping it fails.
+// startDatabaseInLocation sends. With stopFails, the server ignores the signals that stop it, so stopping it fails,
+// and each wait of the three-step stop is shortened to 100ms.
 func writeFakePostgres(t *testing.T, location string, stopFails bool) {
 	t.Helper()
 	if runtime.GOOS == "windows" {
@@ -49,6 +51,12 @@ func writeFakePostgres(t *testing.T, location string, stopFails bool) {
 	t.Setenv(fakePostgresPidFile, pidFile)
 	if stopFails {
 		t.Setenv(fakePostgresIgnoreSignals, "1")
+		waits := []*time.Duration{&smartShutdownWait, &fastShutdownWait, &immediateShutdownWait}
+		for _, w := range waits {
+			original := *w
+			*w = 100 * time.Millisecond
+			t.Cleanup(func() { *w = original })
+		}
 	}
 	// a server that ignores the stop signals has to be killed by the test
 	t.Cleanup(func() {

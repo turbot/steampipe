@@ -2,6 +2,7 @@ package db_local
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -32,7 +33,9 @@ const (
 	ServiceStopTimedOut
 )
 
-// ShutdownService stops the database instance if the given 'invoker' matches
+// ShutdownService stops a database service that was not started by `steampipe service`, unless other Steampipe
+// clients are connected to it. A service an older version started is left running if its clients cannot be
+// counted.
 func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	putils.LogTime("db_local.ShutdownService start")
 	defer putils.LogTime("db_local.ShutdownService end")
@@ -52,6 +55,11 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	// how many clients are connected
 	// under a fresh context
 	clientCounts, err := GetClientCount(context.Background())
+	if errors.Is(err, errStartedByOlderVersion) {
+		// another session may be using it
+		log.Printf("[INFO] ShutdownService not closing database service - %s", err)
+		return
+	}
 	// if there are other clients connected
 	// and if there's no error
 	if err == nil && clientCounts.SteampipeClients > 0 {
@@ -98,28 +106,55 @@ type ClientCount struct {
 // note: we need the PgClientAppName check to handle the case where there may be one or more open DB connections
 // from this instance at the time of shutdown - for example when a control run is cancelled
 // If we do not exclude connections from this execution, the DB will not be shut down after a cancellation
+//
+// root cannot reach a service an older version started, so its clients are then counted as the steampipe user.
+// If that count fails too, the error wraps errStartedByOlderVersion.
 func GetClientCount(ctx context.Context) (*ClientCount, error) {
 	putils.LogTime("db_local.GetClientCount start")
 	defer putils.LogTime("db_local.GetClientCount end")
 
-	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
+	counts, err := countClients(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
+	if !errors.Is(err, errStartedByOlderVersion) {
+		return counts, err
+	}
+	// root cannot reach a service an older version started. The steampipe user can, with the service's password
+	// for a pg_hba.conf rule that requires one.
+	state, stateErr := GetState()
+	if stateErr != nil || state == nil {
+		// the service stopped since, or its state cannot be read
+		return nil, err
+	}
+	counts, err = countClients(ctx, &CreateDbOptions{Username: constants.DatabaseUser, Password: state.Password})
+	if err != nil {
+		return nil, fmt.Errorf("%w, and its clients could not be counted as %s: %w. Stop it with the version of Steampipe that started it, or disconnect its clients and run `steampipe service stop --force`, which stops every Steampipe service on this machine", errStartedByOlderVersion, constants.DatabaseUser, err)
+	}
+	return counts, nil
+}
+
+// countClients is GetClientCount, connected with opts. Root sees every session. Any other user sees only the
+// database, user and application name of another role's sessions, so those are counted by their database and user.
+func countClients(ctx context.Context, opts *CreateDbOptions) (*ClientCount, error) {
+	client, err := CreateLocalDbConnection(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
-	defer rootClient.Close(ctx)
+	defer client.Close(ctx)
 
 	query := `
-SELECT 
+SELECT
   application_name,
   count(*)
-FROM 
-  pg_stat_activity 
+FROM
+  pg_stat_activity
 WHERE
-	-- get only the network client processes
-  client_port IS NOT NULL 
-	AND
-	-- which are client backends
-  backend_type=$1 
+  (
+	-- network client processes which are client backends
+    (client_port IS NOT NULL AND backend_type=$1)
+	OR
+	-- another role's session in a database, seen by a user that is not root. Postgres's own processes have
+	-- no database or no user
+    (backend_type IS NULL AND datid IS NOT NULL AND usesysid IS NOT NULL)
+  )
 	AND
 	-- which are not connections from this application
   application_name!=$2
@@ -129,7 +164,7 @@ GROUP BY application_name
 	counts := &ClientCount{}
 
 	log.Println("[INFO] ClientConnectionAppName: ", runtime.ClientConnectionAppName)
-	rows, err := rootClient.Query(ctx, query, "client backend", runtime.ClientConnectionAppName)
+	rows, err := client.Query(ctx, query, "client backend", runtime.ClientConnectionAppName)
 	if err != nil {
 		return nil, err
 	}
@@ -224,6 +259,13 @@ func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 	return ServiceStopped, nil
 }
 
+// how long each step of doThreeStepPostgresExit waits for the process to exit; variables so tests can shorten them
+var (
+	smartShutdownWait     = 2 * time.Second
+	fastShutdownWait      = 2 * time.Second
+	immediateShutdownWait = 5 * time.Second
+)
+
 /*
 Postgres has three levels of shutdown:
 
@@ -261,7 +303,7 @@ func doThreeStepPostgresExit(ctx context.Context, process *psutils.Process) erro
 	if err != nil {
 		return err
 	}
-	exitSuccessful = waitForProcessExit(process, 2*time.Second)
+	exitSuccessful = waitForProcessExit(process, smartShutdownWait)
 	if !exitSuccessful {
 		// process didn't quit
 
@@ -273,7 +315,7 @@ func doThreeStepPostgresExit(ctx context.Context, process *psutils.Process) erro
 		if err != nil {
 			return err
 		}
-		exitSuccessful = waitForProcessExit(process, 2*time.Second)
+		exitSuccessful = waitForProcessExit(process, fastShutdownWait)
 	}
 	if !exitSuccessful {
 		// process didn't quit
@@ -282,7 +324,7 @@ func doThreeStepPostgresExit(ctx context.Context, process *psutils.Process) erro
 		if err != nil {
 			return err
 		}
-		exitSuccessful = waitForProcessExit(process, 5*time.Second)
+		exitSuccessful = waitForProcessExit(process, immediateShutdownWait)
 	}
 
 	if !exitSuccessful {

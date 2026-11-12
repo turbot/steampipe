@@ -153,7 +153,8 @@ func hasUnchecksummedHeaderOnly(dataDir, text string) bool {
 // writeSteampipePgHba writes Steampipe's pg_hba.conf: the header, the checksum, the rule files in
 // pg_hba.conf.d in name order, then Steampipe's rules. It writes a temporary file and renames it,
 // so pg_hba.conf is never missing: Steampipe 2.4 and earlier treat a missing pg_hba.conf as "not
-// installed", and delete everything in the data directory.
+// installed", and delete everything in the data directory. A pg_hba.conf that is a link is written
+// through, in place, so it stays a link.
 func writeSteampipePgHba(dataDir string) error {
 	hbaDir := filepath.Join(dataDir, pgHbaDirName)
 	if err := os.MkdirAll(hbaDir, 0700); err != nil {
@@ -163,7 +164,15 @@ func writeSteampipePgHba(dataDir string) error {
 	if err != nil {
 		return err
 	}
-	return replaceFile(filepath.Join(dataDir, pgHbaFileName), []byte(steampipePgHba(userRules)), 0600)
+	path, isLink, err := pgHbaConfTarget(dataDir)
+	if err != nil {
+		return err
+	}
+	content := []byte(steampipePgHba(userRules))
+	if isLink {
+		return os.WriteFile(path, content, 0600) //nolint:gosec // G703: the file the data directory's own pg_hba.conf links to
+	}
+	return replaceFile(path, content, 0600)
 }
 
 type pgHbaRuleFile struct {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,7 +21,11 @@ import (
 const olderSteampipeHba = "hostssl all root samehost trust\nhost all root samehost trust\n"
 
 func TestStartDatabaseInLocation_StartFailureRestoresOldPgHba(t *testing.T) {
-	oldLocation := filepath.Join(shortTempDir(t), "old")
+	installDir := shortTempDir(t)
+	original := app_specific.InstallDir
+	t.Cleanup(func() { app_specific.InstallDir = original })
+	app_specific.InstallDir = filepath.Join(installDir, ".steampipe")
+	oldLocation := filepath.Join(installDir, "old")
 	oldDataDir := filepath.Join(oldLocation, "data")
 	if err := os.MkdirAll(oldDataDir, 0700); err != nil {
 		t.Fatal(err)
@@ -45,7 +50,11 @@ func TestStartDatabaseInLocation_StartFailureRestoresOldPgHba(t *testing.T) {
 }
 
 func TestStartDatabaseInLocation_StartFailureRemovesPgHbaThatDidNotExist(t *testing.T) {
-	oldLocation := filepath.Join(shortTempDir(t), "old")
+	installDir := shortTempDir(t)
+	original := app_specific.InstallDir
+	t.Cleanup(func() { app_specific.InstallDir = original })
+	app_specific.InstallDir = filepath.Join(installDir, ".steampipe")
+	oldLocation := filepath.Join(installDir, "old")
 	oldDataDir := filepath.Join(oldLocation, "data")
 	if err := os.MkdirAll(oldDataDir, 0700); err != nil {
 		t.Fatal(err)
@@ -190,6 +199,164 @@ func TestSavePgHbaConf_RestoreReplacesAChangedFileKeepingItsMode(t *testing.T) {
 	}
 }
 
+func TestSavePgHbaConf_RestoreKeepsALink(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(t.TempDir(), "shared_hba.conf")
+	if err := os.WriteFile(target, []byte(olderSteampipeHba), 0600); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, pgHbaFileName)
+	if err := os.Symlink(target, path); err != nil {
+		t.Fatal(err)
+	}
+
+	restore, err := savePgHbaConf(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := writeSteampipePgHba(dir); err != nil {
+		t.Fatal(err)
+	}
+	restore()
+
+	info, err := os.Lstat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		t.Errorf("%s must still be a link, got mode %v", path, info.Mode())
+	}
+	got, err := os.ReadFile(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != olderSteampipeHba {
+		t.Errorf("the link's target must be put back, got:\n%s", got)
+	}
+}
+
+func TestSavePgHbaConf_RestoreThroughALinkIntoAFolderThatCannotBeWritten(t *testing.T) {
+	dir := t.TempDir()
+	targetDir := t.TempDir()
+	target := filepath.Join(targetDir, "shared_hba.conf")
+	if err := os.WriteFile(target, []byte(olderSteampipeHba), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(target, filepath.Join(dir, pgHbaFileName)); err != nil {
+		t.Fatal(err)
+	}
+	// the file can be written, the folder that holds it cannot
+	if err := os.Chmod(targetDir, 0500); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(targetDir, 0700) })
+
+	restore, err := savePgHbaConf(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := writeSteampipePgHba(dir); err != nil {
+		t.Fatal(err)
+	}
+	restore()
+
+	got, err := os.ReadFile(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != olderSteampipeHba {
+		t.Errorf("the link's target must be put back, got:\n%s", got)
+	}
+}
+
+func TestSavePgHbaConf_RestoreKeepsALinkToAMissingFile(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(t.TempDir(), "missing_hba.conf")
+	path := filepath.Join(dir, pgHbaFileName)
+	if err := os.Symlink(target, path); err != nil {
+		t.Fatal(err)
+	}
+
+	restore, err := savePgHbaConf(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := writeSteampipePgHba(dir); err != nil {
+		t.Fatal(err)
+	}
+	restore()
+
+	if info, err := os.Lstat(path); err != nil || info.Mode()&os.ModeSymlink == 0 {
+		t.Errorf("%s must still be a link: %v", path, err)
+	}
+	if _, err := os.Stat(target); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("the file the link points at did not exist before and must not be left behind: %v", err)
+	}
+}
+
+func TestSavePgHbaConf_RestoreKeepsAChainOfLinksToAMissingFile(t *testing.T) {
+	dir := t.TempDir()
+	linkDir := t.TempDir()
+	target := filepath.Join(t.TempDir(), "missing_hba.conf")
+	middle := filepath.Join(linkDir, "middle")
+	if err := os.Symlink(target, middle); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(middle, filepath.Join(dir, pgHbaFileName)); err != nil {
+		t.Fatal(err)
+	}
+
+	restore, err := savePgHbaConf(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := writeSteampipePgHba(dir); err != nil {
+		t.Fatal(err)
+	}
+	restore()
+
+	if info, err := os.Lstat(middle); err != nil || info.Mode()&os.ModeSymlink == 0 {
+		t.Errorf("the link %s must be kept: %v", middle, err)
+	}
+	if _, err := os.Stat(target); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("the file at the end of the links did not exist before and must not be left behind: %v", err)
+	}
+}
+
+func TestPgHbaConfTarget_FollowsAMissingFileLinkUpFromALinkedFolder(t *testing.T) {
+	root := t.TempDir()
+	real := filepath.Join(root, "a", "b")
+	if err := os.MkdirAll(real, 0700); err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Join(root, "data")
+	if err := os.Mkdir(dir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(real, filepath.Join(dir, "sub")); err != nil {
+		t.Fatal(err)
+	}
+	// the OS goes up from a/b, the folder that sub links to, to a/missing_hba.conf
+	if err := os.Symlink(filepath.Join("..", "missing_hba.conf"), filepath.Join(real, "middle")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join("sub", "middle"), filepath.Join(dir, pgHbaFileName)); err != nil {
+		t.Fatal(err)
+	}
+
+	got, isLink, err := pgHbaConfTarget(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolvedA, err := filepath.EvalSymlinks(filepath.Join(root, "a"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := filepath.Join(resolvedA, "missing_hba.conf"); got != want || !isLink {
+		t.Errorf("want the link's end %s, got %s (link %v)", want, got, isLink)
+	}
+}
+
 // fakeOldInstall sets up an installation that an older Steampipe wrote, with a postgres binary that starts,
 // and returns its location and the path of its pg_hba.conf.
 func fakeOldInstall(t *testing.T, version string, stopFails bool) (oldLocation, hbaPath string) {
@@ -265,9 +432,9 @@ func TestAbortInstallAfterBackupError_SocketPathTooLongStopsTheInstall(t *testin
 	app_specific.InstallDir = filepath.Join(t.TempDir(), strings.Repeat("x", 100), ".steampipe")
 
 	oldDataDir := filepath.Join(app_specific.InstallDir, "db", "14.19.0", "data")
-	backupErr := checkSocketPathLengthForUpgrade(oldDataDir, 9193)
+	backupErr := checkSocketPathLength(oldDataDir, 9193)
 	if backupErr == nil {
-		t.Fatal("the socket path is over the limit")
+		t.Fatal("test setup: the socket path must be over the limit")
 	}
 	newLocation := filepaths.DatabaseInstanceDir()
 	_ = filepaths.GetDatabaseLocation()
@@ -295,7 +462,7 @@ func TestAbortInstallAfterBackupError_SocketPathTooLongKeepsNewDataThatHoldsData
 		t.Fatal(err)
 	}
 	oldDataDir := filepath.Join(app_specific.InstallDir, "db", "14.19.0", "data")
-	backupErr := checkSocketPathLengthForUpgrade(oldDataDir, 9193)
+	backupErr := checkSocketPathLength(oldDataDir, 9193)
 
 	err := abortInstallAfterBackupError(backupErr)
 	if !errors.Is(err, errSocketPathTooLong) {
@@ -303,6 +470,10 @@ func TestAbortInstallAfterBackupError_SocketPathTooLongKeepsNewDataThatHoldsData
 	}
 	if !strings.Contains(err.Error(), newDataLocation+" holds data and was kept") {
 		t.Errorf("the error must say the new data folder was kept: %v", err)
+	}
+	// moving the old installation's folder would leave its data behind
+	if !strings.Contains(err.Error(), "Once the install directory is moved") {
+		t.Errorf("the error must say the next run upgrades once the install directory is moved: %v", err)
 	}
 	if _, statErr := os.Stat(filepath.Join(newDataLocation, "PG_VERSION")); statErr != nil {
 		t.Errorf("new data should have been kept: %v", statErr)

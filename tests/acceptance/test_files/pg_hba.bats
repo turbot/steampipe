@@ -142,7 +142,7 @@ write_hba_from_body() {
 
 @test "an install directory with a comma and a double quote starts, answers a query and stops" {
   steampipe service stop
-  # postgres, pgx and libpq all split a socket directory on commas unless it is quoted
+  # postgres splits a socket directory on commas unless it is quoted; pgx and libpq always split a host on commas
   local odd_dir="$BATS_FILE_TMPDIR/a,b\"c"
   ln -s "$STEAMPIPE_INSTALL_DIR" "$odd_dir"
 
@@ -382,7 +382,8 @@ EOF
 
   STEAMPIPE_INSTALL_DIR="$long_dir" run steampipe service start --database-port $PG_PORT
   assert_equal "$status" 32
-  assert_output --partial "Set STEAMPIPE_INSTALL_DIR to a shorter path"
+  # the install holds a database, so a new install directory would leave it behind
+  assert_output --partial "Move $long_dir to a shorter path and set STEAMPIPE_INSTALL_DIR to it"
 
   # postgres did not start
   run pgrep -f "$long_dir"
@@ -390,23 +391,27 @@ EOF
   rm "$long_dir"
 }
 
-# this test is last: it leaves no service running, and stops this install's processes itself
-@test "a running service with no socket in the data directory says to stop it once with --force" {
+# this test is last: it leaves no service running, and stops this install's processes itself if service stop fails
+@test "a running service with no socket in the data directory stops with service stop" {
   run start_service
   assert_success
-  # a service that Steampipe 2.4 or earlier started has no socket in the data directory
+  # a service that an earlier version of Steampipe started has no socket in the data directory
   rm "$HBA_DATA_DIR/.s.PGSQL.$PG_PORT"
+  # the plugins are children of the plugin manager
+  local pg_pid=$(jq -r .pid "$STEAMPIPE_INSTALL_DIR/internal/steampipe.json")
+  local pm_pid=$(jq -r .pid "$STEAMPIPE_INSTALL_DIR/internal/plugin_manager.json")
+  local pids=$(echo $pg_pid $pm_pid $(pgrep -P "$pm_pid") | tr ' ' ',')
 
   run steampipe service stop
-  assert_failure
-  assert_output --partial "started by an older version of Steampipe"
-  assert_output --partial "steampipe service stop --force"
+  local stop_status=$status stop_output=$output
 
-  # stop only this install's processes: service stop --force would stop every service on the machine.
-  # Postgres, the plugin manager (--install-dir) and the plugins all name the install on their command lines.
-  pkill -f "$STEAMPIPE_INSTALL_DIR" || true
-  for _ in $(seq 50); do pgrep -f "$STEAMPIPE_INSTALL_DIR" > /dev/null || break; sleep 0.2; done
-  run pgrep -f "$STEAMPIPE_INSTALL_DIR"
-  assert_failure
+  # whatever happened, stop only this service's processes, by the pids it recorded: service stop --force
+  # would stop every service on the machine
+  kill ${pids//,/ } 2> /dev/null || true
+  for _ in $(seq 50); do ps -p "$pids" > /dev/null || break; sleep 0.2; done
   rm -f "$STEAMPIPE_INSTALL_DIR/internal/steampipe.json" "$STEAMPIPE_INSTALL_DIR/internal/plugin_manager.json"
+
+  echo "$stop_output"
+  assert_equal "$stop_status" 0
+  [[ "$stop_output" == *"Steampipe database service stopped"* ]]
 }

@@ -114,6 +114,15 @@ func GetPostmasterPidLocation() string {
 	return filepath.Join(GetDataLocation(), "postmaster.pid")
 }
 
+// GetSetupUnfinishedMarkerLocation is a file that exists from just before the data folder is initialised until
+// its setup finishes; a start that finds no database in the data folder removes it. It sits beside the data folder
+// because initdb needs that folder empty.
+func GetSetupUnfinishedMarkerLocation() string {
+	return filepath.Join(DatabaseInstanceDir(), SetupUnfinishedMarkerName)
+}
+
+const SetupUnfinishedMarkerName = "setup-unfinished"
+
 func GetPgVersionLocation() string {
 	return filepath.Join(GetDataLocation(), "PG_VERSION")
 }

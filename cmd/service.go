@@ -521,29 +521,47 @@ func showAllStatus(ctx context.Context) {
 
 	error_helpers.FailOnError(err)
 
-	if len(processes) == 0 {
+	rows := buildServiceRows(processes)
+	if len(rows) == 0 {
 		fmt.Println("There are no steampipe services running.") //nolint:forbidigo // acceptable
 		return
 	}
+
 	headers := []string{"PID", "Install Directory", "Port", "Listen"}
-	rows := [][]string{}
-
-	for _, process := range processes {
-		pid, installDir, port, listen := getServiceProcessDetails(process)
-		rows = append(rows, []string{pid, installDir, port, string(listen)})
-	}
-
 	querydisplay.ShowWrappedTable(headers, rows, &querydisplay.ShowWrappedTableOptions{AutoMerge: false})
 }
 
-func getServiceProcessDetails(process *psutils.Process) (string, string, string, db_local.StartListenType) {
-	cmdLine, _ := process.CmdlineSlice()
+func buildServiceRows(processes []*psutils.Process) [][]string {
+	rows := [][]string{}
+	for _, process := range processes {
+		pid, installDir, port, listen, ok := getServiceProcessDetails(process)
+		if !ok {
+			log.Printf("[TRACE] showAllStatus - skipping pid %d: command line unreadable", process.Pid)
+			continue
+		}
+		rows = append(rows, []string{pid, installDir, port, string(listen)})
+	}
+	return rows
+}
+
+func getServiceProcessDetails(process *psutils.Process) (string, string, string, db_local.StartListenType, bool) {
+	cmdLine, err := process.CmdlineSlice()
+	if err != nil {
+		return "", "", "", "", false
+	}
+	return parseServiceCmdline(process.Pid, cmdLine)
+}
+
+func parseServiceCmdline(pid int32, cmdLine []string) (string, string, string, db_local.StartListenType, bool) {
+	if len(cmdLine) == 0 {
+		return "", "", "", "", false
+	}
 	installDir := strings.TrimSuffix(cmdLine[0], filepaths.ServiceExecutableRelativeLocation())
 	var port string
 	var listenType db_local.StartListenType
 
 	for idx, param := range cmdLine {
-		if param == "-p" {
+		if param == "-p" && idx+1 < len(cmdLine) {
 			port = cmdLine[idx+1]
 		}
 		if strings.HasPrefix(param, "listen_addresses") {
@@ -555,7 +573,7 @@ func getServiceProcessDetails(process *psutils.Process) (string, string, string,
 		}
 	}
 
-	return fmt.Sprintf("%d", process.Pid), installDir, port, listenType
+	return fmt.Sprintf("%d", pid), installDir, port, listenType, true
 }
 
 func printStatus(ctx context.Context, dbState *db_local.RunningDBInstanceInfo, pmState *pluginmanager.State, alreadyRunning bool) {

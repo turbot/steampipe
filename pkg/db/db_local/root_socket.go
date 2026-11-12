@@ -19,15 +19,15 @@ import (
 )
 
 // errStartedByOlderVersion is returned for a root connection to a running service that has no socket
-// in the data directory: Steampipe 2.4 and earlier put the socket in /tmp, and allowed root over TCP.
-var errStartedByOlderVersion = errors.New("the running service was started by an older version of Steampipe. Run `steampipe service stop --force` once")
+// in the data directory: earlier versions of Steampipe put the socket in /tmp, and allowed root over TCP.
+var errStartedByOlderVersion = errors.New("the running service was started by an older version of Steampipe")
 
 var errSocketPathTooLong = errors.New("the database socket path is too long")
 
 // postgresSocketArgs are the settings that every postgres Steampipe starts gets: the socket goes in
 // the data directory, and only the OS user who runs postgres can open it. Postgres does not start
-// unless the data directory belongs to that user and nobody else can read it, so no other user can
-// reach the socket, or make a file in its place.
+// unless the data directory belongs to that user and no other user can write to it, so no other user
+// can make a file in the socket's place.
 func postgresSocketArgs(dataDir string, port int) ([]string, error) {
 	if err := checkSocketPathLength(dataDir, port); err != nil {
 		return nil, err
@@ -55,8 +55,15 @@ func libpqSocketDir(dataDir string, port int) (dir string, cleanup func(), err e
 	if err != nil {
 		return "", nil, err
 	}
+	// the link is a socket path too, so it has the same limit
+	if checkSocketPathLength(dir, port) != nil && tmp != "/tmp" {
+		_ = os.RemoveAll(dir)
+		if dir, err = os.MkdirTemp("/tmp", "steampipe-socket-"); err != nil {
+			return "", nil, err
+		}
+	}
 	cleanup = func() { _ = os.RemoveAll(dir) }
-	if err := os.Symlink(rootSocketPath(dataDir, port), filepath.Join(dir, fmt.Sprintf(".s.PGSQL.%d", port))); err != nil {
+	if err := os.Symlink(rootSocketPath(dataDir, port), rootSocketPath(dir, port)); err != nil {
 		cleanup()
 		return "", nil, err
 	}
@@ -77,21 +84,12 @@ func maxSocketPathLength() int {
 }
 
 // checkSocketPathLength refuses a socket path that is too long for the OS. Postgres would fail to
-// start with "could not create any Unix-domain sockets", which does not say what to do.
+// start with "could not create any Unix-domain sockets", which does not say what to do. The advice
+// is to move the install directory: a new, empty one would leave the database behind.
 func checkSocketPathLength(dataDir string, port int) error {
-	return checkSocketPathLengthWithAdvice(dataDir, port, fmt.Sprintf("Set %s to a shorter path", constants.EnvInstallDir))
-}
-
-// checkSocketPathLengthForUpgrade is checkSocketPathLength for the data directory of an existing
-// installation. A new install directory would be empty, so the advice is to move this one.
-func checkSocketPathLengthForUpgrade(oldDataDir string, port int) error {
-	return checkSocketPathLengthWithAdvice(oldDataDir, port, fmt.Sprintf("Move %s to a shorter path and set %s to it", app_specific.InstallDir, constants.EnvInstallDir))
-}
-
-func checkSocketPathLengthWithAdvice(dataDir string, port int, advice string) error {
 	path := rootSocketPath(dataDir, port)
 	if limit := maxSocketPathLength(); len(path) > limit {
-		return fmt.Errorf("%w: %s is %d bytes, and %s allows at most %d. %s", errSocketPathTooLong, path, len(path), runtime.GOOS, limit, advice)
+		return fmt.Errorf("%w: %s is %d bytes, and %s allows at most %d. Move %s to a shorter path and set %s to it", errSocketPathTooLong, path, len(path), runtime.GOOS, limit, app_specific.InstallDir, constants.EnvInstallDir)
 	}
 	return nil
 }
@@ -119,7 +117,7 @@ func setRootSocketHost(config *pgx.ConnConfig, dataDir string) {
 func checkRootSocket(dataDir string, port int) error {
 	_, err := os.Stat(rootSocketPath(dataDir, port))
 	if errors.Is(err, fs.ErrNotExist) {
-		return errStartedByOlderVersion
+		return fmt.Errorf("%w. Run `steampipe service stop`, then try again", errStartedByOlderVersion)
 	}
 	return err
 }
