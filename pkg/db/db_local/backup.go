@@ -42,7 +42,8 @@ type pgRunningInfo struct {
 	dbName string
 }
 
-// stop is used for shutting down postgres instance spun up for extracting dump
+// stop is used for shutting down a postgres instance started in an old install location,
+// either to extract a dump or to leave its data folder cleanly shut down before it is moved.
 // it uses signals as suggested by https://www.postgresql.org/docs/12/server-shutdown.html
 // to try to shutdown the db process process.
 // It is not expected that any client is connected to the instance when 'stop' is called.
