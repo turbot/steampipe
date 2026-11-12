@@ -29,6 +29,15 @@ var ensureMux sync.Mutex
 
 var errDataFolderHoldsDatabase = errors.New("the data folder already holds a database")
 
+// the download, data move, backup, FDW install and database initialisation steps of a database install; tests replace them
+var (
+	installDbFiles  = downloadAndInstallDbFiles
+	moveOldData     = moveDataFromSameMajorInstall
+	backupOldDb     = prepareBackup
+	installFdwFiles = installFDW
+	initNewDatabase = runInstall
+)
+
 func noBackupWarning() string {
 	warningMessage := fmt.Sprintf(`Steampipe database has been upgraded to Postgres %s.
 
@@ -81,7 +90,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 
 	statushooks.SetStatus(ctx, "Installing database…")
 
-	err = downloadAndInstallDbFiles(ctx)
+	err = installDbFiles(ctx)
 	if err != nil {
 		return err
 	}
@@ -91,19 +100,38 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	if err == nil && found && isSameMajorVersion(filepath.Base(oldLocation), constants.DatabaseVersion) {
 		statushooks.SetStatus(ctx, "Moving database…")
 		// no fallback to dump and restore: it replaces the new data folder and deletes the old installation
-		if err := moveDataFromSameMajorInstall(ctx, oldLocation, filepaths.GetDataLocation()); err != nil {
+		if err := moveOldData(ctx, oldLocation, filepaths.GetDataLocation()); err != nil {
 			return err
 		}
 		moved = true
 	}
 
+	// no other version is installed and this version's data folder already holds a database: only its programs
+	// were missing, so the database is neither created nor restored into
+	kept := !moved && err == nil && !found && !needsInit()
+	dataReady := moved || kept
+
+	if dataReady {
+		if err := setAsideStaleBackup(ctx); err != nil {
+			// with the programs in place the next run starts and restores the backup into this database
+			removeNewInstall(filepaths.DatabaseInstanceDir(), filepaths.GetDataLocation())
+			return err
+		}
+	}
+
 	var dbName *string
-	if !moved {
+	if !dataReady {
+		// refuse before anything is dumped: the refusal leaves no backup behind to be restored later
+		if !needsInit() {
+			removeNewInstall(filepaths.DatabaseInstanceDir(), filepaths.GetDataLocation())
+			return dataFolderHoldsDatabaseError(filepaths.GetDataLocation())
+		}
+
 		statushooks.SetStatus(ctx, "Preparing backups…")
 
 		// call prepareBackup to generate the db dump file if necessary
 		// NOTE: this returns the existing database name - we use this when creating the new database
-		dbName, err = prepareBackup(ctx)
+		dbName, err = backupOldDb(ctx)
 		if err != nil {
 			log.Printf("[ERROR] prepareBackup failed: %s", err.Error())
 			if abortErr := abortInstallAfterBackupError(err); abortErr != nil {
@@ -115,21 +143,17 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	}
 
 	// install the fdw
-	_, err = installFDW(ctx, true)
+	_, err = installFdwFiles(ctx, true)
 	if err != nil {
 		log.Printf("[TRACE] installFDW failed: %v", err)
 		return fmt.Errorf("Download & install steampipe-postgres-fdw... FAILED!")
 	}
 
-	// a moved data folder is already initialised
-	if !moved {
+	// a moved or kept data folder is already initialised
+	if !dataReady {
 		// run the database installation
-		err = runInstall(ctx, dbName)
+		err = initNewDatabase(ctx, dbName)
 		if err != nil {
-			if errors.Is(err, errDataFolderHoldsDatabase) {
-				// with the binaries gone the next run installs again, instead of using this data folder as it is
-				removeNewInstall(filepaths.DatabaseInstanceDir(), filepaths.GetDataLocation())
-			}
 			return err
 		}
 	}
@@ -142,6 +166,8 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		log.Printf("[TRACE] updateDownloadedBinarySignature failed: %v", err)
 		return fmt.Errorf("Updating install records... FAILED!")
 	}
+
+	removeOldInstallsWithoutDatabase()
 
 	return nil
 }
@@ -167,6 +193,25 @@ func abortInstallRemovingNewInstall(err error, fixed string) error {
 		return fmt.Errorf("%w\n\n%s holds data and was kept. Once %s, the next run upgrades the old database. If %s holds a database, it asks you to move it somewhere else first", err, newDataLocation, fixed, newDataLocation)
 	}
 	return err
+}
+
+// setAsideStaleBackup keeps a backup left by an earlier attempt to upgrade an older installation in the backups
+// folder. Starting restores a backup into the database it finds, which must not happen to a database that was
+// kept or moved into place rather than upgraded into.
+func setAsideStaleBackup(ctx context.Context) error {
+	backupFile := filepaths.DatabaseBackupFilePath()
+	if !filehelpers.FileExists(backupFile) {
+		return nil
+	}
+	err := retainBackup(ctx)
+	if filehelpers.FileExists(backupFile) {
+		return fmt.Errorf("could not move the backup %s out of the way of the existing database: %w", backupFile, err)
+	}
+	if err != nil {
+		log.Printf("[WARN] Could not convert the kept backup to text: %s", err)
+	}
+	statushooks.Message(ctx, fmt.Sprintf("A backup left by an earlier upgrade attempt was not restored into the existing database. It was moved to %s.", filepaths.EnsureBackupsDir()))
+	return nil
 }
 
 func downloadAndInstallDbFiles(ctx context.Context) error {
@@ -311,9 +356,13 @@ func needsInit() bool {
 // emptied: initdb writes PG_VERSION, so its presence means there is a database to keep.
 func prepareDataLocation(dataLocation string) error {
 	if filehelpers.FileExists(filepath.Join(dataLocation, "PG_VERSION")) {
-		return fmt.Errorf("%w: %s\n\nSteampipe will not replace it. Move %s somewhere else, then run Steampipe again. If a database from a previous version is installed it is upgraded into a new database, otherwise Steampipe creates an empty one. Keep the moved folder until you have checked which database you want", errDataFolderHoldsDatabase, dataLocation, dataLocation)
+		return dataFolderHoldsDatabaseError(dataLocation)
 	}
 	return putils.RemoveDirectoryContents(dataLocation)
+}
+
+func dataFolderHoldsDatabaseError(dataLocation string) error {
+	return fmt.Errorf("%w: %s\n\nSteampipe will not replace it. Move %s somewhere else, then run Steampipe again. If a database from a previous version is installed it is upgraded into a new database, otherwise Steampipe creates an empty one. Keep the moved folder until you have checked which database you want", errDataFolderHoldsDatabase, dataLocation, dataLocation)
 }
 
 func runInstall(ctx context.Context, oldDbName *string) error {
