@@ -19,7 +19,8 @@ type runningPlugin struct {
 }
 
 // isStarting returns true if this is still the placeholder added by addRunningPlugin,
-// i.e. the plugin process has not finished starting so there is no client or reattach config yet
+// i.e. the plugin has not finished starting so there is no client yet, or it has not been
+// initialized so there is no reattach config yet
 func (p *runningPlugin) isStarting() bool {
 	return p.client == nil || p.reattach == nil
 }

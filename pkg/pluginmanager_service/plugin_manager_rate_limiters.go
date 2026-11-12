@@ -151,7 +151,7 @@ func (m *PluginManager) setRateLimitersForPlugin(pluginShortName string) error {
 		log.Printf("[INFO] handleUserLimiterChanges: plugin %s is not currently running - ignoring", pluginShortName)
 		return nil
 	}
-	// if the plugin is still starting it has no client or reattach config yet.
+	// if the plugin is still starting it may have no client or reattach config yet.
 	// initializePlugin may already have sent m.userLimiters, so mark the plugin and
 	// startPlugin sends the limiters again once it has started
 	if runningPlugin.isStarting() {

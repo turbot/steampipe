@@ -93,7 +93,7 @@ func (m *PluginManager) sendUpdateConnectionConfigs(requestMap map[string]*sdkpr
 		if !pluginAlreadyRunning {
 			continue
 		}
-		// if the plugin is still starting there is no client to send the update to
+		// if the plugin is still starting it is not ready for the update
 		// (the plugin was started with the connection configs read before this change -
 		// startPlugin sends it the changes made since, once it has started)
 		if runningPlugin.isStarting() {

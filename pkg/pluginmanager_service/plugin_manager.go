@@ -384,8 +384,10 @@ func (m *PluginManager) startPluginIfNeeded(pluginInstance string, connectionCon
 
 			// NOTE: ensure the connections assigned to this plugin are correct
 			// (may be out of sync if a connection is being added)
+			// use the current connections, not connectionConfigs, which may have been read before
+			// a change that startPlugin has since applied
 			m.mut.Lock()
-			startingPlugin.reattach.UpdateConnections(connectionConfigs)
+			startingPlugin.reattach.UpdateConnections(m.pluginConnectionConfigMap[pluginInstance])
 			m.mut.Unlock()
 
 			log.Printf("[TRACE] waitForPluginLoad succeeded %s (%p)", pluginInstance, req)
