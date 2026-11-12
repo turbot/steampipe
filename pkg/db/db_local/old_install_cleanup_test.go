@@ -3,12 +3,14 @@ package db_local
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 	"github.com/turbot/steampipe/v2/pkg/filepaths"
@@ -133,8 +135,8 @@ func TestRemoveOldInstallsWithoutDatabase_NeverRemovesDataBehindASymlink(t *test
 // a failed install must leave every older folder, removable or not, exactly where it was. Each case makes
 // EnsureDBInstalled fail at a different step and lists every path under the older folders beforehand.
 func TestEnsureDBInstalled_FailureRemovesNothing(t *testing.T) {
-	// older folders that hold no database and would all be removed after a successful install; none holds
-	// programs, so the install does not take the data-move path
+	// older folders: two hold no database and would be removed after a successful install, one holds a database
+	// and would be kept; none holds programs, so the install does not take the data-move path
 	removableOnly := func(t *testing.T, dbDir string) []string {
 		empty := filepath.Join(dbDir, "14.16.0")
 		emptyData := filepath.Join(dbDir, "14.15.0")
@@ -166,14 +168,19 @@ func TestEnsureDBInstalled_FailureRemovesNothing(t *testing.T) {
 		// the stubbed downloads leave no initdb binary, so initialising the new database fails
 		{name: "initialising the database fails", layout: removableOnly},
 		{
-			// the old data is first in name order and its fake server cannot start, so the move fails
+			// the folders are the target's major version, so the install moves the data. The data folder is the
+			// first folder in name order that holds programs and its fake server cannot start, so the move fails
 			name: "moving the data folder fails",
 			layout: func(t *testing.T, dbDir string) []string {
-				withData := filepath.Join(dbDir, "14.17.0")
+				target, err := semver.NewVersion(constants.DatabaseVersion)
+				if err != nil {
+					t.Fatal(err)
+				}
+				withData := filepath.Join(dbDir, fmt.Sprintf("%d.0.1", target.Major()))
 				writeFakeInstall(t, withData)
-				programsOnly := filepath.Join(dbDir, "14.19.0")
+				programsOnly := filepath.Join(dbDir, fmt.Sprintf("%d.0.2", target.Major()))
 				writeProgramsOnlyInstall(t, programsOnly)
-				empty := filepath.Join(dbDir, "14.16.0")
+				empty := filepath.Join(dbDir, fmt.Sprintf("%d.0.0", target.Major()))
 				if err := os.MkdirAll(empty, 0755); err != nil {
 					t.Fatal(err)
 				}
