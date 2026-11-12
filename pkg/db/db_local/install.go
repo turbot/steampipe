@@ -32,6 +32,7 @@ var errDataFolderHoldsDatabase = errors.New("the data folder already holds a dat
 // the download, backup, FDW install and database initialisation steps of a database install; tests replace them
 var (
 	installDbFiles  = downloadAndInstallDbFiles
+	moveOldData     = moveDataFromSameMajorInstall
 	backupOldDb     = prepareBackup
 	installFdwFiles = installFDW
 	initNewDatabase = runInstall
@@ -99,7 +100,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	if err == nil && found && isSameMajorVersion(filepath.Base(oldLocation), constants.DatabaseVersion) {
 		statushooks.SetStatus(ctx, "Moving database…")
 		// no fallback to dump and restore: it replaces the new data folder and deletes the old installation
-		if err := moveDataFromSameMajorInstall(ctx, oldLocation, filepaths.GetDataLocation()); err != nil {
+		if err := moveOldData(ctx, oldLocation, filepaths.GetDataLocation()); err != nil {
 			return err
 		}
 		moved = true

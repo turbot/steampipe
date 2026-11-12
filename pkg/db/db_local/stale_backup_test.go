@@ -3,18 +3,21 @@ package db_local
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/Masterminds/semver/v3"
+	"github.com/turbot/steampipe/v2/pkg/constants"
 	"github.com/turbot/steampipe/v2/pkg/filepaths"
 )
 
 func stubInstallSteps(t *testing.T) {
 	t.Helper()
-	origDownload, origBackup, origFdw, origInit := installDbFiles, backupOldDb, installFdwFiles, initNewDatabase
+	origDownload, origMove, origBackup, origFdw, origInit := installDbFiles, moveOldData, backupOldDb, installFdwFiles, initNewDatabase
 	t.Cleanup(func() {
-		installDbFiles, backupOldDb, installFdwFiles, initNewDatabase = origDownload, origBackup, origFdw, origInit
+		installDbFiles, moveOldData, backupOldDb, installFdwFiles, initNewDatabase = origDownload, origMove, origBackup, origFdw, origInit
 	})
 	installDbFiles = func(context.Context) error { return nil }
 	installFdwFiles = func(context.Context, bool) (string, error) { return "", nil }
@@ -52,6 +55,36 @@ func TestEnsureDBInstalled_KeptDatabaseDoesNotGetALeftoverBackupRestored(t *test
 	}
 	if content, err := os.ReadFile(kept[0]); err != nil || string(content) != "dump of an old database" {
 		t.Errorf("kept backup content changed: %q, %v", content, err)
+	}
+	assertExists(t, filepaths.GetPgVersionLocation())
+}
+
+func TestEnsureDBInstalled_MovedDatabaseDoesNotGetALeftoverBackupRestored(t *testing.T) {
+	dbDir := setCleanupInstallDir(t)
+	stubInstallSteps(t)
+	target, err := semver.NewVersion(constants.DatabaseVersion)
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldInstall := filepath.Join(dbDir, fmt.Sprintf("%d.0.1", target.Major()))
+	writeFakeInstall(t, oldInstall)
+	moveOldData = func(_ context.Context, oldLocation, newDataLocation string) error {
+		return moveDataFolder(oldLocation, newDataLocation)
+	}
+
+	backupFile := filepaths.DatabaseBackupFilePath()
+	if err := os.WriteFile(backupFile, []byte("dump of an old database"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := EnsureDBInstalled(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	assertGone(t, backupFile)
+	kept, err := filepath.Glob(filepath.Join(filepaths.EnsureBackupsDir(), "database-*.dump"))
+	if err != nil || len(kept) != 1 {
+		t.Fatalf("expected the backup to be kept in the backups folder, got %v, %v", kept, err)
 	}
 	assertExists(t, filepaths.GetPgVersionLocation())
 }
