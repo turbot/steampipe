@@ -332,6 +332,26 @@ func TestStartDatabaseInLocation_TooLongSocketPathLeavesOldDataUntouched(t *test
 	}
 }
 
+func TestMoveDataFromSameMajorInstall_TooLongSocketPathSaysOnlyToMoveTheInstallDirectory(t *testing.T) {
+	installDir := filepath.Join(t.TempDir(), strings.Repeat("x", 100), ".steampipe")
+	originalInstallDir := app_specific.InstallDir
+	t.Cleanup(func() { app_specific.InstallDir = originalInstallDir })
+	app_specific.InstallDir = installDir
+	oldLocation := filepath.Join(installDir, "db", "14.19.0")
+	if err := os.MkdirAll(filepath.Join(oldLocation, "data"), 0700); err != nil {
+		t.Fatal(err)
+	}
+
+	err := moveDataFromSameMajorInstall(context.Background(), oldLocation, filepaths.GetDataLocation())
+	if !errors.Is(err, errSocketPathTooLong) {
+		t.Fatalf("want the too-long socket path error, got %v", err)
+	}
+	// moving the old installation aside would start an empty database and leave the data behind
+	if strings.Contains(err.Error(), "new, empty database") || strings.Contains(err.Error(), "run the older version directly") {
+		t.Errorf("the error must only say to move the install directory: %v", err)
+	}
+}
+
 func TestStartDatabaseInLocation_TooLongNewSocketPathLeavesOldDataUntouched(t *testing.T) {
 	// the old data directory's socket path fits; the new one's does not
 	installDir := filepath.Join(t.TempDir(), strings.Repeat("x", 100), ".steampipe")
