@@ -2,6 +2,8 @@ package db_local
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -128,25 +130,97 @@ func TestRemoveOldInstallsWithoutDatabase_NeverRemovesDataBehindASymlink(t *test
 	assertExists(t, filepath.Join(external, "PG_VERSION"))
 }
 
-// a failed install returns before it reaches the cleanup. This drives the one failure that needs no download:
-// a running service from a previous version. The failures after the download are not driven here.
-func TestEnsureDBInstalled_FailureRemovesNoOldFolder(t *testing.T) {
-	dbDir := setCleanupInstallDir(t)
-
-	programsOnly := filepath.Join(dbDir, "14.17.0")
-	writeProgramsOnlyInstall(t, programsOnly)
-
-	// this test process stands in for the running service
-	running := newRunningDBInstanceInfo(&exec.Cmd{Process: &os.Process{Pid: os.Getpid()}}, []string{"localhost"}, 9193, "steampipe", "password", constants.InvokerService)
-	if err := running.Save(); err != nil {
-		t.Fatal(err)
+// a failed install must leave every older folder, removable or not, exactly where it was. Each case makes
+// EnsureDBInstalled fail at a different step and lists every path under the older folders beforehand.
+func TestEnsureDBInstalled_FailureRemovesNothing(t *testing.T) {
+	// older folders that hold no database and would all be removed after a successful install; none holds
+	// programs, so the install does not take the data-move path
+	removableOnly := func(t *testing.T, dbDir string) []string {
+		empty := filepath.Join(dbDir, "14.16.0")
+		emptyData := filepath.Join(dbDir, "14.15.0")
+		for _, dir := range []string{empty, filepath.Join(emptyData, "data")} {
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				t.Fatal(err)
+			}
+		}
+		withData := filepath.Join(dbDir, "14.17.0", "data")
+		if err := os.MkdirAll(withData, 0700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(withData, "PG_VERSION"), []byte("14\n"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		return []string{empty, emptyData, filepath.Join(dbDir, "14.17.0")}
 	}
 
-	if err := EnsureDBInstalled(context.Background()); err == nil {
-		t.Fatal("expected an error")
+	tests := []struct {
+		name     string
+		layout   func(t *testing.T, dbDir string) []string
+		download error
+		fdw      error
+		running  bool
+	}{
+		{name: "a previous service is running", layout: removableOnly, running: true},
+		{name: "the database download fails", layout: removableOnly, download: errors.New("download failed")},
+		{name: "the FDW install fails", layout: removableOnly, fdw: errors.New("fdw failed")},
+		// the stubbed downloads leave no initdb binary, so initialising the new database fails
+		{name: "initialising the database fails", layout: removableOnly},
+		{
+			// the old data is first in name order and its fake server cannot start, so the move fails
+			name: "moving the data folder fails",
+			layout: func(t *testing.T, dbDir string) []string {
+				withData := filepath.Join(dbDir, "14.17.0")
+				writeFakeInstall(t, withData)
+				programsOnly := filepath.Join(dbDir, "14.19.0")
+				writeProgramsOnlyInstall(t, programsOnly)
+				empty := filepath.Join(dbDir, "14.16.0")
+				if err := os.MkdirAll(empty, 0755); err != nil {
+					t.Fatal(err)
+				}
+				return []string{withData, programsOnly, empty}
+			},
+		},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dbDir := setCleanupInstallDir(t)
+			// a failed initdb leaves LC_ALL set
+			t.Setenv("LC_ALL", "")
 
-	assertExists(t, filepath.Join(programsOnly, "postgres", "bin", "postgres"))
+			origDownload, origFdw := installDbFiles, installFdwFiles
+			t.Cleanup(func() { installDbFiles, installFdwFiles = origDownload, origFdw })
+			installDbFiles = func(context.Context) error { return tt.download }
+			installFdwFiles = func(context.Context, bool) (string, error) { return "", tt.fdw }
+
+			folders := tt.layout(t, dbDir)
+			var before []string
+			for _, folder := range folders {
+				err := filepath.WalkDir(folder, func(path string, _ fs.DirEntry, err error) error {
+					before = append(before, path)
+					return err
+				})
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			if tt.running {
+				// this test process stands in for the running service
+				info := newRunningDBInstanceInfo(&exec.Cmd{Process: &os.Process{Pid: os.Getpid()}}, []string{"localhost"}, 9193, "steampipe", "password", constants.InvokerService)
+				if err := info.Save(); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			if err := EnsureDBInstalled(context.Background()); err == nil {
+				t.Fatal("expected an error")
+			}
+
+			for _, path := range before {
+				assertExists(t, path)
+			}
+		})
+	}
 }
 
 func TestRemoveOldInstallsWithoutDatabase_KeepsEverythingElse(t *testing.T) {
