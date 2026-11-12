@@ -169,7 +169,8 @@ func TestEnsureDBInstalled_FailureRemovesNothing(t *testing.T) {
 		{name: "initialising the database fails", layout: removableOnly},
 		{
 			// the folders are the target's major version, so the install moves the data. The data folder is the
-			// first folder in name order that holds programs and its fake server cannot start, so the move fails
+			// only one holding both programs and a database, so it is the one moved, and its fake server cannot
+			// start, so the move fails
 			name: "moving the data folder fails",
 			layout: func(t *testing.T, dbDir string) []string {
 				target, err := semver.NewVersion(constants.DatabaseVersion)
@@ -230,8 +231,9 @@ func TestEnsureDBInstalled_FailureRemovesNothing(t *testing.T) {
 	}
 }
 
-// a successful install, with every step that downloads or runs postgres replaced, removes the older folders that
-// hold no database and keeps the one that does
+// a successful install, with the download, FDW install and database initialisation replaced, removes the older
+// folders that hold no database and keeps the one that does. No older folder holds both programs and a database,
+// so the backup and the data move, which start postgres and cannot be replaced, are not reached.
 func TestEnsureDBInstalled_SuccessRemovesFoldersWithoutDatabase(t *testing.T) {
 	dbDir := setCleanupInstallDir(t)
 
