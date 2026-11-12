@@ -110,40 +110,47 @@ func GetClientCount(ctx context.Context) (*ClientCount, error) {
 	putils.LogTime("db_local.GetClientCount start")
 	defer putils.LogTime("db_local.GetClientCount end")
 
-	counts, err := countClients(ctx, constants.DatabaseSuperUser)
+	counts, err := countClients(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if !errors.Is(err, errStartedByOlderVersion) {
 		return counts, err
 	}
-	// root cannot reach a service an older version started. Steampipe's clients connect as the steampipe user,
-	// which sees their sessions.
-	counts, err = countClients(ctx, constants.DatabaseUser)
+	// root cannot reach a service an older version started. The steampipe user can, with the service's password
+	// for a pg_hba.conf rule that requires one.
+	state, stateErr := GetState()
+	if stateErr != nil || state == nil {
+		// the service stopped since
+		return nil, err
+	}
+	counts, err = countClients(ctx, &CreateDbOptions{Username: constants.DatabaseUser, Password: state.Password})
 	if err != nil {
-		return nil, fmt.Errorf("%w. Could not count its clients as %s: %w", errStartedByOlderVersion, constants.DatabaseUser, err)
+		return nil, fmt.Errorf("%w, and its clients could not be counted as %s: %w. Stop it with the version of Steampipe that started it, or disconnect its clients and run `steampipe service stop --force`, which stops every Steampipe service on this machine", errStartedByOlderVersion, constants.DatabaseUser, err)
 	}
 	return counts, nil
 }
 
-// countClients is GetClientCount, connected as username. Only root sees every session; any other user sees
-// only the sessions of its own role.
-func countClients(ctx context.Context, username string) (*ClientCount, error) {
-	client, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: username})
+// countClients is GetClientCount, connected with opts. Root sees every session. Any other user sees only the
+// name and application name of another role's sessions, so those are counted by a non-empty application name.
+func countClients(ctx context.Context, opts *CreateDbOptions) (*ClientCount, error) {
+	client, err := CreateLocalDbConnection(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
 	defer client.Close(ctx)
 
 	query := `
-SELECT 
+SELECT
   application_name,
   count(*)
-FROM 
-  pg_stat_activity 
+FROM
+  pg_stat_activity
 WHERE
-	-- get only the network client processes
-  client_port IS NOT NULL 
-	AND
-	-- which are client backends
-  backend_type=$1 
+  (
+	-- network client processes which are client backends
+    (client_port IS NOT NULL AND backend_type=$1)
+	OR
+	-- another role's session, seen by a user that is not root
+    (backend_type IS NULL AND application_name!='')
+  )
 	AND
 	-- which are not connections from this application
   application_name!=$2

@@ -90,6 +90,8 @@ func quoteConnStringValue(v string) string {
 
 type CreateDbOptions struct {
 	DatabaseName, Username string
+	// Password is set on the parsed connection, so that it stays out of the logged connection string
+	Password string
 }
 
 func isRootConnection(opts *CreateDbOptions) bool {
@@ -117,6 +119,9 @@ func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.C
 
 	if isRootConnection(opts) {
 		setRootSocketHost(connConfig, filepaths.GetDataLocation())
+	}
+	if opts != nil && opts.Password != "" {
+		connConfig.Password = opts.Password
 	}
 
 	// set an app name so that we can track database connections from this Steampipe execution

@@ -374,7 +374,13 @@ func pgHbaConfTarget(dataDir string) (path string, isLink bool, err error) {
 			return "", false, err
 		}
 		if !filepath.IsAbs(target) {
-			target = filepath.Join(filepath.Dir(path), target)
+			// resolve the folder first: Join would cancel a ".." against a linked folder's name, where the OS
+			// goes up from the folder it links to
+			dir, err := filepath.EvalSymlinks(filepath.Dir(path))
+			if err != nil {
+				return "", false, err
+			}
+			target = filepath.Join(dir, target)
 		}
 		path = target
 		info, err := os.Lstat(path)

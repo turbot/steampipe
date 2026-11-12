@@ -20,7 +20,7 @@ import (
 
 // errStartedByOlderVersion is returned for a root connection to a running service that has no socket
 // in the data directory: earlier versions of Steampipe put the socket in /tmp, and allowed root over TCP.
-var errStartedByOlderVersion = errors.New("the running service was started by an older version of Steampipe. Run `steampipe service stop --force` once")
+var errStartedByOlderVersion = errors.New("the running service was started by an older version of Steampipe")
 
 var errSocketPathTooLong = errors.New("the database socket path is too long")
 
@@ -117,7 +117,7 @@ func setRootSocketHost(config *pgx.ConnConfig, dataDir string) {
 func checkRootSocket(dataDir string, port int) error {
 	_, err := os.Stat(rootSocketPath(dataDir, port))
 	if errors.Is(err, fs.ErrNotExist) {
-		return errStartedByOlderVersion
+		return fmt.Errorf("%w. Run `steampipe service stop`, then try again", errStartedByOlderVersion)
 	}
 	return err
 }
