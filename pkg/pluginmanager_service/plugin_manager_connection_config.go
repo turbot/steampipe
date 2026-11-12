@@ -64,7 +64,7 @@ func (m *PluginManager) applyChangesMadeWhileStarting(p *runningPlugin, startedW
 }
 
 // requestsForChangesMadeWhileStarting builds the update requests which bring a plugin started with startedWith
-// up to date with the current connection config
+// up to date with the current connection config. It also updates the plugin's reattach connections
 // NOTE: caller must hold m.mut lock
 func (m *PluginManager) requestsForChangesMadeWhileStarting(pluginInstance string, startedWith []*sdkproto.ConnectionConfig) map[string]*sdkproto.UpdateConnectionConfigsRequest {
 	startedWithMap := make(connection.ConnectionConfigMap, len(startedWith))

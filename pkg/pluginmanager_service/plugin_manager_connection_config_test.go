@@ -16,7 +16,7 @@ import (
 	pb "github.com/turbot/steampipe/v2/pkg/pluginmanager_service/grpc/proto"
 )
 
-// a plugin which is still starting has a placeholder runningPlugin with a nil client and reattach config.
+// a plugin which is still starting has a placeholder runningPlugin whose reattach config (and, early on, client) is nil.
 // connection config and rate limiter changes arriving in that window must not panic, and are not sent
 // to the plugin while it is starting (startPlugin sends the difference from the connection configs it was started with, once it has started)
 
