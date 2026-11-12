@@ -243,7 +243,12 @@ func killRunningDbInstance(ctx context.Context) error {
 
 // backup the old pg instance public schema using pg_dump
 func takeBackup(ctx context.Context, config *pgRunningInfo) error {
-	cmd := backupCmd(ctx, config)
+	socketDir, cleanup, err := libpqSocketDir(config.dataDir, config.port)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+	cmd := backupCmd(ctx, config, socketDir)
 	log.Println("[TRACE] starting pg_dump command:", cmd.String())
 
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -256,7 +261,7 @@ func takeBackup(ctx context.Context, config *pgRunningInfo) error {
 
 // backupCmd is the pg_dump command that takes the backup. It connects as root through the socket
 // in the old installation's data directory.
-func backupCmd(ctx context.Context, config *pgRunningInfo) *exec.Cmd {
+func backupCmd(ctx context.Context, config *pgRunningInfo, socketDir string) *exec.Cmd {
 	return pgDumpCmd(
 		ctx,
 		fmt.Sprintf("--file=%s", filepaths.DatabaseBackupFilePath()),
@@ -266,7 +271,7 @@ func backupCmd(ctx context.Context, config *pgRunningInfo) *exec.Cmd {
 		// only backup the database used by steampipe
 		fmt.Sprintf("--dbname=%s", config.dbName),
 		// connection parameters
-		fmt.Sprintf("--host=%s", config.dataDir),
+		fmt.Sprintf("--host=%s", socketDir),
 		fmt.Sprintf("--port=%d", config.port),
 		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
 	)
@@ -523,7 +528,12 @@ func restoreDBBackup(ctx context.Context) error {
 }
 
 func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listFile string) error {
-	cmd := restoreCmd(ctx, info, listFile)
+	socketDir, cleanup, err := libpqSocketDir(filepaths.GetDataLocation(), info.Port)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+	cmd := restoreCmd(ctx, info, listFile, socketDir)
 	log.Println("[TRACE] pg_restore command:", cmd.String())
 
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -535,7 +545,7 @@ func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listF
 
 // restoreCmd is the pg_restore command that restores the backup into the new installation's
 // service. It connects as root through the socket in the new data directory.
-func restoreCmd(ctx context.Context, info *RunningDBInstanceInfo, listFile string) *exec.Cmd {
+func restoreCmd(ctx context.Context, info *RunningDBInstanceInfo, listFile string, socketDir string) *exec.Cmd {
 	return pgRestoreCmd(
 		ctx,
 		filepaths.DatabaseBackupFilePath(),
@@ -552,7 +562,7 @@ func restoreCmd(ctx context.Context, info *RunningDBInstanceInfo, listFile strin
 		fmt.Sprintf("--dbname=%s", info.Database),
 		// connection parameters
 		// the restore goes into the new installation's service
-		fmt.Sprintf("--host=%s", filepaths.GetDataLocation()),
+		fmt.Sprintf("--host=%s", socketDir),
 		fmt.Sprintf("--port=%d", info.Port),
 		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
 	)

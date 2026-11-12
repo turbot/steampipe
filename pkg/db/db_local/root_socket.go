@@ -8,8 +8,10 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
@@ -31,9 +33,34 @@ func postgresSocketArgs(dataDir string, port int) ([]string, error) {
 		return nil, err
 	}
 	return []string{
-		"-c", fmt.Sprintf("unix_socket_directories=%s", dataDir),
+		// postgres splits this setting on commas unless an element is double-quoted,
+		// and a double quote inside a quoted element is doubled
+		"-c", fmt.Sprintf(`unix_socket_directories="%s"`, strings.ReplaceAll(dataDir, `"`, `""`)),
 		"-c", "unix_socket_permissions=0700",
 	}, nil
+}
+
+// libpqSocketDir is the directory to give pg_dump and pg_restore for the socket in dataDir. libpq
+// splits a host on commas with no way to quote one, so a directory with a comma is reached through
+// a private temporary directory that holds a link to the socket. cleanup removes it.
+func libpqSocketDir(dataDir string, port int) (dir string, cleanup func(), err error) {
+	if !strings.Contains(dataDir, ",") {
+		return dataDir, func() {}, nil
+	}
+	tmp := os.TempDir()
+	if strings.Contains(tmp, ",") {
+		tmp = "/tmp"
+	}
+	dir, err = os.MkdirTemp(tmp, "steampipe-socket-")
+	if err != nil {
+		return "", nil, err
+	}
+	cleanup = func() { _ = os.RemoveAll(dir) }
+	if err := os.Symlink(rootSocketPath(dataDir, port), filepath.Join(dir, fmt.Sprintf(".s.PGSQL.%d", port))); err != nil {
+		cleanup()
+		return "", nil, err
+	}
+	return dir, cleanup, nil
 }
 
 func rootSocketPath(dataDir string, port int) string {
@@ -71,14 +98,20 @@ func checkSocketPathLengthWithAdvice(dataDir string, port int, advice string) er
 
 // rootConnectionParams are the connection parameters for every connection that Steampipe makes as
 // root: the unix socket in the data directory, which does not use SSL. The database is up to the
-// caller.
-func rootConnectionParams(dataDir string, port int) map[string]string {
+// caller. The host is left out because pgx splits it on commas: the caller sets it with
+// setRootSocketHost after parsing.
+func rootConnectionParams(port int) map[string]string {
 	return map[string]string{
-		"host":    dataDir,
 		"port":    fmt.Sprint(port),
 		"user":    constants.DatabaseSuperUser,
 		"sslmode": "disable",
 	}
+}
+
+// setRootSocketHost points a parsed connection at the socket in the data directory.
+func setRootSocketHost(config *pgx.ConnConfig, dataDir string) {
+	config.Host = dataDir
+	config.Fallbacks = nil
 }
 
 // checkRootSocket is for a root connection to a service that is already running. A missing socket
