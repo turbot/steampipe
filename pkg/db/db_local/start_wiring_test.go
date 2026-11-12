@@ -81,15 +81,8 @@ func assertRecordedStart(t *testing.T, recordDir string) {
 	})
 }
 
-func setWiringInstallDir(t *testing.T) {
-	t.Helper()
-	original := app_specific.InstallDir
-	t.Cleanup(func() { app_specific.InstallDir = original })
-	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
-}
-
 func TestStartPostgresProcess_WritesPgHbaAndSetsSocket(t *testing.T) {
-	setWiringInstallDir(t)
+	setCleanupInstallDir(t)
 	recordDir := writeRecordingPostgres(t, filepaths.GetPostgresBinaryExecutablePath())
 	_ = filepaths.GetDataLocation() // creates the data folder
 
@@ -106,7 +99,7 @@ func TestStartPostgresProcess_WritesPgHbaAndSetsSocket(t *testing.T) {
 }
 
 func TestStartServiceForInstall_WritesPgHbaAndSetsSocket(t *testing.T) {
-	setWiringInstallDir(t)
+	setCleanupInstallDir(t)
 	recordDir := writeRecordingPostgres(t, filepaths.GetPostgresBinaryExecutablePath())
 	_ = filepaths.GetDataLocation() // creates the data folder
 
@@ -114,13 +107,13 @@ func TestStartServiceForInstall_WritesPgHbaAndSetsSocket(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { _ = process.Kill() })
+	t.Cleanup(func() { killAndReap(int(process.Pid)) })
 
 	assertRecordedStart(t, recordDir)
 }
 
 func TestStartDatabaseInLocation_WritesPgHbaAndSetsSocket(t *testing.T) {
-	setWiringInstallDir(t)
+	setCleanupInstallDir(t)
 	location := filepath.Join(app_specific.InstallDir, "db", "13.0.0")
 	recordDir := writeRecordingPostgres(t, filepath.Join(location, "postgres", "bin", "postgres"))
 	if err := os.MkdirAll(filepath.Join(location, "data"), 0700); err != nil {
@@ -173,7 +166,7 @@ func assertNotStartedWhenPgHbaCannotBeWritten(t *testing.T, recordDir, dataLocat
 }
 
 func TestStartPostgresProcess_DoesNotStartWhenPgHbaCannotBeWritten(t *testing.T) {
-	setWiringInstallDir(t)
+	setCleanupInstallDir(t)
 	recordDir := writeRecordingPostgres(t, filepaths.GetPostgresBinaryExecutablePath())
 
 	assertNotStartedWhenPgHbaCannotBeWritten(t, recordDir, filepaths.GetDataLocation(), func() error {
@@ -189,20 +182,20 @@ func TestStartPostgresProcess_DoesNotStartWhenPgHbaCannotBeWritten(t *testing.T)
 }
 
 func TestStartServiceForInstall_DoesNotStartWhenPgHbaCannotBeWritten(t *testing.T) {
-	setWiringInstallDir(t)
+	setCleanupInstallDir(t)
 	recordDir := writeRecordingPostgres(t, filepaths.GetPostgresBinaryExecutablePath())
 
 	assertNotStartedWhenPgHbaCannotBeWritten(t, recordDir, filepaths.GetDataLocation(), func() error {
 		process, err := startServiceForInstall(9193)
 		if process != nil {
-			t.Cleanup(func() { _ = process.Kill() })
+			t.Cleanup(func() { killAndReap(int(process.Pid)) })
 		}
 		return err
 	})
 }
 
 func TestStartDatabaseInLocation_DoesNotStartWhenPgHbaCannotBeWritten(t *testing.T) {
-	setWiringInstallDir(t)
+	setCleanupInstallDir(t)
 	location := filepath.Join(app_specific.InstallDir, "db", "13.0.0")
 	recordDir := writeRecordingPostgres(t, filepath.Join(location, "postgres", "bin", "postgres"))
 
@@ -213,4 +206,13 @@ func TestStartDatabaseInLocation_DoesNotStartWhenPgHbaCannotBeWritten(t *testing
 		_, err := startDatabaseInLocation(ctx, location)
 		return err
 	})
+}
+
+// killAndReap stops a child process that was started inside production code, so that it does not stay behind as a
+// zombie until the test binary exits
+func killAndReap(pid int) {
+	if p, err := os.FindProcess(pid); err == nil {
+		_ = p.Kill()
+		_, _ = p.Wait()
+	}
 }
