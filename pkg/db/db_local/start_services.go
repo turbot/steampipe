@@ -653,6 +653,12 @@ func FindAllSteampipePostgresInstances(ctx context.Context) ([]*psutils.Process,
 	return findSteampipePostgresInstances(ctx, psutils.ProcessesWithContext)
 }
 
+// readProcessCmdline is a variable so tests can simulate a process whose
+// command line cannot be read yet.
+var readProcessCmdline = func(ctx context.Context, p *psutils.Process) ([]string, error) {
+	return p.CmdlineSliceWithContext(ctx)
+}
+
 func findSteampipePostgresInstances(ctx context.Context, listProcesses func(context.Context) ([]*psutils.Process, error)) ([]*psutils.Process, error) {
 	var instances []*psutils.Process
 	allProcesses, err := listProcesses(ctx)
@@ -661,7 +667,7 @@ func findSteampipePostgresInstances(ctx context.Context, listProcesses func(cont
 		return nil, err
 	}
 	for _, p := range allProcesses {
-		cmdLine, err := p.CmdlineSliceWithContext(ctx)
+		cmdLine, err := readProcessCmdline(ctx, p)
 		if err != nil {
 			// the process may have exited since the list was taken, or its
 			// command line may not be readable by this user
