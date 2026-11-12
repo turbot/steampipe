@@ -109,11 +109,6 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 			if abortErr := abortInstallAfterBackupError(err); abortErr != nil {
 				return abortErr
 			}
-			if backupErrorStopsInstall(err) {
-				// remove the new binaries - otherwise, the backup won't get triggered, even if the user fixes the cause
-				removeNewInstall(filepaths.DatabaseInstanceDir(), filepaths.GetDataLocation())
-				return err
-			}
 			// ignore all other errors with the backup, displaying a warning instead
 			statushooks.Message(ctx, noBackupWarning())
 		}
@@ -152,13 +147,17 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 }
 
 // abortInstallAfterBackupError returns the error that stops the install when the backup failed in a way that
-// carrying on would hide, and nil for any other backup error.
+// carrying on would hide, and nil for any other backup error. The user can fix each of these errors, and the
+// backup must run again at the next start.
 func abortInstallAfterBackupError(err error) error {
-	if errors.Is(err, errDbInstanceRunning) {
+	var hbaStop *pgHbaStopError
+	switch {
+	case errors.Is(err, errDbInstanceRunning):
 		return abortInstallRemovingNewInstall(err, "the old server is stopped")
-	}
-	if errors.Is(err, errSocketPathTooLong) {
+	case errors.Is(err, errSocketPathTooLong):
 		return abortInstallRemovingNewInstall(err, "the old directory is moved")
+	case errors.As(err, &hbaStop):
+		return abortInstallRemovingNewInstall(err, "pg_hba.conf is fixed")
 	}
 	return nil
 }

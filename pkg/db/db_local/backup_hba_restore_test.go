@@ -3,6 +3,7 @@ package db_local
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -270,6 +271,42 @@ func TestAbortInstallAfterBackupError_SocketPathTooLongKeepsNewDataThatHoldsData
 	}
 	if _, statErr := os.Stat(filepath.Join(newDataLocation, "PG_VERSION")); statErr != nil {
 		t.Errorf("new data should have been kept: %v", statErr)
+	}
+}
+
+func TestAbortInstallAfterBackupError_PgHbaStopErrorStopsTheInstall(t *testing.T) {
+	original := app_specific.InstallDir
+	defer func() { app_specific.InstallDir = original }()
+	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
+
+	newLocation := filepaths.DatabaseInstanceDir()
+	_ = filepaths.GetDatabaseLocation()
+	_ = filepaths.GetDataLocation()
+
+	backupErr := fmt.Errorf("start: %w", &pgHbaStopError{message: "fix pg_hba.conf"})
+	err := abortInstallAfterBackupError(backupErr)
+	var stop *pgHbaStopError
+	if !errors.As(err, &stop) {
+		t.Fatalf("the install must stop with the pg_hba.conf error: %v", err)
+	}
+	if _, statErr := os.Stat(newLocation); !os.IsNotExist(statErr) {
+		t.Errorf("new installation should have been removed so the next run installs again, stat err: %v", statErr)
+	}
+}
+
+func TestAbortInstallAfterBackupError_PgHbaStopErrorKeepsNewDataThatHoldsData(t *testing.T) {
+	original := app_specific.InstallDir
+	defer func() { app_specific.InstallDir = original }()
+	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
+
+	newDataLocation := filepaths.GetDataLocation()
+	if err := os.WriteFile(filepath.Join(newDataLocation, "PG_VERSION"), []byte("14\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	err := abortInstallAfterBackupError(&pgHbaStopError{message: "fix pg_hba.conf"})
+	if err == nil || !strings.Contains(err.Error(), newDataLocation+" holds data and was kept") {
+		t.Errorf("the error must say the new data folder was kept: %v", err)
 	}
 }
 

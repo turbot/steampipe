@@ -2,7 +2,6 @@ package db_local
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -406,19 +405,6 @@ func TestCheckPgHbaConf_OnlyAnEditedFileStopsARestart(t *testing.T) {
 	var stop *pgHbaStopError
 	if err := CheckPgHbaConf(); !errors.As(err, &stop) {
 		t.Errorf("an edited file must stop the restart, got %v", err)
-	}
-}
-
-func TestBackupErrorStopsInstall(t *testing.T) {
-	cases := map[error]bool{
-		errDbInstanceRunning:                                    true,
-		fmt.Errorf("start: %w", &pgHbaStopError{message: "m"}): true,
-		errors.New("pg_dump failed"):                            false,
-	}
-	for err, want := range cases {
-		if got := backupErrorStopsInstall(err); got != want {
-			t.Errorf("%v: got %v, want %v", err, got, want)
-		}
 	}
 }
 

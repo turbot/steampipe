@@ -65,13 +65,6 @@ const (
 	onlyMatViewRefreshListFileName = "only_refresh.lst"
 )
 
-// backupErrorStopsInstall reports whether a failed backup stops the install. The user can fix both
-// errors, and the backup must run again at the next start.
-func backupErrorStopsInstall(err error) bool {
-	var stop *pgHbaStopError
-	return errors.Is(err, errDbInstanceRunning) || errors.As(err, &stop)
-}
-
 // prepareBackup creates a backup file of the public schema for the current database, if we are migrating
 // if a backup was taken, this returns the name of the database that was backed up
 func prepareBackup(ctx context.Context) (*string, error) {
@@ -346,7 +339,7 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 	if err != nil {
 		return nil, err
 	}
-	// the old pg_hba.conf is rewritten below, so nothing may fail before this check without being undone
+	// checked before the old pg_hba.conf is saved and possibly rewritten below, so a failure here leaves nothing to undo
 	if err := checkSocketPathLengthForUpgrade(dataLocation, port); err != nil {
 		return nil, err
 	}
