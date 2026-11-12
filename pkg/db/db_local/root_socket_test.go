@@ -63,7 +63,7 @@ func TestCreateCmd_HasSocketSettings(t *testing.T) {
 		t.Fatal(err)
 	}
 	args := strings.Join(cmd.Args, " ")
-	for _, setting := range []string{`unix_socket_directories="` + filepaths.GetDataLocation() + `"`,"unix_socket_permissions=0700"} {
+	for _, setting := range []string{`unix_socket_directories="` + filepaths.GetDataLocation() + `"`, "unix_socket_permissions=0700"} {
 		if !strings.Contains(args, setting) {
 			t.Errorf("service start is missing %s: %s", setting, args)
 		}
