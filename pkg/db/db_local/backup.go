@@ -121,16 +121,10 @@ func moveDataFromSameMajorInstall(ctx context.Context, oldLocation, newDataLocat
 		newLocation := filepaths.DatabaseInstanceDir()
 		err = fmt.Errorf("could not move the database from %s to %s: %w", oldLocation, newLocation, err)
 
-		newBinaries := filepath.Join(newLocation, "postgres")
-		if removeErr := os.RemoveAll(newBinaries); removeErr != nil {
-			log.Printf("[WARN] Could not remove new binaries at %s: %s", newBinaries, removeErr)
-		}
-		// os.Remove never removes a folder that holds anything
-		if removeErr := os.Remove(newDataLocation); removeErr != nil && !os.IsNotExist(removeErr) {
-			// either folder may hold the data the user wants: the new one may be a database already upgraded
-			if entries, readErr := os.ReadDir(newDataLocation); readErr != nil || len(entries) > 0 {
-				oldDataLocation := filepath.Join(oldLocation, "data")
-				err = fmt.Errorf(`%w
+		// either folder may hold the data the user wants: the new one may be a database already upgraded
+		if removeNewInstall(newLocation, newDataLocation) {
+			oldDataLocation := filepath.Join(oldLocation, "data")
+			err = fmt.Errorf(`%w
 
 Both data folders were kept:
   %s (PostgreSQL %s), unchanged
@@ -138,21 +132,16 @@ Both data folders were kept:
 The next run moves %s into place, so %s must be out of the way first. Check which folder holds the data you want, then:
   to keep %s, move %s somewhere else, or delete it;
   to keep %s, move %s somewhere else, then move %s to %s.
-Keep %s until then: without it Steampipe creates an empty database in %s, replacing what is there.
+Keep %s until then: without it Steampipe cannot move the data into %s.
 Then run Steampipe again`,
-					err,
-					oldDataLocation, filepath.Base(oldLocation),
-					newDataLocation, filepath.Base(newLocation),
-					oldDataLocation, newDataLocation,
-					oldDataLocation, newDataLocation,
-					newDataLocation, oldDataLocation, newDataLocation, oldDataLocation,
-					oldLocation, newDataLocation)
-				return
-			}
-			log.Printf("[WARN] Could not remove new data folder at %s: %s", newDataLocation, removeErr)
-		}
-		if removeErr := os.Remove(newLocation); removeErr != nil {
-			log.Printf("[WARN] Could not remove new installation at %s: %s", newLocation, removeErr)
+				err,
+				oldDataLocation, filepath.Base(oldLocation),
+				newDataLocation, filepath.Base(newLocation),
+				oldDataLocation, newDataLocation,
+				oldDataLocation, newDataLocation,
+				newDataLocation, oldDataLocation, newDataLocation, oldDataLocation,
+				oldLocation, newDataLocation)
+			return
 		}
 		err = fmt.Errorf("%w\n\nYour data is unchanged in %s", err, oldLocation)
 	}()
@@ -173,6 +162,26 @@ Then run Steampipe again`,
 	}
 
 	return moveDataFolder(oldLocation, newDataLocation)
+}
+
+// removeNewInstall removes the new installation's binaries, and its data folder and install folder when the data
+// folder is empty. It returns true if the data folder holds data or cannot be read, in which case it and its parent are kept.
+func removeNewInstall(newLocation, newDataLocation string) (dataKept bool) {
+	newBinaries := filepath.Join(newLocation, "postgres")
+	if removeErr := os.RemoveAll(newBinaries); removeErr != nil {
+		log.Printf("[WARN] Could not remove new binaries at %s: %s", newBinaries, removeErr)
+	}
+	// os.Remove never removes a folder that holds anything
+	if removeErr := os.Remove(newDataLocation); removeErr != nil && !os.IsNotExist(removeErr) {
+		if entries, readErr := os.ReadDir(newDataLocation); readErr != nil || len(entries) > 0 {
+			return true
+		}
+		log.Printf("[WARN] Could not remove new data folder at %s: %s", newDataLocation, removeErr)
+	}
+	if removeErr := os.Remove(newLocation); removeErr != nil {
+		log.Printf("[WARN] Could not remove new installation at %s: %s", newLocation, removeErr)
+	}
+	return false
 }
 
 func moveDataFolder(oldLocation, newDataLocation string) error {
