@@ -2,6 +2,7 @@ package db_local
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -52,6 +53,11 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	// how many clients are connected
 	// under a fresh context
 	clientCounts, err := GetClientCount(context.Background())
+	if errors.Is(err, errStartedByOlderVersion) {
+		// its clients cannot be counted, and another session may be using it: the older version stops it
+		log.Printf("[INFO] ShutdownService not closing database service - %s", err)
+		return
+	}
 	// if there are other clients connected
 	// and if there's no error
 	if err == nil && clientCounts.SteampipeClients > 0 {

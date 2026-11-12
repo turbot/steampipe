@@ -55,8 +55,15 @@ func libpqSocketDir(dataDir string, port int) (dir string, cleanup func(), err e
 	if err != nil {
 		return "", nil, err
 	}
+	// the link is a socket path too, so it has the same limit
+	if checkSocketPathLength(dir, port) != nil && tmp != "/tmp" {
+		_ = os.RemoveAll(dir)
+		if dir, err = os.MkdirTemp("/tmp", "steampipe-socket-"); err != nil {
+			return "", nil, err
+		}
+	}
 	cleanup = func() { _ = os.RemoveAll(dir) }
-	if err := os.Symlink(rootSocketPath(dataDir, port), filepath.Join(dir, fmt.Sprintf(".s.PGSQL.%d", port))); err != nil {
+	if err := os.Symlink(rootSocketPath(dataDir, port), rootSocketPath(dir, port)); err != nil {
 		cleanup()
 		return "", nil, err
 	}
@@ -77,21 +84,12 @@ func maxSocketPathLength() int {
 }
 
 // checkSocketPathLength refuses a socket path that is too long for the OS. Postgres would fail to
-// start with "could not create any Unix-domain sockets", which does not say what to do.
+// start with "could not create any Unix-domain sockets", which does not say what to do. The advice
+// is to move the install directory: a new, empty one would leave the database behind.
 func checkSocketPathLength(dataDir string, port int) error {
-	return checkSocketPathLengthWithAdvice(dataDir, port, fmt.Sprintf("Set %s to a shorter path", constants.EnvInstallDir))
-}
-
-// checkSocketPathLengthForUpgrade is checkSocketPathLength for the data directory of an existing
-// installation. A new install directory would be empty, so the advice is to move this one.
-func checkSocketPathLengthForUpgrade(oldDataDir string, port int) error {
-	return checkSocketPathLengthWithAdvice(oldDataDir, port, fmt.Sprintf("Move %s to a shorter path and set %s to it", app_specific.InstallDir, constants.EnvInstallDir))
-}
-
-func checkSocketPathLengthWithAdvice(dataDir string, port int, advice string) error {
 	path := rootSocketPath(dataDir, port)
 	if limit := maxSocketPathLength(); len(path) > limit {
-		return fmt.Errorf("%w: %s is %d bytes, and %s allows at most %d. %s", errSocketPathTooLong, path, len(path), runtime.GOOS, limit, advice)
+		return fmt.Errorf("%w: %s is %d bytes, and %s allows at most %d. Move %s to a shorter path and set %s to it", errSocketPathTooLong, path, len(path), runtime.GOOS, limit, app_specific.InstallDir, constants.EnvInstallDir)
 	}
 	return nil
 }

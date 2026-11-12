@@ -17,8 +17,10 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/shirou/gopsutil/process"
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	putils "github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 	"github.com/turbot/steampipe/v2/pkg/error_helpers"
@@ -282,6 +284,10 @@ func backupCmd(ctx context.Context, config *pgRunningInfo, socketDir string) *ex
 // as root, which the rules written for the upgrade do not allow.
 func savePgHbaConf(dataDir string) (restore func(), err error) {
 	path := filepath.Join(dataDir, pgHbaFileName)
+	// a link stays a link: its target is what is put back
+	if target, err := filepath.EvalSymlinks(path); err == nil {
+		path = target
+	}
 	content, readErr := os.ReadFile(path)
 	existed := readErr == nil
 	if readErr != nil && !errors.Is(readErr, fs.ErrNotExist) {
@@ -344,9 +350,20 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 	if err != nil {
 		return nil, err
 	}
-	// the old pg_hba.conf is rewritten below, so nothing may fail before this check without being undone
-	if err := checkSocketPathLengthForUpgrade(dataLocation, port); err != nil {
-		return nil, err
+	// the old pg_hba.conf is rewritten below, so nothing may fail before these checks without being undone.
+	// The data then goes to the new data directory, which the install starts on a free port like this one
+	// and the service on the configured port.
+	for _, socket := range []struct {
+		dataDir string
+		port    int
+	}{
+		{dataLocation, port},
+		{filepaths.GetDataLocation(), port},
+		{filepaths.GetDataLocation(), viper.GetInt(pconstants.ArgDatabasePort)},
+	} {
+		if err := checkSocketPathLength(socket.dataDir, socket.port); err != nil {
+			return nil, err
+		}
 	}
 	restoreHba, err := savePgHbaConf(dataLocation)
 	if err != nil {

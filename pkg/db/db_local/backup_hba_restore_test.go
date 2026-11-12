@@ -18,7 +18,11 @@ import (
 const olderSteampipeHba = "# written by an older Steampipe\nhost all root samehost trust\n"
 
 func TestStartDatabaseInLocation_StartFailureRestoresOldPgHba(t *testing.T) {
-	oldLocation := filepath.Join(shortTempDir(t), "old")
+	installDir := shortTempDir(t)
+	original := app_specific.InstallDir
+	t.Cleanup(func() { app_specific.InstallDir = original })
+	app_specific.InstallDir = filepath.Join(installDir, ".steampipe")
+	oldLocation := filepath.Join(installDir, "old")
 	oldDataDir := filepath.Join(oldLocation, "data")
 	if err := os.MkdirAll(oldDataDir, 0700); err != nil {
 		t.Fatal(err)
@@ -43,7 +47,11 @@ func TestStartDatabaseInLocation_StartFailureRestoresOldPgHba(t *testing.T) {
 }
 
 func TestStartDatabaseInLocation_StartFailureRemovesPgHbaThatDidNotExist(t *testing.T) {
-	oldLocation := filepath.Join(shortTempDir(t), "old")
+	installDir := shortTempDir(t)
+	original := app_specific.InstallDir
+	t.Cleanup(func() { app_specific.InstallDir = original })
+	app_specific.InstallDir = filepath.Join(installDir, ".steampipe")
+	oldLocation := filepath.Join(installDir, "old")
 	oldDataDir := filepath.Join(oldLocation, "data")
 	if err := os.MkdirAll(oldDataDir, 0700); err != nil {
 		t.Fatal(err)
@@ -264,7 +272,7 @@ func TestAbortInstallAfterBackupError_SocketPathTooLongStopsTheInstall(t *testin
 	app_specific.InstallDir = filepath.Join(t.TempDir(), strings.Repeat("x", 100), ".steampipe")
 
 	oldDataDir := filepath.Join(app_specific.InstallDir, "db", "14.19.0", "data")
-	backupErr := checkSocketPathLengthForUpgrade(oldDataDir, 9193)
+	backupErr := checkSocketPathLength(oldDataDir, 9193)
 	if backupErr == nil {
 		t.Fatal("the socket path is over the limit")
 	}
@@ -294,7 +302,7 @@ func TestAbortInstallAfterBackupError_SocketPathTooLongKeepsNewDataThatHoldsData
 		t.Fatal(err)
 	}
 	oldDataDir := filepath.Join(app_specific.InstallDir, "db", "14.19.0", "data")
-	backupErr := checkSocketPathLengthForUpgrade(oldDataDir, 9193)
+	backupErr := checkSocketPathLength(oldDataDir, 9193)
 
 	err := abortInstallAfterBackupError(backupErr)
 	if !errors.Is(err, errSocketPathTooLong) {
