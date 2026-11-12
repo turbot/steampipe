@@ -519,18 +519,26 @@ func showAllStatus(ctx context.Context) {
 		return
 	}
 	headers := []string{"PID", "Install Directory", "Port", "Listen"}
-	rows := [][]string{}
-
-	for _, process := range processes {
-		pid, installDir, port, listen := getServiceProcessDetails(process)
-		rows = append(rows, []string{pid, installDir, port, string(listen)})
-	}
+	rows := buildServiceRows(processes)
 
 	querydisplay.ShowWrappedTable(headers, rows, &querydisplay.ShowWrappedTableOptions{AutoMerge: false})
 }
 
-func getServiceProcessDetails(process *psutils.Process) (string, string, string, db_local.StartListenType) {
+func buildServiceRows(processes []*psutils.Process) [][]string {
+	rows := [][]string{}
+	for _, process := range processes {
+		pid, installDir, port, listen, _ := getServiceProcessDetails(process)
+		rows = append(rows, []string{pid, installDir, port, string(listen)})
+	}
+	return rows
+}
+
+func getServiceProcessDetails(process *psutils.Process) (string, string, string, db_local.StartListenType, bool) {
 	cmdLine, _ := process.CmdlineSlice()
+	return parseServiceCmdline(process.Pid, cmdLine)
+}
+
+func parseServiceCmdline(pid int32, cmdLine []string) (string, string, string, db_local.StartListenType, bool) {
 	installDir := strings.TrimSuffix(cmdLine[0], filepaths.ServiceExecutableRelativeLocation())
 	var port string
 	var listenType db_local.StartListenType
@@ -548,7 +556,7 @@ func getServiceProcessDetails(process *psutils.Process) (string, string, string,
 		}
 	}
 
-	return fmt.Sprintf("%d", process.Pid), installDir, port, listenType
+	return fmt.Sprintf("%d", pid), installDir, port, listenType, true
 }
 
 func printStatus(ctx context.Context, dbState *db_local.RunningDBInstanceInfo, pmState *pluginmanager.State, alreadyRunning bool) {
