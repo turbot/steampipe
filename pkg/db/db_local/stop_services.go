@@ -106,6 +106,9 @@ type ClientCount struct {
 // note: we need the PgClientAppName check to handle the case where there may be one or more open DB connections
 // from this instance at the time of shutdown - for example when a control run is cancelled
 // If we do not exclude connections from this execution, the DB will not be shut down after a cancellation
+//
+// root cannot reach a service an older version started, so its clients are then counted as the steampipe user.
+// If that count fails too, the error wraps errStartedByOlderVersion.
 func GetClientCount(ctx context.Context) (*ClientCount, error) {
 	putils.LogTime("db_local.GetClientCount start")
 	defer putils.LogTime("db_local.GetClientCount end")
