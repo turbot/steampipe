@@ -14,8 +14,8 @@ import (
 
 const fakePostgresArg = "application_name=steampipe"
 
-// Run as a child process by TestFindSteampipePostgresInstancesSkipsExitedProcess,
-// which gives it a command line that looks like a steampipe postgres service.
+// Run as a child process by the TestFindSteampipePostgresInstances* tests,
+// which give it a command line that looks like a steampipe postgres service.
 func TestFakeSteampipePostgresProcess(t *testing.T) {
 	if !slices.Contains(os.Args, fakePostgresArg) {
 		t.Skip("only runs as a child process")
@@ -68,6 +68,54 @@ func TestFindSteampipePostgresInstancesSkipsExitedProcess(t *testing.T) {
 	instances, err := findSteampipePostgresInstances(context.Background(), listProcesses)
 	if err != nil {
 		t.Fatalf("expected the exited process to be skipped, got error: %v", err)
+	}
+	if len(instances) != 1 || instances[0].Pid != postgres.Pid {
+		t.Errorf("expected only the fake postgres process (pid %d), got %v", postgres.Pid, instances)
+	}
+}
+
+// A process that has only just started can briefly report an empty command
+// line on Linux. The scan must still find it, and must not match a process
+// whose command line stays empty.
+func TestFindSteampipePostgresInstancesFindsProcessWithBrieflyEmptyCmdline(t *testing.T) {
+	previousAppName := app_specific.AppName
+	app_specific.AppName = "steampipe"
+	t.Cleanup(func() { app_specific.AppName = previousAppName })
+
+	postgresCmd := exec.Command(os.Args[0], "-test.run=^TestFakeSteampipePostgresProcess$", fakePostgresArg) //nolint:gosec // G204: os.Args[0] is this test binary, re-run with fixed arguments
+	postgresCmd.Args[0] = "postgres"
+	if err := postgresCmd.Start(); err != nil {
+		t.Fatalf("failed to start fake postgres process: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = postgresCmd.Process.Kill()
+		_ = postgresCmd.Wait()
+	})
+
+	postgres := &psutils.Process{Pid: int32(postgresCmd.Process.Pid)} //nolint:gosec // G115: test child PID
+	alwaysEmpty := &psutils.Process{Pid: int32(os.Getpid())}          //nolint:gosec // G115: this test's own PID
+
+	previousReader := readProcessCmdline
+	t.Cleanup(func() { readProcessCmdline = previousReader })
+	postgresReads := 0
+	readProcessCmdline = func(ctx context.Context, p *psutils.Process) ([]string, error) {
+		if p.Pid == alwaysEmpty.Pid {
+			return []string{}, nil
+		}
+		postgresReads++
+		if postgresReads <= 2 {
+			return []string{}, nil
+		}
+		return previousReader(ctx, p)
+	}
+
+	listProcesses := func(context.Context) ([]*psutils.Process, error) {
+		return []*psutils.Process{alwaysEmpty, postgres}, nil
+	}
+
+	instances, err := findSteampipePostgresInstances(context.Background(), listProcesses)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(instances) != 1 || instances[0].Pid != postgres.Pid {
 		t.Errorf("expected only the fake postgres process (pid %d), got %v", postgres.Pid, instances)
