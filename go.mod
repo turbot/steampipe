@@ -14,7 +14,7 @@ require (
 	github.com/bgentry/speakeasy v0.2.0 // indirect
 	github.com/briandowns/spinner v1.23.2
 	github.com/c-bata/go-prompt v0.2.6
-	github.com/fatih/color v1.18.0
+	github.com/fatih/color v1.19.0
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gertd/go-pluralize v0.2.1
 	github.com/go-git/go-git/v5 v5.19.2
@@ -23,7 +23,7 @@ require (
 	github.com/hashicorp/go-plugin v1.7.0
 	github.com/hashicorp/go-version v1.8.0
 	github.com/hashicorp/hcl/v2 v2.24.0
-	github.com/jackc/pgx/v5 v5.9.2
+	github.com/jackc/pgx/v5 v5.10.0
 	github.com/jedib0t/go-pretty/v6 v6.6.9
 	github.com/karrick/gows v0.3.0
 	github.com/mattn/go-isatty v0.0.20
@@ -34,11 +34,11 @@ require (
 	github.com/sethvargo/go-retry v0.3.0
 	github.com/shiena/ansicolor v0.0.0-20230509054315-a9deabde6e02
 	github.com/shirou/gopsutil v3.21.11+incompatible
-	github.com/spf13/cobra v1.10.1
+	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.9
 	github.com/spf13/viper v1.20.1
-	github.com/thediveo/enumflag/v2 v2.0.7
-	github.com/turbot/go-kit v1.3.0
+	github.com/thediveo/enumflag/v2 v2.2.1
+	github.com/turbot/go-kit v1.3.1
 	github.com/turbot/pipe-fittings/v2 v2.9.1
 	github.com/turbot/terraform-components v0.0.0-20250114051614-04b806a9cbed
 	github.com/zclconf/go-cty v1.16.3 // indirect
