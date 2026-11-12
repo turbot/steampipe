@@ -502,3 +502,100 @@ func TestSteampipeRules_RootOnlyOnUnixSocket(t *testing.T) {
 		t.Errorf("root must have exactly one rule, for the unix socket: %v", rootRules)
 	}
 }
+
+func TestCheckPgHbaConf_ChecksTheOlderInstallThatTheUpgradeStarts(t *testing.T) {
+	installDir := app_specific.InstallDir
+	t.Cleanup(func() { app_specific.InstallDir = installDir })
+	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
+	// an older install with a database; this version's install does not exist yet
+	older := filepath.Join(filepaths.EnsureDatabaseDir(), "14.1.0")
+	writeFile(t, filepath.Join(older, "postgres", "bin", "postgres"), "")
+	writeFile(t, filepath.Join(older, "data", "PG_VERSION"), "14\n")
+	writeFile(t, filepath.Join(older, "data", "pg_hba.conf"), "host all bob 10.0.0.0/8 md5\n")
+
+	var stop *pgHbaStopError
+	err := CheckPgHbaConf()
+	if !errors.As(err, &stop) || !strings.Contains(err.Error(), filepath.Join(older, "data", "pg_hba.conf")) {
+		t.Errorf("the restart must check the data folder that the upgrade starts, got %v", err)
+	}
+}
+
+func TestMayLetRootIn_FirstMatchingRuleDecides(t *testing.T) {
+	for text, want := range map[string]bool{
+		"local all root trust\n":                          true,
+		"local all all peer\nlocal all root trust\n":      false,
+		"local all root reject\nlocal all all trust\n":    false,
+		"local all bob peer\nlocal all root trust\n":      true,
+		"local mydb all reject\nlocal all root trust\n":   true,
+		"local all +admins trust\nlocal all all reject\n": true,
+		"include_dir hba.d\nlocal all root trust\n":       false,
+		"include hba.extra\n":                             false,
+	} {
+		if got := mayLetRootIn(text); got != want {
+			t.Errorf("mayLetRootIn(%q) = %v, want %v", text, got, want)
+		}
+	}
+}
+
+func TestPgHbaOwnerOf_FileWithNoRulesIsSteampipes(t *testing.T) {
+	for _, text := range []string{"", "\n\n", "# nothing here\n"} {
+		dir := t.TempDir()
+		writeFile(t, filepath.Join(dir, "pg_hba.conf"), text)
+		if got, err := pgHbaOwnerOf(dir); err != nil || got != pgHbaSteampipe {
+			t.Errorf("%q: got owner %d, %v; a file with no rules lets nobody in and must be Steampipe's", text, got, err)
+		}
+	}
+}
+
+func TestEditedPgHbaError_ADuplicatedRuleIsNotAChangedOrder(t *testing.T) {
+	dir := t.TempDir()
+	steampipeFileWith(t, dir, nil)
+	writeFile(t, filepath.Join(dir, "pg_hba.conf"), readHba(t, dir)+"local all root trust\n")
+
+	msg := editedPgHbaError(dir).Error()
+	if strings.Contains(msg, "in a different order") {
+		t.Errorf("a repeated rule is not a change of order:\n%s", msg)
+	}
+	if !strings.Contains(msg, "more than once") {
+		t.Errorf("the message must say that a rule is repeated:\n%s", msg)
+	}
+}
+
+func TestPgHbaMessages_NeverSayToDeleteTheFile(t *testing.T) {
+	dir := t.TempDir()
+	steampipeFileWith(t, dir, nil)
+	writeFile(t, filepath.Join(dir, "pg_hba.conf"), readHba(t, dir)+"host all bob all md5\n")
+	edited := editedPgHbaError(dir).Error()
+	writeFile(t, filepath.Join(dir, "pg_hba.conf"), "local all all peer\n")
+	refused := rootRefusedError(dir).Error()
+
+	path := filepath.Join(dir, "pg_hba.conf")
+	for name, msg := range map[string]string{"edited": edited, "refused": refused} {
+		// Steampipe 2.4 and earlier take a missing pg_hba.conf for a new install and empty the data folder
+		if strings.Contains(msg, "Delete "+path) || strings.Contains(msg, "delete "+path) {
+			t.Errorf("%s: the message must not say to delete %s:\n%s", name, path, msg)
+		}
+		if !strings.Contains(msg, "Empty "+path) && !strings.Contains(msg, "empty "+path) {
+			t.Errorf("%s: the message must say to empty %s:\n%s", name, path, msg)
+		}
+	}
+	if !strings.Contains(refused, "come before Steampipe's") {
+		t.Errorf("option 1 must say the moved rules come first, so a local rule must still let root in:\n%s", refused)
+	}
+}
+
+func TestPgHbaMessages_OnAnOlderInstallSayTheRulesAreNotCarriedOver(t *testing.T) {
+	installDir := app_specific.InstallDir
+	t.Cleanup(func() { app_specific.InstallDir = installDir })
+	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
+	older := filepath.Join(filepaths.EnsureDatabaseDir(), "14.1.0", "data")
+	writeFile(t, filepath.Join(older, "pg_hba.conf"), "local all all peer\n")
+
+	msg := rootRefusedError(older).Error()
+	if !strings.Contains(msg, filepaths.GetDataLocation()) || !strings.Contains(msg, "not carried over") {
+		t.Errorf("the message must say the rules are not carried to %s:\n%s", filepaths.GetDataLocation(), msg)
+	}
+	if strings.Contains(rootRefusedError(filepaths.GetDataLocation()).Error(), "not carried over") {
+		t.Errorf("this version's own data folder is not being upgraded")
+	}
+}
