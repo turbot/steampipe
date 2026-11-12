@@ -261,6 +261,11 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 	if err != nil {
 		return nil, err
 	}
+	// nothing may be written to the old data directory before this: a failed upgrade must leave it
+	// startable by the version that wrote it
+	if err := checkSocketPathLengthForUpgrade(dataLocation, port); err != nil {
+		return nil, err
+	}
 	// whatever an older Steampipe left in the old data directory, the backup must connect as root
 	if err := writePgHbaConf(dataLocation); err != nil {
 		return nil, err

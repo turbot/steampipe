@@ -151,3 +151,40 @@ func TestWaitForRootSocket(t *testing.T) {
 		t.Errorf("the socket is there: %v", err)
 	}
 }
+
+func TestStartDatabaseInLocation_TooLongSocketPathLeavesOldDataUntouched(t *testing.T) {
+	installDir := filepath.Join(t.TempDir(), strings.Repeat("x", 100), ".steampipe")
+	app_specific.InstallDir = installDir
+	oldLocation := filepath.Join(installDir, "db", "14.19.0")
+	oldDataDir := filepath.Join(oldLocation, "data")
+	if err := os.MkdirAll(oldDataDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	hbaPath := filepath.Join(oldDataDir, pgHbaFileName)
+	const original = "# written by an older Steampipe\nhost all all 127.0.0.1/32 trust\n"
+	if err := os.WriteFile(hbaPath, []byte(original), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := startDatabaseInLocation(context.Background(), oldLocation)
+	if err == nil {
+		t.Fatal("a socket path over the limit must be refused")
+	}
+
+	got, readErr := os.ReadFile(hbaPath)
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+	if string(got) != original {
+		t.Errorf("the old data directory's pg_hba.conf must not be rewritten before the socket path is checked, got:\n%s", got)
+	}
+	if _, statErr := os.Stat(filepath.Join(oldDataDir, pgHbaDirName)); statErr == nil {
+		t.Errorf("%s must not be created in the old data directory", pgHbaDirName)
+	}
+	if !strings.Contains(err.Error(), "Move "+installDir) || !strings.Contains(err.Error(), constants.EnvInstallDir) {
+		t.Errorf("the error must say to move the existing install directory and point %s at it: %v", constants.EnvInstallDir, err)
+	}
+	if strings.Contains(err.Error(), "Set "+constants.EnvInstallDir+" to a shorter path") {
+		t.Errorf("an upgrade must not be told to set %s to a new path: %v", constants.EnvInstallDir, err)
+	}
+}
