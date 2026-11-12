@@ -17,9 +17,15 @@ import (
 	"github.com/turbot/steampipe/v2/pkg/filepaths"
 )
 
-// listenForStartupUser accepts connections on a free port, with SSL using the install's server certificate,
-// sends each connecting user's name to the returned channel, and closes the connection.
-func listenForStartupUser(t *testing.T) (port int, users <-chan string) {
+// startupLogin is what a connection to listenForStartup sent.
+type startupLogin struct {
+	user, password string
+}
+
+// listenForStartup accepts connections on a free port, with SSL using the install's server certificate,
+// asks each for a password, as a pg_hba.conf rule that requires one does, sends what it logged in with to
+// the returned channel, and closes the connection.
+func listenForStartup(t *testing.T) (port int, logins <-chan startupLogin) {
 	t.Helper()
 	cert, err := tls.LoadX509KeyPair(filepaths.GetServerCertLocation(), filepaths.GetServerCertKeyLocation())
 	if err != nil {
@@ -30,7 +36,7 @@ func listenForStartupUser(t *testing.T) (port int, users <-chan string) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = l.Close() })
-	ch := make(chan string, 10)
+	ch := make(chan startupLogin, 10)
 	go func() {
 		for {
 			conn, err := l.Accept()
@@ -39,7 +45,8 @@ func listenForStartupUser(t *testing.T) (port int, users <-chan string) {
 			}
 			var c net.Conn = conn
 			for {
-				msg, err := pgproto3.NewBackend(c, c).ReceiveStartupMessage()
+				backend := pgproto3.NewBackend(c, c)
+				msg, err := backend.ReceiveStartupMessage()
 				if err != nil {
 					break
 				}
@@ -50,9 +57,20 @@ func listenForStartupUser(t *testing.T) (port int, users <-chan string) {
 					c = tls.Server(conn, &tls.Config{Certificates: []tls.Certificate{cert}})
 					continue
 				}
-				if m, ok := msg.(*pgproto3.StartupMessage); ok {
-					ch <- m.Parameters["user"]
+				m, ok := msg.(*pgproto3.StartupMessage)
+				if !ok {
+					break
 				}
+				login := startupLogin{user: m.Parameters["user"]}
+				backend.Send(&pgproto3.AuthenticationCleartextPassword{})
+				if backend.Flush() == nil && backend.SetAuthType(pgproto3.AuthTypeCleartextPassword) == nil {
+					if p, err := backend.Receive(); err == nil {
+						if pm, ok := p.(*pgproto3.PasswordMessage); ok {
+							login.password = pm.Password
+						}
+					}
+				}
+				ch <- login
 				break
 			}
 			_ = c.Close()
@@ -62,9 +80,9 @@ func listenForStartupUser(t *testing.T) (port int, users <-chan string) {
 }
 
 // startOlderVersionService records a running service that an older version started for invoker: a stand-in
-// process, and a stand-in server that drops every connection after reporting its user. It has no socket in
+// process, and a stand-in server that asks for a password and drops every connection after reporting the login. It has no socket in
 // the data directory, so root cannot connect to count the clients.
-func startOlderVersionService(t *testing.T, invoker constants.Invoker) (exited <-chan struct{}, users <-chan string) {
+func startOlderVersionService(t *testing.T, invoker constants.Invoker) (exited <-chan struct{}, logins <-chan startupLogin) {
 	t.Helper()
 	if runtime.GOOS == "windows" {
 		t.Skip("the stand-in service is sleep")
@@ -87,25 +105,28 @@ func startOlderVersionService(t *testing.T, invoker constants.Invoker) (exited <
 		close(done)
 	}()
 	t.Cleanup(func() { _ = service.Process.Kill() })
-	port, users := listenForStartupUser(t)
-	info := newRunningDBInstanceInfo(service, []string{"127.0.0.1"}, port, "steampipe", "password", invoker)
+	port, logins := listenForStartup(t)
+	info := newRunningDBInstanceInfo(service, []string{"127.0.0.1"}, port, "steampipe", "service-password", invoker)
 	if err := info.Save(); err != nil {
 		t.Fatal(err)
 	}
-	return done, users
+	return done, logins
 }
 
 func TestGetClientCount_CountsAServiceAnOlderVersionStartedAsTheSteampipeUser(t *testing.T) {
-	_, users := startOlderVersionService(t, constants.InvokerService)
+	_, logins := startOlderVersionService(t, constants.InvokerService)
 
-	// service stop counts the clients first; without a count it would send the user to --force, which stops
-	// every service on the machine
+	// service stop counts the clients first; without a count it cannot stop the service
 	_, err := GetClientCount(context.Background())
 
 	select {
-	case user := <-users:
-		if user != constants.DatabaseUser {
-			t.Errorf("the clients must be counted as %s, which an older version's service lets in over TCP, got %s", constants.DatabaseUser, user)
+	case login := <-logins:
+		if login.user != constants.DatabaseUser {
+			t.Errorf("the clients must be counted as %s, which an older version's service lets in over TCP, got %s", constants.DatabaseUser, login.user)
+		}
+		// a pg_hba.conf rule may require the password for the steampipe user
+		if login.password != "service-password" {
+			t.Errorf("the count must log in with the service's password, got %q", login.password)
 		}
 	default:
 		t.Error("the clients of a service an older version started must still be counted")
@@ -117,14 +138,14 @@ func TestGetClientCount_CountsAServiceAnOlderVersionStartedAsTheSteampipeUser(t 
 }
 
 func TestShutdownService_CountsTheClientsOfAServiceAnOlderVersionStarted(t *testing.T) {
-	exited, users := startOlderVersionService(t, constants.InvokerQuery)
+	exited, logins := startOlderVersionService(t, constants.InvokerQuery)
 
 	ShutdownService(context.Background(), constants.InvokerQuery)
 
 	select {
-	case user := <-users:
-		if user != constants.DatabaseUser {
-			t.Errorf("the clients must be counted as %s, which an older version's service lets in over TCP, got %s", constants.DatabaseUser, user)
+	case login := <-logins:
+		if login.user != constants.DatabaseUser {
+			t.Errorf("the clients must be counted as %s, which an older version's service lets in over TCP, got %s", constants.DatabaseUser, login.user)
 		}
 	default:
 		t.Error("the clients of a service an older version started must still be counted")
