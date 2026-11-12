@@ -27,10 +27,11 @@ import (
 
 var ensureMux sync.Mutex
 
-// the steps of a first-time install that download from the registry; tests replace them
+// the steps of a first-time install that download from the registry or run postgres; tests replace them
 var (
 	installDbFiles  = downloadAndInstallDbFiles
 	installFdwFiles = installFDW
+	initNewDatabase = runInstall
 )
 
 func noBackupWarning() string {
@@ -130,7 +131,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	// a moved data folder is already initialised
 	if !moved {
 		// run the database installation
-		err = runInstall(ctx, dbName)
+		err = initNewDatabase(ctx, dbName)
 		if err != nil {
 			return err
 		}

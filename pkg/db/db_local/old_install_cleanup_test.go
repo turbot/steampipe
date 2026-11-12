@@ -230,6 +230,41 @@ func TestEnsureDBInstalled_FailureRemovesNothing(t *testing.T) {
 	}
 }
 
+// a successful install, with every step that downloads or runs postgres replaced, removes the older folders that
+// hold no database and keeps the one that does
+func TestEnsureDBInstalled_SuccessRemovesFoldersWithoutDatabase(t *testing.T) {
+	dbDir := setCleanupInstallDir(t)
+
+	empty := filepath.Join(dbDir, "14.16.0")
+	emptyData := filepath.Join(dbDir, "14.15.0")
+	for _, dir := range []string{empty, filepath.Join(emptyData, "data")} {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	withData := filepath.Join(dbDir, "14.17.0", "data")
+	if err := os.MkdirAll(withData, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(withData, "PG_VERSION"), []byte("14\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	origDownload, origFdw, origInit := installDbFiles, installFdwFiles, initNewDatabase
+	t.Cleanup(func() { installDbFiles, installFdwFiles, initNewDatabase = origDownload, origFdw, origInit })
+	installDbFiles = func(context.Context) error { return nil }
+	installFdwFiles = func(context.Context, bool) (string, error) { return "", nil }
+	initNewDatabase = func(context.Context, *string) error { return nil }
+
+	if err := EnsureDBInstalled(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	assertGone(t, empty)
+	assertGone(t, emptyData)
+	assertExists(t, filepath.Join(withData, "PG_VERSION"))
+}
+
 func TestRemoveOldInstallsWithoutDatabase_KeepsEverythingElse(t *testing.T) {
 	dbDir := setCleanupInstallDir(t)
 
