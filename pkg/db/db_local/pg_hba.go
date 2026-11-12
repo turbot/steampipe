@@ -54,7 +54,7 @@ func preserveChangedPgHba(hbaPath, hbaDir string) error {
 
 	preservedPath := filepath.Join(hbaDir, constants.PgHbaPreservedFileName)
 	log.Printf("[WARN] %s was not written by Steampipe: keeping its rules in %s", hbaPath, preservedPath)
-	return os.WriteFile(preservedPath, existing, 0600)
+	return os.WriteFile(preservedPath, existing, 0600) //nolint:gosec // both paths are fixed names under the database data directory
 }
 
 // hasOnlyOldSteampipeRules reports whether every rule in the file is one that an older Steampipe wrote,
@@ -122,7 +122,7 @@ func buildPgHba(userRules []pgHbaRuleFile) string {
 	var b strings.Builder
 	b.WriteString(constants.PgHbaHeader)
 	for _, r := range userRules {
-		fmt.Fprintf(&b, "\n# from %s/%s\n%s\n", pgHbaDirName, r.name, strings.TrimRight(r.content, "\n"))
+		b.WriteString(fmt.Sprintf("\n# from %s/%s\n%s\n", pgHbaDirName, r.name, strings.TrimRight(r.content, "\n")))
 	}
 	b.WriteString("\n# Steampipe's rules\n")
 	b.WriteString(constants.PgHbaSteampipeRules)

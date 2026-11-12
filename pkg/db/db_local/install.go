@@ -27,6 +27,8 @@ import (
 
 var ensureMux sync.Mutex
 
+var errDataFolderHoldsDatabase = errors.New("the data folder already holds a database")
+
 func noBackupWarning() string {
 	warningMessage := fmt.Sprintf(`Steampipe database has been upgraded to Postgres %s.
 
@@ -105,9 +107,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		if err != nil {
 			log.Printf("[ERROR] prepareBackup failed: %s", err.Error())
 			if errors.Is(err, errDbInstanceRunning) {
-				// remove the installation - otherwise, the backup won't get triggered, even if the user stops the service
-				os.RemoveAll(filepaths.DatabaseInstanceDir())
-				return err
+				return abortInstallAfterRunningInstance(err)
 			}
 			// ignore all other errors with the backup, displaying a warning instead
 			statushooks.Message(ctx, noBackupWarning())
@@ -126,6 +126,10 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		// run the database installation
 		err = runInstall(ctx, dbName)
 		if err != nil {
+			if errors.Is(err, errDataFolderHoldsDatabase) {
+				// with the binaries gone the next run installs again, instead of using this data folder as it is
+				removeNewInstall(filepaths.DatabaseInstanceDir(), filepaths.GetDataLocation())
+			}
 			return err
 		}
 	}
@@ -140,6 +144,16 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	}
 
 	return nil
+}
+
+// abortInstallAfterRunningInstance removes the new binaries - otherwise, the backup won't get triggered, even if
+// the user stops the service. A new data folder that holds data is kept, and the returned error says so.
+func abortInstallAfterRunningInstance(err error) error {
+	newDataLocation := filepaths.GetDataLocation()
+	if removeNewInstall(filepaths.DatabaseInstanceDir(), newDataLocation) {
+		return fmt.Errorf("%w\n\n%s holds data and was kept. Once the old server is stopped, the next run upgrades the old database. If %s holds a database, it asks you to move it somewhere else first", err, newDataLocation, newDataLocation)
+	}
+	return err
 }
 
 func downloadAndInstallDbFiles(ctx context.Context) error {
@@ -280,6 +294,15 @@ func needsInit() bool {
 	return !filehelpers.FileExists(filepaths.GetPgVersionLocation())
 }
 
+// prepareDataLocation empties the data folder, ready for initdb. A data folder that holds a database is never
+// emptied: initdb writes PG_VERSION, so its presence means there is a database to keep.
+func prepareDataLocation(dataLocation string) error {
+	if filehelpers.FileExists(filepath.Join(dataLocation, "PG_VERSION")) {
+		return fmt.Errorf("%w: %s\n\nSteampipe will not replace it. Move %s somewhere else, then run Steampipe again. If a database from a previous version is installed it is upgraded into a new database, otherwise Steampipe creates an empty one. Keep the moved folder until you have checked which database you want", errDataFolderHoldsDatabase, dataLocation, dataLocation)
+	}
+	return putils.RemoveDirectoryContents(dataLocation)
+}
+
 func runInstall(ctx context.Context, oldDbName *string) error {
 	putils.LogTime("db_local.runInstall start")
 	defer putils.LogTime("db_local.runInstall end")
@@ -296,8 +319,11 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 
 	statushooks.SetStatus(ctx, "Cleaning up…")
 
-	err = putils.RemoveDirectoryContents(filepaths.GetDataLocation())
+	err = prepareDataLocation(filepaths.GetDataLocation())
 	if err != nil {
+		if errors.Is(err, errDataFolderHoldsDatabase) {
+			return err
+		}
 		log.Printf("[TRACE] %v", err)
 		return fmt.Errorf("Prepare database install location... FAILED!")
 	}
