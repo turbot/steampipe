@@ -29,6 +29,13 @@ var ensureMux sync.Mutex
 
 var errDataFolderHoldsDatabase = errors.New("the data folder already holds a database")
 
+// the download, FDW install and database initialisation steps of a database install; tests replace them
+var (
+	installDbFiles  = downloadAndInstallDbFiles
+	installFdwFiles = installFDW
+	initNewDatabase = runInstall
+)
+
 func noBackupWarning() string {
 	warningMessage := fmt.Sprintf(`Steampipe database has been upgraded to Postgres %s.
 
@@ -81,7 +88,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 
 	statushooks.SetStatus(ctx, "Installing database…")
 
-	err = downloadAndInstallDbFiles(ctx)
+	err = installDbFiles(ctx)
 	if err != nil {
 		return err
 	}
@@ -115,7 +122,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	}
 
 	// install the fdw
-	_, err = installFDW(ctx, true)
+	_, err = installFdwFiles(ctx, true)
 	if err != nil {
 		log.Printf("[TRACE] installFDW failed: %v", err)
 		return fmt.Errorf("Download & install steampipe-postgres-fdw... FAILED!")
@@ -124,7 +131,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	// a moved data folder is already initialised
 	if !moved {
 		// run the database installation
-		err = runInstall(ctx, dbName)
+		err = initNewDatabase(ctx, dbName)
 		if err != nil {
 			if errors.Is(err, errDataFolderHoldsDatabase) {
 				// with the binaries gone the next run installs again, instead of using this data folder as it is
@@ -142,6 +149,8 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		log.Printf("[TRACE] updateDownloadedBinarySignature failed: %v", err)
 		return fmt.Errorf("Updating install records... FAILED!")
 	}
+
+	removeOldInstallsWithoutDatabase()
 
 	return nil
 }
