@@ -18,7 +18,8 @@ import (
 
 // a plugin which is still starting has a placeholder runningPlugin whose reattach config (and, early on, client) is nil.
 // connection config and rate limiter changes arriving in that window must not panic, and are not sent
-// to the plugin while it is starting (startPlugin sends the difference from the connection configs it was started with, once it has started)
+// to the plugin while it is starting (startPlugin sends the connection config difference, and the rate limiters if
+// they changed, once it has started)
 
 func newStartingPluginManager(t *testing.T, pluginInstance string) *PluginManager {
 	t.Helper()
@@ -76,8 +77,8 @@ func TestSetRateLimitersForPlugin_PluginStarting(t *testing.T) {
 }
 
 // the update requests built for a plugin which was started with startedWith, and whose connection config changed
-// while it was starting, must carry the difference (startPlugin sends them once it has started)
-func TestChangesMadeWhileStarting_AreSentOnceStarted(t *testing.T) {
+// while it was starting, must carry the difference. This builds the requests only: sending them needs a real plugin
+func TestChangesMadeWhileStarting_RequestsCarryTheDifference(t *testing.T) {
 	const p = "hub.steampipe.io/plugins/turbot/aws@latest"
 	pm := newStartingPluginManager(t, p)
 
