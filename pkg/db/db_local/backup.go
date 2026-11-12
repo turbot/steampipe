@@ -3,6 +3,7 @@ package db_local
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log"
@@ -42,7 +43,8 @@ type pgRunningInfo struct {
 	dbName string
 }
 
-// stop is used for shutting down postgres instance spun up for extracting dump
+// stop is used for shutting down a postgres instance started in an old install location,
+// either to extract a dump or to leave its data folder cleanly shut down before it is moved.
 // it uses signals as suggested by https://www.postgresql.org/docs/12/server-shutdown.html
 // to try to shutdown the db process process.
 // It is not expected that any client is connected to the instance when 'stop' is called.
@@ -113,7 +115,10 @@ func isSameMajorVersion(oldVersion, targetVersion string) bool {
 // and removes the old installation. If it returns an error the old installation's files are still in place and the
 // new installation's binaries are removed, so the next run installs them again and retries the move. The new data
 // folder is removed only when it is empty: one that holds data is kept, and the error tells the user how to recover.
+// If the old server cannot be used, the error carries the cause and, unless both data folders were kept, says how to
+// look into it and how to move the old installation aside; it never moves or deletes the old installation itself.
 func moveDataFromSameMajorInstall(ctx context.Context, oldLocation, newDataLocation string) (err error) {
+	var oldInstallHint string
 	defer func() {
 		if err == nil {
 			return
@@ -143,7 +148,7 @@ Then run Steampipe again`,
 				oldLocation, newDataLocation)
 			return
 		}
-		err = fmt.Errorf("%w\n\nYour data is unchanged in %s", err, oldLocation)
+		err = fmt.Errorf("%w\n\nYour data is unchanged in %s%s", err, oldLocation, oldInstallHint)
 	}()
 
 	if err := killRunningDbInstance(ctx); err != nil {
@@ -155,7 +160,23 @@ Then run Steampipe again`,
 	// of the same major replays what is left.
 	runConfig, err := startDatabaseInLocation(ctx, oldLocation)
 	if err != nil {
-		return fmt.Errorf("could not start the database in %s: %w", oldLocation, err)
+		// every run stops here until the user acts, so say what they can do without losing data. The command
+		// uses a free port and no unix socket, so a PostgreSQL already holding 5432 or the default socket folder
+		// does not get in the way
+		runOldCommand := fmt.Sprintf("%q -D %q -c logging_collector=off -c unix_socket_directories=",
+			filepath.Join(oldLocation, "postgres", "bin", "postgres"), filepath.Join(oldLocation, "data"))
+		if freePort, portErr := putils.GetNextFreePort(); portErr == nil {
+			runOldCommand += fmt.Sprintf(" -p %d", freePort)
+		}
+		oldInstallHint = fmt.Sprintf(`
+
+To look into it, read the newest file in %s, or run the older version directly:
+  %s
+To start Steampipe with a new, empty database instead, move %s out of %s, then run Steampipe again.
+Moving it keeps your data: the folder is not deleted`,
+			filepath.Join(oldLocation, "data", "log"), runOldCommand,
+			oldLocation, filepath.Dir(oldLocation))
+		return fmt.Errorf("could not use the database in %s: %w", oldLocation, err)
 	}
 	if err := runConfig.stop(ctx); err != nil {
 		return fmt.Errorf("could not stop the database in %s: %w", oldLocation, err)
@@ -289,6 +310,15 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 
 	log.Println("[TRACE]", cmd.String())
 
+	// keep what the server prints before it exits: a file, not a pipe, so there is no copying to wait for
+	var serverOutputPath string
+	if stderrFile, fileErr := os.CreateTemp("", "steampipe-postgres-*.log"); fileErr == nil {
+		serverOutputPath = stderrFile.Name()
+		defer os.Remove(serverOutputPath)
+		defer stderrFile.Close()
+		cmd.Stderr = stderrFile
+	}
+
 	if err := cmd.Start(); err != nil {
 		return nil, err
 	}
@@ -299,6 +329,12 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 	if err != nil {
 		// best-effort cleanup - we are already returning the getDatabaseName error
 		_ = runConfig.stop(ctx)
+		// a server that ran fine and holds no database has nothing to explain
+		if !errors.Is(err, errNoSteampipeDatabase) {
+			if serverOutput, readErr := os.ReadFile(serverOutputPath); readErr == nil && len(strings.TrimSpace(string(serverOutput))) > 0 {
+				err = fmt.Errorf("%w\nthe server printed:\n%s", err, strings.TrimSpace(string(serverOutput)))
+			}
+		}
 		return nil, err
 	}
 

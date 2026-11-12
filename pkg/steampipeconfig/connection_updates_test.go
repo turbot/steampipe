@@ -137,24 +137,32 @@ func TestConnectionUpdates_IdentifyMissingComments(t *testing.T) {
 	}
 }
 
-// A connection whose plugin block was skipped keeps its schema only if it has one:
-// taking it out of both maps is what stops the refresh updating or deleting it.
+// A connection whose plugin block was skipped is kept only if its state shows it has a schema:
+// taking it out of both maps is what stops the refresh updating or deleting it. A connection
+// that cannot be queried is kept in error, with the reason it is in error.
 func TestTakeConnectionsToKeep(t *testing.T) {
 	tests := []struct {
-		name         string
-		currentState string
-		wantKept     bool
+		name          string
+		currentState  string
+		requiredState string
+		wantKept      bool
+		wantState     string
 	}{
-		{name: "ready", currentState: constants.ConnectionStateReady, wantKept: true},
-		{name: "pending_after_startup", currentState: constants.ConnectionStatePending, wantKept: true},
-		{name: "already_in_error", currentState: constants.ConnectionStateError},
-		{name: "pending_incomplete", currentState: constants.ConnectionStatePendingIncomplete},
-		{name: "disabled", currentState: constants.ConnectionStateDisabled},
+		{name: "ready", currentState: constants.ConnectionStateReady, requiredState: constants.ConnectionStateError, wantKept: true, wantState: constants.ConnectionStateError},
+		{name: "pending_after_startup", currentState: constants.ConnectionStatePending, requiredState: constants.ConnectionStateError, wantKept: true, wantState: constants.ConnectionStateError},
+		{name: "resolves_despite_skipped_block", currentState: constants.ConnectionStateReady, requiredState: constants.ConnectionStateReady, wantKept: true, wantState: constants.ConnectionStateReady},
+		// a connection kept in error is set to pending-incomplete when the service starts
+		{name: "kept_in_error_before_restart", currentState: constants.ConnectionStateError, requiredState: constants.ConnectionStateError, wantKept: true, wantState: constants.ConnectionStateError},
+		{name: "kept_in_error_after_restart", currentState: constants.ConnectionStatePendingIncomplete, requiredState: constants.ConnectionStateError, wantKept: true, wantState: constants.ConnectionStateError},
+		{name: "error_but_resolves_now", currentState: constants.ConnectionStateError, requiredState: constants.ConnectionStateReady},
+		{name: "pending_incomplete_but_resolves_now", currentState: constants.ConnectionStatePendingIncomplete, requiredState: constants.ConnectionStateReady},
+		{name: "disabled", currentState: constants.ConnectionStateDisabled, requiredState: constants.ConnectionStateError},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			reason := "plugin block 'plugin.held' failed to load"
 			required := ConnectionStateMap{
-				"held":  {ConnectionName: "held", State: constants.ConnectionStateError},
+				"held":  {ConnectionName: "held", State: tt.requiredState, ConnectionError: &reason},
 				"other": {ConnectionName: "other", State: constants.ConnectionStateReady},
 			}
 			current := ConnectionStateMap{
@@ -173,8 +181,11 @@ func TestTakeConnectionsToKeep(t *testing.T) {
 			if inRequired == tt.wantKept || inCurrent == tt.wantKept {
 				t.Errorf("in required = %v, in current = %v, want both %v", inRequired, inCurrent, !tt.wantKept)
 			}
-			if tt.wantKept && (state.State != constants.ConnectionStateReady || state.SchemaHash != "hash") {
-				t.Errorf("kept state = %q with hash %q, want ready with the current hash", state.State, state.SchemaHash)
+			if tt.wantKept && (state.State != tt.wantState || state.SchemaHash != "hash") {
+				t.Errorf("kept state = %q with hash %q, want %q with the current hash", state.State, state.SchemaHash, tt.wantState)
+			}
+			if tt.wantKept && tt.wantState == constants.ConnectionStateError && state.Error() != reason {
+				t.Errorf("kept error = %q, want %q", state.Error(), reason)
 			}
 			if _, ok := kept["new"]; ok {
 				t.Error("a connection with no current state has no schema to keep")

@@ -31,7 +31,8 @@ type SteampipeConfig struct {
 	PluginsInstances map[string]*plugin.Plugin
 	// map of connection name to partially parsed connection config
 	Connections map[string]*modconfig.SteampipeConnection
-	// connections whose plugin block was skipped when loading, which a refresh leaves as they are
+	// connections whose plugin block was skipped when loading, or may have been in a file that was dropped:
+	// a refresh keeps their schema, and sets their state to error if the plugin block cannot be resolved
 	ConnectionsWithSkippedPlugin map[string]struct{}
 
 	// labels of the plugin blocks loadConfig skipped
@@ -246,6 +247,7 @@ func (c *SteampipeConfig) initializePlugins() {
 			c.ConnectionsWithSkippedPlugin[connection.Name] = struct{}{}
 		}
 		if err != nil {
+			err = c.describeSkippedPluginBlock(connection, err)
 			log.Printf("[WARN] cannot resolve plugin for connection '%s': %s", connection.Name, err.Error())
 			connection.Error = err
 			continue
@@ -280,12 +282,29 @@ func (c *SteampipeConfig) initializePlugins() {
 
 }
 
+// pluginBlockSkipped returns whether the plugin block the connection refers to was skipped when loading,
+// or may have been, because the connection's plugin does not resolve and a config file was dropped
 func (c *SteampipeConfig) pluginBlockSkipped(connection *modconfig.SteampipeConnection, resolveErr error) bool {
 	if connection.PluginInstance == nil {
 		return false
 	}
 	_, skipped := c.skippedPluginInstances[*connection.PluginInstance]
 	return skipped || (resolveErr != nil && c.configFileDropped)
+}
+
+// describeSkippedPluginBlock says in the error that the plugin block a connection refers to is missing
+// because loadConfig skipped it, or may be missing because it was in a file loadConfig dropped
+func (c *SteampipeConfig) describeSkippedPluginBlock(connection *modconfig.SteampipeConnection, resolveErr error) error {
+	if connection.PluginInstance == nil {
+		return resolveErr
+	}
+	if _, skipped := c.skippedPluginInstances[*connection.PluginInstance]; skipped {
+		return fmt.Errorf("plugin block 'plugin.%s' failed to load, see the config warnings: %w", *connection.PluginInstance, resolveErr)
+	}
+	if c.configFileDropped {
+		return fmt.Errorf("plugin block 'plugin.%s' was not found and may be in a config file that failed to load, see the config warnings: %w", *connection.PluginInstance, resolveErr)
+	}
+	return resolveErr
 }
 
 /*
