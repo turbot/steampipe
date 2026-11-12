@@ -204,11 +204,10 @@ func pgHbaChecksum(body string) string {
 
 // splitPgHbaChecksum returns the checksum in a file that Steampipe wrote, and every line after it.
 func splitPgHbaChecksum(text string) (sum, body string, ok bool) {
-	i := strings.Index(text, "\n"+constants.PgHbaChecksumPrefix)
-	if i < 0 {
+	if !strings.HasPrefix(text, constants.PgHbaHeader+constants.PgHbaChecksumPrefix) {
 		return "", "", false
 	}
-	rest := text[i+1+len(constants.PgHbaChecksumPrefix):]
+	rest := text[len(constants.PgHbaHeader)+len(constants.PgHbaChecksumPrefix):]
 	end := strings.IndexByte(rest, '\n')
 	if end < 0 {
 		return "", "", false

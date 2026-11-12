@@ -271,6 +271,23 @@ EOF
   assert_output "0"
 }
 
+@test "a rule added between the header and the checksum line stops the start, and is not deleted" {
+  steampipe service stop
+  { head -n 3 "$HBA_FILE"; echo "host all bob all md5"; tail -n +4 "$HBA_FILE"; } > "$BATS_FILE_TMPDIR/inserted.conf"
+  cp "$BATS_FILE_TMPDIR/inserted.conf" "$HBA_FILE"
+
+  run start_service
+  assert_equal "$status" 32
+  assert_output --partial "pg_hba.conf was changed after Steampipe wrote it"
+  run cmp "$HBA_FILE" "$BATS_FILE_TMPDIR/inserted.conf"
+  assert_success
+  assert_no_postgres
+
+  rm "$HBA_FILE"
+  run start_service
+  assert_success
+}
+
 @test "a rule in pg_hba.conf.d that refuses root stops the start at once" {
   steampipe service stop
   echo "local all root reject" > "$HBA_DIR/05-no-root.conf"

@@ -189,6 +189,11 @@ func TestPgHbaOwnerOf(t *testing.T) {
 			steampipeFileWith(t, dir, nil)
 			writeFile(t, filepath.Join(dir, "pg_hba.conf"), withRule(readHba(t, dir), "# a note"))
 		}, pgHbaEdited},
+		{"Steampipe's file with a rule added between the header and the checksum line", func(t *testing.T, dir string) {
+			steampipeFileWith(t, dir, nil)
+			text := readHba(t, dir)
+			writeFile(t, filepath.Join(dir, "pg_hba.conf"), strings.Replace(text, constants.PgHbaChecksumPrefix, "host all bob all md5\n"+constants.PgHbaChecksumPrefix, 1))
+		}, pgHbaEdited},
 		{"Steampipe's file with the checksum line deleted", func(t *testing.T, dir string) {
 			steampipeFileWith(t, dir, nil)
 			text := readHba(t, dir)
