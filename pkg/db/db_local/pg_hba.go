@@ -146,7 +146,8 @@ func pgHbaDatabaseMatchesPostgres(field string) (matches, certain bool) {
 		switch {
 		case db == "all" || db == "postgres" || db == `"postgres"`:
 			return true, true
-		case db == "samerole" || db == "samegroup" || strings.HasPrefix(db, "@"):
+		// samerole does not match a superuser that was not granted the role postgres
+		case strings.HasPrefix(db, "@"):
 			matches = true
 		}
 	}

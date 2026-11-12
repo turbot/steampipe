@@ -535,6 +535,7 @@ func TestMayLetRootIn_FirstMatchingRuleDecides(t *testing.T) {
 		"local postgres root reject\nlocal all all trust\n":     false,
 		"local foo,postgres all reject\nlocal all root trust\n": false,
 		"local steampipe root trust\nlocal all all reject\n":    false,
+		"local samerole root trust\nlocal all all reject\n":     false,
 		"local @dbs root trust\nlocal all all reject\n":         true,
 	} {
 		if got := mayLetRootIn(text); got != want {
