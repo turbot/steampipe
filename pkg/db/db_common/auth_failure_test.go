@@ -8,6 +8,18 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
+func TestIsMissingRole(t *testing.T) {
+	if !IsMissingRole(fmt.Errorf("connect: %w", &pgconn.PgError{Code: "28000", Message: `role "root" does not exist`})) {
+		t.Error("a login for a role that does not exist")
+	}
+	if IsMissingRole(&pgconn.PgError{Code: "28000", Message: `no pg_hba.conf entry for host "[local]", user "root"`}) {
+		t.Error("a refused login is not a missing role")
+	}
+	if IsMissingRole(errors.New(`role "root" does not exist`)) {
+		t.Error("not a postgres error")
+	}
+}
+
 func TestIsAuthFailure(t *testing.T) {
 	cases := []struct {
 		name string

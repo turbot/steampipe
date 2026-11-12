@@ -12,8 +12,12 @@ import (
 // role that does not exist has the same class, but no rule refused it.
 func IsAuthFailure(err error) bool {
 	var pgErr *pgconn.PgError
-	if !errors.As(err, &pgErr) || !strings.HasPrefix(pgErr.Code, "28") {
-		return false
-	}
-	return !(strings.HasPrefix(pgErr.Message, "role ") && strings.HasSuffix(pgErr.Message, " does not exist"))
+	return errors.As(err, &pgErr) && strings.HasPrefix(pgErr.Code, "28") && !IsMissingRole(err)
+}
+
+// IsMissingRole reports whether postgres refused a login because the role does not exist.
+func IsMissingRole(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "28000" &&
+		strings.HasPrefix(pgErr.Message, "role ") && strings.HasSuffix(pgErr.Message, " does not exist")
 }
