@@ -667,8 +667,10 @@ const (
 )
 
 // findSteampipePostgresInstances returns the running steampipe postgres
-// processes. A process that cannot be read, or whose command line stays empty,
-// is treated as not being one.
+// processes. A process that cannot be read is treated as not being one. So is
+// one with an empty command line, except that if it started in the last 10
+// seconds it is read again for up to about 100ms first. If ctx is cancelled
+// during that wait, it returns the matches found so far together with ctx.Err().
 func findSteampipePostgresInstances(ctx context.Context, listProcesses func(context.Context) ([]*psutils.Process, error)) ([]*psutils.Process, error) {
 	var instances []*psutils.Process
 	allProcesses, err := listProcesses(ctx)
