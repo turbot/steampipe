@@ -181,6 +181,7 @@ func setDefaultsFromEnv() {
 		constants.EnvDashboardStartTimeout: {[]string{pconstants.ArgDashboardStartTimeout}, Int},
 		constants.EnvCacheTTL:              {[]string{pconstants.ArgCacheTtl}, Int},
 		constants.EnvCacheMaxTTL:           {[]string{pconstants.ArgCacheMaxTtl}, Int},
+		constants.EnvCacheMaxSize:          {[]string{pconstants.ArgMaxCacheSizeMb}, Int},
 		constants.EnvMemoryMaxMb:           {[]string{pconstants.ArgMemoryMaxMb}, Int},
 		constants.EnvMemoryMaxMbPlugin:     {[]string{pconstants.ArgMemoryMaxMbPlugin}, Int},
 		constants.EnvPluginStartTimeout:    {[]string{pconstants.ArgPluginStartTimeout}, Int},

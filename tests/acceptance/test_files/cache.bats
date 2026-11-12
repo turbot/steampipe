@@ -193,6 +193,96 @@ load ../helpers/steampipe_processes
   assert_not_equal "$unique1" "$unique3"
 }
 
+# The query cache size limit is one total for all plugins. Each plugin gets a share of the total,
+# in proportion to its number of connections. With the chaos2 connection added, chaos has 2
+# connections (chaos, chaos2) and chaosdynamic has 1. So for a total of 300 MB, chaos gets
+# 300 x 2/3 = 200 MB and chaosdynamic gets 300 x 1/3 = 100 MB.
+
+# count the lines in the plugin logs
+function plugin_log_line_count() {
+  cat $STEAMPIPE_INSTALL_DIR/logs/plugin-*.log 2>/dev/null | wc -l | tr -d ' '
+}
+
+# print the query cache size(s) that plugin $1 logged when it started, after line $2 of the plugin logs
+function cache_size_logged_by() {
+  cat $STEAMPIPE_INSTALL_DIR/logs/plugin-*.log 2>/dev/null | tail -n +$(( $2 + 1 )) | grep -F "steampipe-plugin-$1.plugin:" | grep -o 'query cache created, max size [0-9]*Mb' | grep -o '[0-9][0-9]*' | sort -u
+}
+
+# start both plugins with one query
+function query_both_plugins() {
+  steampipe query "select (select count(*) from chaos2.chaos_all_column_types) as chaos_rows, (select count(*) from chaosdynamic.test1) as chaosdynamic_rows"
+}
+
+@test "cache_max_size_mb in database options is one total, shared by the plugins by connection count" {
+  export STEAMPIPE_LOG=info
+  cp $SRC_DATA_DIR/cache_size_chaos2.spc $STEAMPIPE_INSTALL_DIR/config/cache_size_chaos2.spc
+  cp $SRC_DATA_DIR/cache_max_size_300.spc $STEAMPIPE_INSTALL_DIR/config/cache_max_size_300.spc
+  ls $STEAMPIPE_INSTALL_DIR/config
+
+  start=$(plugin_log_line_count)
+  run query_both_plugins
+  echo $output
+  queried=$status
+
+  chaos=$(cache_size_logged_by chaos $start)
+  chaosdynamic=$(cache_size_logged_by chaosdynamic $start)
+  echo "chaos: $chaos, chaosdynamic: $chaosdynamic"
+
+  rm -f $STEAMPIPE_INSTALL_DIR/config/cache_size_chaos2.spc
+  rm -f $STEAMPIPE_INSTALL_DIR/config/cache_max_size_300.spc
+
+  assert_equal "$queried" "0"
+  assert_equal "$chaos" "200"
+  assert_equal "$chaosdynamic" "100"
+}
+
+@test "STEAMPIPE_CACHE_MAX_SIZE_MB is one total, shared by the plugins by connection count" {
+  export STEAMPIPE_LOG=info
+  cp $SRC_DATA_DIR/cache_size_chaos2.spc $STEAMPIPE_INSTALL_DIR/config/cache_size_chaos2.spc
+  ls $STEAMPIPE_INSTALL_DIR/config
+
+  start=$(plugin_log_line_count)
+  export STEAMPIPE_CACHE_MAX_SIZE_MB=300
+  run query_both_plugins
+  echo $output
+  queried=$status
+
+  chaos=$(cache_size_logged_by chaos $start)
+  chaosdynamic=$(cache_size_logged_by chaosdynamic $start)
+  echo "chaos: $chaos, chaosdynamic: $chaosdynamic"
+
+  rm -f $STEAMPIPE_INSTALL_DIR/config/cache_size_chaos2.spc
+
+  assert_equal "$queried" "0"
+  assert_equal "$chaos" "200"
+  assert_equal "$chaosdynamic" "100"
+}
+
+@test "STEAMPIPE_CACHE_MAX_SIZE_MB takes precedence over cache_max_size_mb in database options" {
+  export STEAMPIPE_LOG=info
+  cp $SRC_DATA_DIR/cache_size_chaos2.spc $STEAMPIPE_INSTALL_DIR/config/cache_size_chaos2.spc
+  cp $SRC_DATA_DIR/cache_max_size_300.spc $STEAMPIPE_INSTALL_DIR/config/cache_max_size_300.spc
+  ls $STEAMPIPE_INSTALL_DIR/config
+
+  start=$(plugin_log_line_count)
+  # a total of 600 MB: chaos gets 600 x 2/3 = 400 MB, chaosdynamic gets 600 x 1/3 = 200 MB
+  export STEAMPIPE_CACHE_MAX_SIZE_MB=600
+  run query_both_plugins
+  echo $output
+  queried=$status
+
+  chaos=$(cache_size_logged_by chaos $start)
+  chaosdynamic=$(cache_size_logged_by chaosdynamic $start)
+  echo "chaos: $chaos, chaosdynamic: $chaosdynamic"
+
+  rm -f $STEAMPIPE_INSTALL_DIR/config/cache_size_chaos2.spc
+  rm -f $STEAMPIPE_INSTALL_DIR/config/cache_max_size_300.spc
+
+  assert_equal "$queried" "0"
+  assert_equal "$chaos" "400"
+  assert_equal "$chaosdynamic" "200"
+}
+
 function teardown_file() {
   # list running processes
   ps -ef | grep steampipe
