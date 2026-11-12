@@ -52,7 +52,7 @@ func TestAbortInstallAfterRunningInstance_KeepsNonEmptyData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err := abortInstallAfterRunningInstance(errDbInstanceRunning)
+	err := abortInstallRemovingNewInstall(errDbInstanceRunning, "the old server is stopped")
 	if !errors.Is(err, errDbInstanceRunning) {
 		t.Errorf("error should wrap errDbInstanceRunning: %v", err)
 	}
@@ -76,7 +76,7 @@ func TestAbortInstallAfterRunningInstance_EmptyDataReturnsErrorUnchanged(t *test
 	_ = filepaths.GetDatabaseLocation()
 	_ = filepaths.GetDataLocation()
 
-	if err := abortInstallAfterRunningInstance(errDbInstanceRunning); err != errDbInstanceRunning {
+	if err := abortInstallRemovingNewInstall(errDbInstanceRunning, "the old server is stopped"); err != errDbInstanceRunning {
 		t.Errorf("error should be returned unchanged: %v", err)
 	}
 	if _, statErr := os.Stat(newLocation); !os.IsNotExist(statErr) {

@@ -2,6 +2,7 @@ package db_local
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -272,7 +273,7 @@ func backupCmd(ctx context.Context, config *pgRunningInfo) *exec.Cmd {
 }
 
 // savePgHbaConf returns a function that puts the data directory's pg_hba.conf back exactly as it is now,
-// or removes it if there is none. The versions of Steampipe that wrote the data directory connect over TCP
+// or removes it if there is none, and does not touch a file that is still as it was. The versions of Steampipe that wrote the data directory connect over TCP
 // as root, which the rules written for the upgrade do not allow.
 func savePgHbaConf(dataDir string) (restore func(), err error) {
 	path := filepath.Join(dataDir, pgHbaFileName)
@@ -292,7 +293,10 @@ func savePgHbaConf(dataDir string) (restore func(), err error) {
 	return func() {
 		var restoreErr error
 		if existed {
-			restoreErr = os.WriteFile(path, content, mode) //nolint:gosec // G703: a fixed file name under the old database data directory
+			// a file that is unchanged is left alone
+			if current, err := os.ReadFile(path); err != nil || !bytes.Equal(current, content) {
+				restoreErr = replaceFile(path, content, mode)
+			}
 		} else if restoreErr = os.Remove(path); errors.Is(restoreErr, fs.ErrNotExist) {
 			restoreErr = nil
 		}
@@ -300,6 +304,28 @@ func savePgHbaConf(dataDir string) (restore func(), err error) {
 			log.Printf("[WARN] Could not restore %s: %s", path, restoreErr)
 		}
 	}, nil
+}
+
+// replaceFile writes content to a temporary file next to path and renames it over path, so path is never
+// missing or half written.
+func replaceFile(path string, content []byte, mode os.FileMode) error {
+	tmp, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".*.tmp")
+	if err != nil {
+		return err
+	}
+	// a no-op once the file is renamed
+	defer os.Remove(tmp.Name())
+	if _, err := tmp.Write(content); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	if err := os.Chmod(tmp.Name(), mode); err != nil {
+		return err
+	}
+	return os.Rename(tmp.Name(), path)
 }
 
 // startDatabaseInLocation starts up the postgres binary in a specific installation directory

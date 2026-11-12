@@ -150,22 +150,21 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 // carrying on would hide, and nil for any other backup error.
 func abortInstallAfterBackupError(err error) error {
 	if errors.Is(err, errDbInstanceRunning) {
-		return abortInstallAfterRunningInstance(err)
+		return abortInstallRemovingNewInstall(err, "the old server is stopped")
 	}
-	// the new binaries go, so the next run installs again and retries the upgrade once the user has moved the old directory
 	if errors.Is(err, errSocketPathTooLong) {
-		removeNewInstall(filepaths.DatabaseInstanceDir(), filepaths.GetDataLocation())
-		return err
+		return abortInstallRemovingNewInstall(err, "the old directory is moved")
 	}
 	return nil
 }
 
-// abortInstallAfterRunningInstance removes the new binaries - otherwise, the backup won't get triggered, even if
-// the user stops the service. A new data folder that holds data is kept, and the returned error says so.
-func abortInstallAfterRunningInstance(err error) error {
+// abortInstallRemovingNewInstall removes the new binaries - otherwise, the install would not retry the upgrade
+// on the next run, even once the user has fixed the problem. A new data folder that holds data is kept, and the
+// returned error says so; fixed completes the sentence "Once ..." that says what the user does first.
+func abortInstallRemovingNewInstall(err error, fixed string) error {
 	newDataLocation := filepaths.GetDataLocation()
 	if removeNewInstall(filepaths.DatabaseInstanceDir(), newDataLocation) {
-		return fmt.Errorf("%w\n\n%s holds data and was kept. Once the old server is stopped, the next run upgrades the old database. If %s holds a database, it asks you to move it somewhere else first", err, newDataLocation, newDataLocation)
+		return fmt.Errorf("%w\n\n%s holds data and was kept. Once %s, the next run upgrades the old database. If %s holds a database, it asks you to move it somewhere else first", err, newDataLocation, fixed, newDataLocation)
 	}
 	return err
 }
