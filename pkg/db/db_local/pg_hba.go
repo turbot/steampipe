@@ -28,8 +28,9 @@ const (
 type pgHbaOwner int
 
 const (
-	// pgHbaSteampipe: there is no file, Steampipe wrote it and nobody changed it, or it is exactly
-	// a file that an older Steampipe wrote. Steampipe writes it.
+	// pgHbaSteampipe: there is no file, the file has no rules, Steampipe wrote it and nobody changed
+	// it, or it is exactly a file that an older Steampipe or a build from develop wrote. Steampipe
+	// writes it.
 	pgHbaSteampipe pgHbaOwner = iota
 	// pgHbaEdited: Steampipe wrote the file, and someone changed it. Postgres must not start.
 	pgHbaEdited
@@ -103,32 +104,53 @@ func CheckPgHbaConf(ctx context.Context) error {
 	return nil
 }
 
-// mayLetRootIn reports whether a user's pg_hba.conf could let Steampipe connect as root through the
-// unix socket. Postgres uses the first rule that matches, so this is false when a local rule that
-// matches root on every database comes before any local rule that trusts root. A rule that may match
-// root (a group, a file of names, some databases only) and trusts it counts as letting root in. An
-// include line makes it false: Postgres 14 does not read them, and does not start.
+// mayLetRootIn reports whether a user's pg_hba.conf could let Steampipe's first connection, as root
+// to the postgres database through the unix socket, in. Postgres uses the first rule that matches, so
+// this is false when a local rule that surely matches that connection comes before any local rule
+// that trusts root. A rule that may match it (a group, a file of names) and trusts it counts as
+// letting root in. An include line anywhere makes it false: Postgres 14 does not read them, and does
+// not start.
 func mayLetRootIn(text string) bool {
-	for _, r := range pgHbaRules(text) {
+	rules := pgHbaRules(text)
+	if hasPgHbaInclude(rules) {
+		return false
+	}
+	for _, r := range rules {
 		f := r.fields
-		if strings.HasPrefix(f[0], "include") {
-			return false
-		}
 		if len(f) < 4 || f[0] != "local" {
 			continue
 		}
-		matches, certain := pgHbaUserMatchesRoot(f[2])
-		if !matches {
+		userMatches, userCertain := pgHbaUserMatchesRoot(f[2])
+		dbMatches, dbCertain := pgHbaDatabaseMatchesPostgres(f[1])
+		if !userMatches || !dbMatches {
 			continue
 		}
 		if f[3] == "trust" {
 			return true
 		}
-		if certain && f[1] == "all" {
+		if userCertain && dbCertain {
 			return false
 		}
 	}
 	return false
+}
+
+func hasPgHbaInclude(rules []pgHbaRule) bool {
+	return slices.ContainsFunc(rules, func(r pgHbaRule) bool { return strings.HasPrefix(r.fields[0], "include") })
+}
+
+// pgHbaDatabaseMatchesPostgres reports whether a rule's database field may match the postgres
+// database, and whether it surely does.
+func pgHbaDatabaseMatchesPostgres(field string) (matches, certain bool) {
+	for _, db := range strings.Split(field, ",") {
+		switch {
+		case db == "all" || db == "postgres" || db == `"postgres"`:
+			return true, true
+		case db == "samerole" || db == "samegroup" || strings.HasPrefix(db, "@"):
+			matches = true
+		}
+	}
+	return matches, false
 }
 
 // pgHbaUserMatchesRoot reports whether a rule's user field may match root, and whether it surely does.
@@ -472,8 +494,9 @@ Change that rule, or put this rule before it:
 	if err != nil {
 		return err
 	}
+	rules := pgHbaRules(string(content))
 	var yours []string
-	for _, r := range pgHbaRules(string(content)) {
+	for _, r := range rules {
 		if !isOlderSteampipeRule(r.fields) {
 			yours = append(yours, r.text)
 		}
@@ -499,22 +522,30 @@ Change that rule, or put this rule before it:
 Empty the file rather than delete it: Steampipe 2.4 and earlier take a missing %[1]s for a new
 install, and delete the database.
 `, pgHbaFileName, filepath.Join(hbaDir, "10-mine.conf"), path, constants.PgHbaRootRule, constants.DatabaseSuperUser)
+	if hasPgHbaInclude(rules) {
+		message += fmt.Sprintf("\nPostgres %s does not read include lines in %s and does not start with one. Remove them, whichever you choose.\n",
+			constants.DatabaseVersion, pgHbaFileName)
+	}
 	message += upgradeNote(dataDir)
 	message += ruleList("Your rules (the rules that older Steampipe versions did not write):", yours)
 	message += "\nFile: " + path
 	return &pgHbaStopError{message: message}
 }
 
-// upgradeNote says, about the data folder of an older install that an upgrade starts to carry its
-// data over, that its pg_hba.conf and pg_hba.conf.d stay behind. It is empty for any other folder.
+// upgradeNote says, about the data folder of an older install with another Postgres major version,
+// that the upgrade dumps its data into a new folder and leaves its pg_hba.conf and pg_hba.conf.d
+// behind. It is empty for any other folder: an upgrade within a major version moves the whole folder.
 func upgradeNote(dataDir string) string {
-	if filepath.Dir(filepath.Dir(dataDir)) != filepaths.EnsureDatabaseDir() || dataDir == filepaths.GetDataLocation() {
+	installDir := filepath.Dir(dataDir)
+	newDataDir := filepath.Join(filepaths.EnsureDatabaseDir(), constants.DatabaseVersion, "data")
+	if filepath.Dir(installDir) != filepaths.EnsureDatabaseDir() || dataDir == newDataDir ||
+		isSameMajorVersion(filepath.Base(installDir), constants.DatabaseVersion) {
 		return ""
 	}
 	return fmt.Sprintf(`
-This is the data folder of an older Postgres version, which Steampipe is upgrading to %s.
+This is the data folder of an older Postgres major version, which Steampipe is upgrading to %s.
 Neither %s nor %s is carried over: after the upgrade, make the same change there.
-`, filepaths.GetDataLocation(), pgHbaFileName, pgHbaDirName)
+`, newDataDir, pgHbaFileName, pgHbaDirName)
 }
 
 // ruleList is a title and the rules under it, or nothing when there are no rules.

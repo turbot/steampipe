@@ -2,9 +2,10 @@ package constants
 
 // PgHbaHeader starts every pg_hba.conf that Steampipe writes. A checksum line follows it.
 // Steampipe recognises a file that it wrote by the first line, and reads the checksum only
-// from a file that starts with every line of the header followed by the checksum prefix: a
-// file with any other header counts as edited. Changing any header line must keep accepting
-// the old header, or every file written with it counts as edited.
+// from a file that starts with every line of the header followed by the checksum prefix. Any
+// other file with that first line counts as edited, except the exact file that builds from
+// develop wrote before the checksum existed. Changing any header line must keep accepting the
+// old header, or every file written with it counts as edited.
 const PgHbaHeader = `# Written by Steampipe each time the database starts. DO NOT EDIT.
 # Put your own rules in pg_hba.conf.d/<name>.conf. They come first, so they win.
 # To manage this file yourself, delete these header lines. Steampipe then does not change it,
@@ -26,6 +27,6 @@ host  all steampipe samehost trust
 host  all steampipe all      scram-sha-256
 `
 
-// PgHbaRootRule is the rule that a pg_hba.conf the user manages must have, so that Steampipe
-// can connect as root through the unix socket.
+// PgHbaRootRule is the rule that Steampipe tells the user to add to a pg_hba.conf they manage,
+// so that Steampipe can connect as root through the unix socket.
 const PgHbaRootRule = "local all root trust"

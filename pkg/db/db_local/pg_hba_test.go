@@ -523,14 +523,19 @@ func TestCheckPgHbaConf_ChecksTheOlderInstallThatTheUpgradeStarts(t *testing.T) 
 
 func TestMayLetRootIn_FirstMatchingRuleDecides(t *testing.T) {
 	for text, want := range map[string]bool{
-		"local all root trust\n":                          true,
-		"local all all peer\nlocal all root trust\n":      false,
-		"local all root reject\nlocal all all trust\n":    false,
-		"local all bob peer\nlocal all root trust\n":      true,
-		"local mydb all reject\nlocal all root trust\n":   true,
-		"local all +admins trust\nlocal all all reject\n": true,
-		"include_dir hba.d\nlocal all root trust\n":       false,
-		"include hba.extra\n":                             false,
+		"local all root trust\n":                                true,
+		"local all all peer\nlocal all root trust\n":            false,
+		"local all root reject\nlocal all all trust\n":          false,
+		"local all bob peer\nlocal all root trust\n":            true,
+		"local mydb all reject\nlocal all root trust\n":         true,
+		"local all +admins trust\nlocal all all reject\n":       true,
+		"include_dir hba.d\nlocal all root trust\n":             false,
+		"include hba.extra\n":                                   false,
+		"local all root trust\ninclude hba.extra\n":             false,
+		"local postgres root reject\nlocal all all trust\n":     false,
+		"local foo,postgres all reject\nlocal all root trust\n": false,
+		"local steampipe root trust\nlocal all all reject\n":    false,
+		"local @dbs root trust\nlocal all all reject\n":         true,
 	} {
 		if got := mayLetRootIn(text); got != want {
 			t.Errorf("mayLetRootIn(%q) = %v, want %v", text, got, want)
@@ -585,18 +590,34 @@ func TestPgHbaMessages_NeverSayToDeleteTheFile(t *testing.T) {
 	}
 }
 
-func TestPgHbaMessages_OnAnOlderInstallSayTheRulesAreNotCarriedOver(t *testing.T) {
+func TestPgHbaMessages_OnAnOlderMajorInstallSayTheRulesAreNotCarriedOver(t *testing.T) {
 	installDir := app_specific.InstallDir
 	t.Cleanup(func() { app_specific.InstallDir = installDir })
 	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
-	older := filepath.Join(filepaths.EnsureDatabaseDir(), "14.1.0", "data")
-	writeFile(t, filepath.Join(older, "pg_hba.conf"), "local all all peer\n")
-
-	msg := rootRefusedError(older).Error()
-	if !strings.Contains(msg, filepaths.GetDataLocation()) || !strings.Contains(msg, "Neither pg_hba.conf nor pg_hba.conf.d is carried over") {
-		t.Errorf("the message must say the rules are not carried to %s:\n%s", filepaths.GetDataLocation(), msg)
+	const notCarried = "Neither pg_hba.conf nor pg_hba.conf.d is carried over"
+	olderMajor := filepath.Join(filepaths.EnsureDatabaseDir(), "12.1.0", "data")
+	sameMajor := filepath.Join(filepaths.EnsureDatabaseDir(), "14.1.0", "data")
+	current := filepath.Join(filepaths.EnsureDatabaseDir(), constants.DatabaseVersion, "data")
+	for _, dir := range []string{olderMajor, sameMajor, current} {
+		writeFile(t, filepath.Join(dir, "pg_hba.conf"), "local all all peer\n")
 	}
-	if strings.Contains(rootRefusedError(filepaths.GetDataLocation()).Error(), "Neither pg_hba.conf nor pg_hba.conf.d is carried over") {
+
+	msg := rootRefusedError(olderMajor).Error()
+	if !strings.Contains(msg, current) || !strings.Contains(msg, notCarried) {
+		t.Errorf("a dump and restore from another major version must say the rules are not carried to %s:\n%s", current, msg)
+	}
+	if strings.Contains(rootRefusedError(sameMajor).Error(), notCarried) {
+		t.Errorf("an upgrade within a major version moves the whole data folder, so the rules are carried over")
+	}
+	if strings.Contains(rootRefusedError(current).Error(), notCarried) {
 		t.Errorf("this version's own data folder is not being upgraded")
+	}
+}
+
+func TestRootRefusedError_AnIncludeLineMustBeRemoved(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, "pg_hba.conf"), "local all root trust\ninclude hba.extra\n")
+	if msg := rootRefusedError(dir).Error(); !strings.Contains(msg, "does not read include lines") {
+		t.Errorf("adding the root rule cannot fix a file with an include line; the message must say to remove it:\n%s", msg)
 	}
 }
