@@ -33,7 +33,8 @@ const (
 	ServiceStopTimedOut
 )
 
-// ShutdownService stops the database instance if the given 'invoker' matches
+// ShutdownService stops the database instance if the given 'invoker' matches and no other Steampipe client is
+// connected. A service an older version started is left running if its clients cannot be counted.
 func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	putils.LogTime("db_local.ShutdownService start")
 	defer putils.LogTime("db_local.ShutdownService end")
@@ -54,9 +55,14 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	// under a fresh context
 	clientCounts, err := GetClientCount(context.Background())
 	if errors.Is(err, errStartedByOlderVersion) {
-		// its clients cannot be counted, and another session may be using it: the older version stops it
-		log.Printf("[INFO] ShutdownService not closing database service - %s", err)
-		return
+		// root cannot reach a service an older version started. Steampipe's clients connect as the steampipe
+		// user, which sees their sessions.
+		clientCounts, err = countClients(context.Background(), constants.DatabaseUser)
+		if err != nil {
+			// another session may be using it
+			log.Printf("[INFO] ShutdownService not closing database service an older version started - could not count its clients: %s", err)
+			return
+		}
 	}
 	// if there are other clients connected
 	// and if there's no error
@@ -108,11 +114,17 @@ func GetClientCount(ctx context.Context) (*ClientCount, error) {
 	putils.LogTime("db_local.GetClientCount start")
 	defer putils.LogTime("db_local.GetClientCount end")
 
-	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
+	return countClients(ctx, constants.DatabaseSuperUser)
+}
+
+// countClients is GetClientCount, connected as username. Only root sees every session; any other user sees
+// only the sessions of its own role.
+func countClients(ctx context.Context, username string) (*ClientCount, error) {
+	client, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: username})
 	if err != nil {
 		return nil, err
 	}
-	defer rootClient.Close(ctx)
+	defer client.Close(ctx)
 
 	query := `
 SELECT 
@@ -135,7 +147,7 @@ GROUP BY application_name
 	counts := &ClientCount{}
 
 	log.Println("[INFO] ClientConnectionAppName: ", runtime.ClientConnectionAppName)
-	rows, err := rootClient.Query(ctx, query, "client backend", runtime.ClientConnectionAppName)
+	rows, err := client.Query(ctx, query, "client backend", runtime.ClientConnectionAppName)
 	if err != nil {
 		return nil, err
 	}

@@ -38,7 +38,7 @@ func TestRemoveNewInstall_KeepsNonEmptyData(t *testing.T) {
 	}
 }
 
-func TestAbortInstallAfterRunningInstance_KeepsNonEmptyData(t *testing.T) {
+func TestAbortInstallRemovingNewInstall_KeepsNonEmptyData(t *testing.T) {
 	original := app_specific.InstallDir
 	defer func() { app_specific.InstallDir = original }()
 	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
@@ -67,7 +67,7 @@ func TestAbortInstallAfterRunningInstance_KeepsNonEmptyData(t *testing.T) {
 	}
 }
 
-func TestAbortInstallAfterRunningInstance_EmptyDataReturnsErrorUnchanged(t *testing.T) {
+func TestAbortInstallRemovingNewInstall_EmptyDataReturnsErrorUnchanged(t *testing.T) {
 	original := app_specific.InstallDir
 	defer func() { app_specific.InstallDir = original }()
 	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")

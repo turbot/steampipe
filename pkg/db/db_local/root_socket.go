@@ -19,15 +19,15 @@ import (
 )
 
 // errStartedByOlderVersion is returned for a root connection to a running service that has no socket
-// in the data directory: Steampipe 2.4 and earlier put the socket in /tmp, and allowed root over TCP.
+// in the data directory: earlier versions of Steampipe put the socket in /tmp, and allowed root over TCP.
 var errStartedByOlderVersion = errors.New("the running service was started by an older version of Steampipe. Run `steampipe service stop --force` once")
 
 var errSocketPathTooLong = errors.New("the database socket path is too long")
 
 // postgresSocketArgs are the settings that every postgres Steampipe starts gets: the socket goes in
 // the data directory, and only the OS user who runs postgres can open it. Postgres does not start
-// unless the data directory belongs to that user and nobody else can read it, so no other user can
-// reach the socket, or make a file in its place.
+// unless the data directory belongs to that user and no other user can write to it, so no other user
+// can make a file in the socket's place.
 func postgresSocketArgs(dataDir string, port int) ([]string, error) {
 	if err := checkSocketPathLength(dataDir, port); err != nil {
 		return nil, err

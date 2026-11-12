@@ -124,7 +124,8 @@ func isSameMajorVersion(oldVersion, targetVersion string) bool {
 // new installation's binaries are removed, so the next run installs them again and retries the move. The new data
 // folder is removed only when it is empty: one that holds data is kept, and the error tells the user how to recover.
 // If the old server cannot be used, the error carries the cause and, unless both data folders were kept, says how to
-// look into it and how to move the old installation aside; it never moves or deletes the old installation itself.
+// look into it and how to move the old installation aside; it never moves or deletes the old installation itself. A
+// socket path that is too long gives only its own advice, to move the install directory.
 func moveDataFromSameMajorInstall(ctx context.Context, oldLocation, newDataLocation string) (err error) {
 	var oldInstallHint string
 	defer func() {
@@ -307,10 +308,9 @@ func backupCmd(ctx context.Context, config *pgRunningInfo, socketDir string) *ex
 // or removes it if there is none, and does not touch a file that is still as it was. The versions of Steampipe that wrote the data directory connect over TCP
 // as root, which the rules written for the upgrade do not allow.
 func savePgHbaConf(dataDir string) (restore func(), err error) {
-	path := filepath.Join(dataDir, pgHbaFileName)
-	// a link stays a link: its target is what is put back
-	if target, err := filepath.EvalSymlinks(path); err == nil {
-		path = target
+	path, isLink, err := pgHbaConfTarget(dataDir)
+	if err != nil {
+		return nil, err
 	}
 	content, readErr := os.ReadFile(path)
 	existed := readErr == nil
@@ -330,7 +330,13 @@ func savePgHbaConf(dataDir string) (restore func(), err error) {
 		if existed {
 			// a file that is unchanged is left alone
 			if current, err := os.ReadFile(path); err != nil || !bytes.Equal(current, content) {
-				restoreErr = replaceFile(path, content, mode)
+				if isLink {
+					// written in place, as the upgrade wrote it: the link's folder may not let a file be made there
+					restoreErr = os.WriteFile(path, content, mode) //nolint:gosec // G703: the file the data directory's own pg_hba.conf links to, which the upgrade has just written through
+
+				} else {
+					restoreErr = replaceFile(path, content, mode)
+				}
 			}
 		} else if restoreErr = os.Remove(path); errors.Is(restoreErr, fs.ErrNotExist) {
 			restoreErr = nil
@@ -339,6 +345,34 @@ func savePgHbaConf(dataDir string) (restore func(), err error) {
 			log.Printf("[WARN] Could not restore %s: %s", path, restoreErr)
 		}
 	}, nil
+}
+
+// pgHbaConfTarget is the file the data directory's pg_hba.conf is, or the file it links to, which the upgrade
+// writes through the link whether or not it exists. A link stays a link.
+func pgHbaConfTarget(dataDir string) (path string, isLink bool, err error) {
+	path = filepath.Join(dataDir, pgHbaFileName)
+	info, err := os.Lstat(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return path, false, nil
+	}
+	if err != nil {
+		return "", false, err
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		return path, false, nil
+	}
+	if target, err := filepath.EvalSymlinks(path); err == nil {
+		return target, true, nil
+	}
+	// a link to a missing file
+	target, err := os.Readlink(path)
+	if err != nil {
+		return "", false, err
+	}
+	if !filepath.IsAbs(target) {
+		target = filepath.Join(dataDir, target)
+	}
+	return target, true, nil
 }
 
 // replaceFile writes content to a temporary file next to path and renames it over path, so path is never
@@ -374,7 +408,7 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 	if err != nil {
 		return nil, err
 	}
-	// the old pg_hba.conf is rewritten below, so nothing may fail before these checks without being undone.
+	// these checks come before the old pg_hba.conf is rewritten below, so a failure leaves nothing to undo.
 	// The data then goes to the new data directory, which the install starts on a free port like this one
 	// and the service on the configured port.
 	for _, socket := range []struct {

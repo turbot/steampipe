@@ -334,7 +334,7 @@ func TestAbortInstallAfterBackupError_SocketPathTooLongStopsTheInstall(t *testin
 	oldDataDir := filepath.Join(app_specific.InstallDir, "db", "14.19.0", "data")
 	backupErr := checkSocketPathLength(oldDataDir, 9193)
 	if backupErr == nil {
-		t.Fatal("the socket path is over the limit")
+		t.Fatal("test setup: the socket path must be over the limit")
 	}
 	newLocation := filepaths.DatabaseInstanceDir()
 	_ = filepaths.GetDatabaseLocation()

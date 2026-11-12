@@ -2,6 +2,7 @@ package db_local
 
 import (
 	"context"
+	"crypto/tls"
 	"net"
 	"os/exec"
 	"path/filepath"
@@ -12,12 +13,17 @@ import (
 	"github.com/jackc/pgx/v5/pgproto3"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
 	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/filepaths"
 )
 
-// listenForStartupUser accepts connections on a free port, sends each connecting user's name to the returned
-// channel, and closes the connection.
+// listenForStartupUser accepts connections on a free port, with SSL using the install's server certificate,
+// sends each connecting user's name to the returned channel, and closes the connection.
 func listenForStartupUser(t *testing.T) (port int, users <-chan string) {
 	t.Helper()
+	cert, err := tls.LoadX509KeyPair(filepaths.GetServerCertLocation(), filepaths.GetServerCertKeyLocation())
+	if err != nil {
+		t.Fatal(err)
+	}
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
@@ -30,14 +36,17 @@ func listenForStartupUser(t *testing.T) (port int, users <-chan string) {
 			if err != nil {
 				return
 			}
-			backend := pgproto3.NewBackend(conn, conn)
+			var c net.Conn = conn
 			for {
-				msg, err := backend.ReceiveStartupMessage()
+				msg, err := pgproto3.NewBackend(c, c).ReceiveStartupMessage()
 				if err != nil {
 					break
 				}
 				if _, ok := msg.(*pgproto3.SSLRequest); ok {
-					_, _ = conn.Write([]byte("N"))
+					if _, err := c.Write([]byte("S")); err != nil {
+						break
+					}
+					c = tls.Server(conn, &tls.Config{Certificates: []tls.Certificate{cert}})
 					continue
 				}
 				if m, ok := msg.(*pgproto3.StartupMessage); ok {
@@ -45,7 +54,7 @@ func listenForStartupUser(t *testing.T) (port int, users <-chan string) {
 				}
 				break
 			}
-			_ = conn.Close()
+			_ = c.Close()
 		}
 	}()
 	return l.Addr().(*net.TCPAddr).Port, ch
@@ -58,6 +67,10 @@ func TestShutdownService_CountsTheClientsOfAServiceAnOlderVersionStarted(t *test
 	originalInstallDir := app_specific.InstallDir
 	t.Cleanup(func() { app_specific.InstallDir = originalInstallDir })
 	app_specific.InstallDir = filepath.Join(shortTempDir(t), ".steampipe")
+	// a connection as the steampipe user uses SSL, as it does to a real service
+	if err := ensureCertificates(); err != nil {
+		t.Fatal(err)
+	}
 
 	// a stand-in for a postgres that an older version started for a query: it has no socket in the data
 	// directory, so root cannot connect to count the clients

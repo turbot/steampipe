@@ -199,7 +199,7 @@ EOF
 @test "a running service with no socket in the data directory says to stop it once with --force" {
   run start_service
   assert_success
-  # a service that Steampipe 2.4 or earlier started has no socket in the data directory
+  # a service that an earlier version of Steampipe started has no socket in the data directory
   rm "$HBA_DATA_DIR/.s.PGSQL.$PG_PORT"
 
   run steampipe service stop

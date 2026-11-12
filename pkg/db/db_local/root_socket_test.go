@@ -64,6 +64,8 @@ func TestCheckSocketPathLength_Limit(t *testing.T) {
 }
 
 func TestCreateCmd_HasSocketSettings(t *testing.T) {
+	originalInstallDir := app_specific.InstallDir
+	t.Cleanup(func() { app_specific.InstallDir = originalInstallDir })
 	// a short install directory: t.TempDir can make the socket path too long
 	app_specific.InstallDir = filepath.Join(shortTempDir(t), ".steampipe")
 	cmd, err := createCmd(context.Background(), 9193, []string{"127.0.0.1"})
@@ -277,8 +279,9 @@ func TestCheckRootSocket(t *testing.T) {
 
 func TestWaitForRootSocket(t *testing.T) {
 	dir := shortTempDir(t)
+	originalTimeout := viper.Get(pconstants.ArgDatabaseStartTimeout)
+	t.Cleanup(func() { viper.Set(pconstants.ArgDatabaseStartTimeout, originalTimeout) })
 	viper.Set(pconstants.ArgDatabaseStartTimeout, 0)
-	t.Cleanup(func() { viper.Set(pconstants.ArgDatabaseStartTimeout, nil) })
 
 	if err := waitForRootSocket(context.Background(), dir, 9193); err == nil || !strings.Contains(err.Error(), "timed out") {
 		t.Errorf("want a time-out while the socket is missing, got %v", err)

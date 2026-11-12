@@ -186,7 +186,7 @@ func abortInstallAfterBackupError(err error) error {
 		return abortInstallRemovingNewInstall(err, "the old server is stopped")
 	}
 	if errors.Is(err, errSocketPathTooLong) {
-		return abortInstallRemovingNewInstall(err, "the old directory is moved")
+		return abortInstallRemovingNewInstall(err, "the install directory is moved")
 	}
 	return nil
 }
@@ -427,19 +427,15 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	putils.LogTime("db_local.runInstall start")
 	defer putils.LogTime("db_local.runInstall end")
 
-	port, err := putils.GetNextFreePort()
-	if err != nil {
-		log.Printf("[TRACE] getNextFreePort failed: %v", err)
-		return fmt.Errorf("Starting database... FAILED!")
-	}
-	// before initdb, which marks the database as installed
-	if err := checkSocketPathLength(filepaths.GetDataLocation(), port); err != nil {
+	// before initdb, which marks the database as installed. The free port is taken later, just before the server
+	// starts, so the longest port stands in for it.
+	if err := checkSocketPathLength(filepaths.GetDataLocation(), 65535); err != nil {
 		return err
 	}
 
 	statushooks.SetStatus(ctx, "Cleaning up…")
 
-	err = prepareDataLocation(filepaths.GetDataLocation())
+	err := prepareDataLocation(filepaths.GetDataLocation())
 	if err != nil {
 		if errors.Is(err, errDataFolderHoldsDatabase) {
 			return err
@@ -456,6 +452,11 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	}
 
 	statushooks.SetStatus(ctx, "Starting database…")
+	port, err := putils.GetNextFreePort()
+	if err != nil {
+		log.Printf("[TRACE] getNextFreePort failed: %v", err)
+		return fmt.Errorf("Starting database... FAILED!")
+	}
 	process, err := startServiceForInstall(port)
 	if err != nil {
 		log.Printf("[TRACE] startServiceForInstall failed: %v", err)
