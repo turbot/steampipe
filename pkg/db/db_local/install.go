@@ -27,6 +27,12 @@ import (
 
 var ensureMux sync.Mutex
 
+// the steps of a first-time install that download from the registry; tests replace them
+var (
+	installDbFiles  = downloadAndInstallDbFiles
+	installFdwFiles = installFDW
+)
+
 func noBackupWarning() string {
 	warningMessage := fmt.Sprintf(`Steampipe database has been upgraded to Postgres %s.
 
@@ -79,7 +85,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 
 	statushooks.SetStatus(ctx, "Installing database…")
 
-	err = downloadAndInstallDbFiles(ctx)
+	err = installDbFiles(ctx)
 	if err != nil {
 		return err
 	}
@@ -115,7 +121,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	}
 
 	// install the fdw
-	_, err = installFDW(ctx, true)
+	_, err = installFdwFiles(ctx, true)
 	if err != nil {
 		log.Printf("[TRACE] installFDW failed: %v", err)
 		return fmt.Errorf("Download & install steampipe-postgres-fdw... FAILED!")
