@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -31,13 +32,20 @@ func TestPostgresSocketArgs(t *testing.T) {
 }
 
 func TestPostgresSocketArgs_RefusesTooLongPath(t *testing.T) {
-	dataDir := "/" + strings.Repeat("d", maxSocketPathLength())
+	originalInstallDir := app_specific.InstallDir
+	t.Cleanup(func() { app_specific.InstallDir = originalInstallDir })
+	app_specific.InstallDir = "/" + strings.Repeat("d", maxSocketPathLength())
+	dataDir := filepath.Join(app_specific.InstallDir, "db", "14.24.0", "data")
 	got, err := postgresSocketArgs(dataDir, 9193)
 	if err == nil {
 		t.Fatalf("a socket path longer than %d bytes must be refused, got %v", maxSocketPathLength(), got)
 	}
-	if !strings.Contains(err.Error(), constants.EnvInstallDir) {
-		t.Errorf("the error must say to set %s: %v", constants.EnvInstallDir, err)
+	// the data directory holds the database: a new install directory would leave it behind
+	if !strings.Contains(err.Error(), "Move "+app_specific.InstallDir) || !strings.Contains(err.Error(), constants.EnvInstallDir) {
+		t.Errorf("the error must say to move the install directory and point %s at it: %v", constants.EnvInstallDir, err)
+	}
+	if strings.Contains(err.Error(), "Set "+constants.EnvInstallDir+" to a shorter path") {
+		t.Errorf("the error must not say to set %s to a new path: %v", constants.EnvInstallDir, err)
 	}
 }
 
@@ -91,28 +99,62 @@ func TestQuoteConnStringValue_KeepsPathWithSpacesAndQuotes(t *testing.T) {
 	}
 }
 
+// writeArgsRecorder replaces the binary at path with a script that writes its arguments, one per line, to
+// the returned file.
+func writeArgsRecorder(t *testing.T, path string) (argsFile string) {
+	t.Helper()
+	argsFile = filepath.Join(t.TempDir(), "args")
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		t.Fatal(err)
+	}
+	script := "#!/bin/sh\nprintf '%s\\n' \"$@\" > '" + argsFile + "'\n"
+	if err := os.WriteFile(path, []byte(script), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(path, 0700); err != nil {
+		t.Fatal(err)
+	}
+	return argsFile
+}
+
+func recordedHost(t *testing.T, argsFile string) string {
+	t.Helper()
+	b, err := os.ReadFile(argsFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, arg := range strings.Split(string(b), "\n") {
+		if host, ok := strings.CutPrefix(arg, "--host="); ok {
+			return host
+		}
+	}
+	t.Fatalf("no --host in %q", b)
+	return ""
+}
+
 func TestBackupAndRestoreConnectThroughTheirDataDirectory(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the recorders are shell scripts")
+	}
+	originalInstallDir := app_specific.InstallDir
+	t.Cleanup(func() { app_specific.InstallDir = originalInstallDir })
 	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
 	oldDataDir := filepath.Join(t.TempDir(), "14.19.0", "data")
 
-	oldDir, cleanupOld, err := libpqSocketDir(oldDataDir, 9876)
-	if err != nil {
+	dumpArgs := writeArgsRecorder(t, filepaths.PgDumpBinaryExecutablePath())
+	if err := takeBackup(context.Background(), &pgRunningInfo{dataDir: oldDataDir, port: 9876, dbName: "steampipe"}); err != nil {
 		t.Fatal(err)
 	}
-	defer cleanupOld()
-	dump := strings.Join(backupCmd(context.Background(), &pgRunningInfo{dataDir: oldDataDir, port: 9876, dbName: "steampipe"}, oldDir).Args, " ")
-	if !strings.Contains(dump, "--host="+oldDataDir+" ") {
-		t.Errorf("pg_dump must connect through the old installation's data directory: %s", dump)
+	if got := recordedHost(t, dumpArgs); got != oldDataDir {
+		t.Errorf("pg_dump must connect through the old installation's data directory %s, got %s", oldDataDir, got)
 	}
 
-	newDir, cleanupNew, err := libpqSocketDir(filepaths.GetDataLocation(), 9193)
-	if err != nil {
+	restoreArgs := writeArgsRecorder(t, filepaths.PgRestoreBinaryExecutablePath())
+	if err := runRestoreUsingList(context.Background(), &RunningDBInstanceInfo{Port: 9193, Database: "steampipe"}, "list"); err != nil {
 		t.Fatal(err)
 	}
-	defer cleanupNew()
-	restore := strings.Join(restoreCmd(context.Background(), &RunningDBInstanceInfo{Port: 9193, Database: "steampipe"}, "list", newDir).Args, " ")
-	if !strings.Contains(restore, "--host="+filepaths.GetDataLocation()+" ") {
-		t.Errorf("pg_restore must connect through the new installation's data directory: %s", restore)
+	if got := recordedHost(t, restoreArgs); got != filepaths.GetDataLocation() {
+		t.Errorf("pg_restore must connect through the new installation's data directory %s, got %s", filepaths.GetDataLocation(), got)
 	}
 }
 
@@ -164,6 +206,22 @@ func TestLibpqSocketDir_CommaInTempDirUsesSlashTmp(t *testing.T) {
 	defer cleanup()
 	if strings.Contains(dir, ",") || filepath.Dir(dir) != "/tmp" {
 		t.Errorf("the link directory must be in /tmp, got %s", dir)
+	}
+}
+
+func TestLibpqSocketDir_LongTempDirUsesSlashTmp(t *testing.T) {
+	longTmp := filepath.Join(shortTempDir(t), strings.Repeat("t", 90))
+	if err := os.Mkdir(longTmp, 0700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("TMPDIR", longTmp)
+	dir, cleanup, err := libpqSocketDir("/data/a,b", 9193)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cleanup()
+	if err := checkSocketPathLength(dir, 9193); err != nil {
+		t.Errorf("the link to the socket must fit the OS limit: %v", err)
 	}
 }
 
@@ -271,5 +329,33 @@ func TestStartDatabaseInLocation_TooLongSocketPathLeavesOldDataUntouched(t *test
 	}
 	if strings.Contains(err.Error(), "Set "+constants.EnvInstallDir+" to a shorter path") {
 		t.Errorf("an upgrade must not be told to set %s to a new path: %v", constants.EnvInstallDir, err)
+	}
+}
+
+func TestStartDatabaseInLocation_TooLongNewSocketPathLeavesOldDataUntouched(t *testing.T) {
+	// the old data directory's socket path fits; the new one's does not
+	installDir := filepath.Join(t.TempDir(), strings.Repeat("x", 100), ".steampipe")
+	originalInstallDir := app_specific.InstallDir
+	t.Cleanup(func() { app_specific.InstallDir = originalInstallDir })
+	app_specific.InstallDir = installDir
+	oldLocation := filepath.Join(shortTempDir(t), "db", "14.19.0")
+	oldDataDir := filepath.Join(oldLocation, "data")
+	if err := os.MkdirAll(oldDataDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	hbaPath := filepath.Join(oldDataDir, pgHbaFileName)
+	if err := os.WriteFile(hbaPath, []byte(olderSteampipeHba), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := startDatabaseInLocation(context.Background(), oldLocation)
+	if !errors.Is(err, errSocketPathTooLong) {
+		t.Fatalf("a new data directory whose socket path is over the limit must be refused before the old data is touched, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "Move "+installDir) {
+		t.Errorf("the error must say to move the install directory: %v", err)
+	}
+	if _, statErr := os.Stat(filepath.Join(oldDataDir, pgHbaDirName)); statErr == nil {
+		t.Errorf("%s must not be created in the old data directory", pgHbaDirName)
 	}
 }

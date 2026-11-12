@@ -115,7 +115,7 @@ connect_as() {
 
 @test "an install directory with a comma and a double quote starts, answers a query and stops" {
   steampipe service stop
-  # postgres, pgx and libpq all split a socket directory on commas unless it is quoted
+  # postgres splits a socket directory on commas unless it is quoted; pgx and libpq always split a host on commas
   local odd_dir="$BATS_FILE_TMPDIR/a,b\"c"
   ln -s "$STEAMPIPE_INSTALL_DIR" "$odd_dir"
 
@@ -186,7 +186,8 @@ EOF
 
   STEAMPIPE_INSTALL_DIR="$long_dir" run steampipe service start --database-port $PG_PORT
   assert_equal "$status" 32
-  assert_output --partial "Set STEAMPIPE_INSTALL_DIR to a shorter path"
+  # the install holds a database, so a new install directory would leave it behind
+  assert_output --partial "Move $long_dir to a shorter path and set STEAMPIPE_INSTALL_DIR to it"
 
   # postgres did not start
   run pgrep -f "$long_dir"
@@ -206,11 +207,14 @@ EOF
   assert_output --partial "started by an older version of Steampipe"
   assert_output --partial "steampipe service stop --force"
 
-  # stop only this install's processes: service stop --force would stop every service on the machine.
-  # Postgres, the plugin manager (--install-dir) and the plugins all name the install on their command lines.
-  pkill -f "$STEAMPIPE_INSTALL_DIR" || true
-  for _ in $(seq 50); do pgrep -f "$STEAMPIPE_INSTALL_DIR" > /dev/null || break; sleep 0.2; done
-  run pgrep -f "$STEAMPIPE_INSTALL_DIR"
+  # stop only this service's processes, by the pids it recorded: service stop --force would stop every
+  # service on the machine. The plugins are children of the plugin manager.
+  local pg_pid=$(jq -r .pid "$STEAMPIPE_INSTALL_DIR/internal/steampipe.json")
+  local pm_pid=$(jq -r .pid "$STEAMPIPE_INSTALL_DIR/internal/plugin_manager.json")
+  local pids=$(echo $pg_pid $pm_pid $(pgrep -P "$pm_pid") | tr ' ' ',')
+  kill ${pids//,/ } || true
+  for _ in $(seq 50); do ps -p "$pids" > /dev/null || break; sleep 0.2; done
+  run ps -p "$pids"
   assert_failure
   rm -f "$STEAMPIPE_INSTALL_DIR/internal/steampipe.json" "$STEAMPIPE_INSTALL_DIR/internal/plugin_manager.json"
 }

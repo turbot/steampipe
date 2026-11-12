@@ -153,6 +153,42 @@ func TestSavePgHbaConf_RestoreReplacesAChangedFileKeepingItsMode(t *testing.T) {
 	}
 }
 
+func TestSavePgHbaConf_RestoreKeepsALink(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(t.TempDir(), "shared_hba.conf")
+	if err := os.WriteFile(target, []byte(olderSteampipeHba), 0600); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, pgHbaFileName)
+	if err := os.Symlink(target, path); err != nil {
+		t.Fatal(err)
+	}
+
+	restore, err := savePgHbaConf(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := writePgHbaConf(dir); err != nil {
+		t.Fatal(err)
+	}
+	restore()
+
+	info, err := os.Lstat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		t.Errorf("%s must still be a link, got mode %v", path, info.Mode())
+	}
+	got, err := os.ReadFile(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != olderSteampipeHba {
+		t.Errorf("the link's target must be put back, got:\n%s", got)
+	}
+}
+
 // fakeOldInstall sets up an installation that an older Steampipe wrote, with a postgres binary that starts,
 // and returns its location and the path of its pg_hba.conf.
 func fakeOldInstall(t *testing.T, version string, stopFails bool) (oldLocation, hbaPath string) {
