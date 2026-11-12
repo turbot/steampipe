@@ -3,6 +3,7 @@ package db_local
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -197,6 +198,65 @@ func TestSavePgHbaConf_RestoreKeepsALink(t *testing.T) {
 	}
 }
 
+func TestSavePgHbaConf_RestoreThroughALinkIntoAFolderThatCannotBeWritten(t *testing.T) {
+	dir := t.TempDir()
+	targetDir := t.TempDir()
+	target := filepath.Join(targetDir, "shared_hba.conf")
+	if err := os.WriteFile(target, []byte(olderSteampipeHba), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(target, filepath.Join(dir, pgHbaFileName)); err != nil {
+		t.Fatal(err)
+	}
+	// the file can be written, the folder that holds it cannot
+	if err := os.Chmod(targetDir, 0500); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(targetDir, 0700) })
+
+	restore, err := savePgHbaConf(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := writePgHbaConf(dir); err != nil {
+		t.Fatal(err)
+	}
+	restore()
+
+	got, err := os.ReadFile(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != olderSteampipeHba {
+		t.Errorf("the link's target must be put back, got:\n%s", got)
+	}
+}
+
+func TestSavePgHbaConf_RestoreKeepsALinkToAMissingFile(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(t.TempDir(), "missing_hba.conf")
+	path := filepath.Join(dir, pgHbaFileName)
+	if err := os.Symlink(target, path); err != nil {
+		t.Fatal(err)
+	}
+
+	restore, err := savePgHbaConf(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := writePgHbaConf(dir); err != nil {
+		t.Fatal(err)
+	}
+	restore()
+
+	if info, err := os.Lstat(path); err != nil || info.Mode()&os.ModeSymlink == 0 {
+		t.Errorf("%s must still be a link: %v", path, err)
+	}
+	if _, err := os.Stat(target); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("the file the link points at did not exist before and must not be left behind: %v", err)
+	}
+}
+
 // fakeOldInstall sets up an installation that an older Steampipe wrote, with a postgres binary that starts,
 // and returns its location and the path of its pg_hba.conf.
 func fakeOldInstall(t *testing.T, version string, stopFails bool) (oldLocation, hbaPath string) {
@@ -310,6 +370,10 @@ func TestAbortInstallAfterBackupError_SocketPathTooLongKeepsNewDataThatHoldsData
 	}
 	if !strings.Contains(err.Error(), newDataLocation+" holds data and was kept") {
 		t.Errorf("the error must say the new data folder was kept: %v", err)
+	}
+	// moving the old installation's folder would leave its data behind
+	if !strings.Contains(err.Error(), "Once the install directory is moved") {
+		t.Errorf("the error must say the next run upgrades once the install directory is moved: %v", err)
 	}
 	if _, statErr := os.Stat(filepath.Join(newDataLocation, "PG_VERSION")); statErr != nil {
 		t.Errorf("new data should have been kept: %v", statErr)
