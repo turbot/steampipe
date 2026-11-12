@@ -111,7 +111,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	kept := !moved && err == nil && !found && !needsInit()
 	dataReady := moved || kept
 
-	if kept {
+	if dataReady {
 		if err := setAsideStaleBackup(ctx); err != nil {
 			// with the programs in place the next run starts and restores the backup into this database
 			removeNewInstall(filepaths.DatabaseInstanceDir(), filepaths.GetDataLocation())
@@ -184,7 +184,7 @@ func abortInstallAfterRunningInstance(err error) error {
 
 // setAsideStaleBackup keeps a backup left by an earlier attempt to upgrade an older installation in the backups
 // folder. Starting restores a backup into the database it finds, which must not happen to a database that was
-// kept rather than upgraded into.
+// kept or moved into place rather than upgraded into.
 func setAsideStaleBackup(ctx context.Context) error {
 	backupFile := filepaths.DatabaseBackupFilePath()
 	if !filehelpers.FileExists(backupFile) {
