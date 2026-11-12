@@ -130,16 +130,10 @@ func moveDataFromSameMajorInstall(ctx context.Context, oldLocation, newDataLocat
 		newLocation := filepaths.DatabaseInstanceDir()
 		err = fmt.Errorf("could not move the database from %s to %s: %w", oldLocation, newLocation, err)
 
-		newBinaries := filepath.Join(newLocation, "postgres")
-		if removeErr := os.RemoveAll(newBinaries); removeErr != nil {
-			log.Printf("[WARN] Could not remove new binaries at %s: %s", newBinaries, removeErr)
-		}
-		// os.Remove never removes a folder that holds anything
-		if removeErr := os.Remove(newDataLocation); removeErr != nil && !os.IsNotExist(removeErr) {
-			// either folder may hold the data the user wants: the new one may be a database already upgraded
-			if entries, readErr := os.ReadDir(newDataLocation); readErr != nil || len(entries) > 0 {
-				oldDataLocation := filepath.Join(oldLocation, "data")
-				err = fmt.Errorf(`%w
+		// either folder may hold the data the user wants: the new one may be a database already upgraded
+		if removeNewInstall(newLocation, newDataLocation) {
+			oldDataLocation := filepath.Join(oldLocation, "data")
+			err = fmt.Errorf(`%w
 
 Both data folders were kept:
   %s (PostgreSQL %s), unchanged
@@ -147,21 +141,16 @@ Both data folders were kept:
 The next run moves %s into place, so %s must be out of the way first. Check which folder holds the data you want, then:
   to keep %s, move %s somewhere else, or delete it;
   to keep %s, move %s somewhere else, then move %s to %s.
-Keep %s until then: without it Steampipe creates an empty database in %s, replacing what is there.
+Keep %s until then: without it Steampipe cannot move the data into %s.
 Then run Steampipe again`,
-					err,
-					oldDataLocation, filepath.Base(oldLocation),
-					newDataLocation, filepath.Base(newLocation),
-					oldDataLocation, newDataLocation,
-					oldDataLocation, newDataLocation,
-					newDataLocation, oldDataLocation, newDataLocation, oldDataLocation,
-					oldLocation, newDataLocation)
-				return
-			}
-			log.Printf("[WARN] Could not remove new data folder at %s: %s", newDataLocation, removeErr)
-		}
-		if removeErr := os.Remove(newLocation); removeErr != nil {
-			log.Printf("[WARN] Could not remove new installation at %s: %s", newLocation, removeErr)
+				err,
+				oldDataLocation, filepath.Base(oldLocation),
+				newDataLocation, filepath.Base(newLocation),
+				oldDataLocation, newDataLocation,
+				oldDataLocation, newDataLocation,
+				newDataLocation, oldDataLocation, newDataLocation, oldDataLocation,
+				oldLocation, newDataLocation)
+			return
 		}
 		err = fmt.Errorf("%w\n\nYour data is unchanged in %s", err, oldLocation)
 	}()
@@ -182,6 +171,26 @@ Then run Steampipe again`,
 	}
 
 	return moveDataFolder(oldLocation, newDataLocation)
+}
+
+// removeNewInstall removes the new installation's binaries, and its data folder and install folder when the data
+// folder is empty. It returns true if the data folder holds data or cannot be read, in which case it and its parent are kept.
+func removeNewInstall(newLocation, newDataLocation string) (dataKept bool) {
+	newBinaries := filepath.Join(newLocation, "postgres")
+	if removeErr := os.RemoveAll(newBinaries); removeErr != nil {
+		log.Printf("[WARN] Could not remove new binaries at %s: %s", newBinaries, removeErr)
+	}
+	// os.Remove never removes a folder that holds anything
+	if removeErr := os.Remove(newDataLocation); removeErr != nil && !os.IsNotExist(removeErr) {
+		if entries, readErr := os.ReadDir(newDataLocation); readErr != nil || len(entries) > 0 {
+			return true
+		}
+		log.Printf("[WARN] Could not remove new data folder at %s: %s", newDataLocation, removeErr)
+	}
+	if removeErr := os.Remove(newLocation); removeErr != nil {
+		log.Printf("[WARN] Could not remove new installation at %s: %s", newLocation, removeErr)
+	}
+	return false
 }
 
 func moveDataFolder(oldLocation, newDataLocation string) error {
@@ -320,8 +329,8 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 	return runConfig, nil
 }
 
-// findDifferentPgInstallation checks whether the '$STEAMPIPE_INSTALL_DIR/db' directory contains any database installation
-// other than desired version.
+// findDifferentPgInstallation checks whether the '$STEAMPIPE_INSTALL_DIR/db' directory contains an installation
+// holding a database, of a version older than the desired version. If several do, it returns the newest.
 // it's called by `EnsureDBInstalled` to decide whether a same-major data folder can be moved, and as part of
 // `prepareBackup` to decide whether `pg_dump` needs to run
 // it's also called as part of `restoreDBBackup` for removal of the installation once restoration successfully completes
@@ -331,29 +340,32 @@ func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 	if err != nil {
 		return false, "", err
 	}
+	targetVersion, err := semver.NewVersion(constants.DatabaseVersion)
+	if err != nil {
+		return false, "", err
+	}
+	var newest *semver.Version
 	for _, de := range entries {
-		if de.IsDir() {
-			// check if it contains a postgres binary - meaning this is a DB installation
-			isDBInstallationDirectory := files.FileExists(
-				filepath.Join(
-					dbBaseDirectory,
-					de.Name(),
-					"postgres",
-					"bin",
-					"postgres",
-				),
-			)
-
-			// if not the target DB version
-			if de.Name() != constants.DatabaseVersion && isDBInstallationDirectory {
-				// this is an unknown directory.
-				// this MUST be some other installation
-				return true, filepath.Join(dbBaseDirectory, de.Name()), nil
-			}
+		if !de.IsDir() {
+			continue
+		}
+		version, err := semver.NewVersion(de.Name())
+		if err != nil || !version.LessThan(targetVersion) {
+			continue
+		}
+		// an installation has a postgres binary and, to be worth carrying over, an initialised data folder
+		location := filepath.Join(dbBaseDirectory, de.Name())
+		hasBinary := files.FileExists(filepath.Join(location, "postgres", "bin", "postgres"))
+		hasDatabase := files.FileExists(filepath.Join(location, "data", "PG_VERSION"))
+		if hasBinary && hasDatabase && (newest == nil || version.GreaterThan(newest)) {
+			newest = version
 		}
 	}
+	if newest == nil {
+		return false, "", nil
+	}
 
-	return false, "", nil
+	return true, filepath.Join(dbBaseDirectory, newest.Original()), nil
 }
 
 // restoreDBBackup loads the back up file into the database

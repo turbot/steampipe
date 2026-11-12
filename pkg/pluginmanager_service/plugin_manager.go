@@ -533,6 +533,8 @@ func (m *PluginManager) startPluginProcess(pluginInstance string, connectionConf
 	}
 
 	cmd := exec.Command(pluginPath)
+	// the plugin gets our environment from cmd.Env only (SkipHostEnv below)
+	cmd.Env = os.Environ()
 	m.setPluginMaxMemory(pluginConfig, cmd)
 
 	pluginStartTimeoutDuration := time.Duration(viper.GetInt64(pconstants.ArgPluginStartTimeout)) * time.Second
@@ -544,6 +546,9 @@ func (m *PluginManager) startPluginProcess(pluginInstance string, connectionConf
 		Cmd:              cmd,
 		AllowedProtocols: []goplugin.Protocol{goplugin.ProtocolGRPC},
 		StartTimeout:     pluginStartTimeoutDuration,
+		// without this, go-plugin appends our environment again after cmd.Env, and a GOMEMLIMIT
+		// in our environment would replace the plugin's memory limit
+		SkipHostEnv: true,
 
 		// pass our logger to the plugin client to ensure plugin logs end up in logfile
 		Logger: m.logger,
@@ -569,8 +574,8 @@ func (m *PluginManager) setPluginMaxMemory(pluginConfig *plugin.Plugin, cmd *exe
 	if maxMemoryBytes != 0 {
 		log.Printf("[INFO] Setting max memory for plugin '%s' to %d Mb", pluginConfig.Instance, maxMemoryBytes/(1024*1024))
 		// set GOMEMLIMIT for the plugin command env
-		// TODO should I check for GOMEMLIMIT or does this just override
-		cmd.Env = append(os.Environ(), fmt.Sprintf("GOMEMLIMIT=%d", maxMemoryBytes))
+		// this is the last GOMEMLIMIT in cmd.Env, so it replaces one from our environment
+		cmd.Env = append(cmd.Env, fmt.Sprintf("GOMEMLIMIT=%d", maxMemoryBytes))
 	}
 }
 
