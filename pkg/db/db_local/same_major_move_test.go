@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
+	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
@@ -40,8 +41,17 @@ func TestIsSameMajorVersion(t *testing.T) {
 }
 
 // writeFakeInstall creates a version folder holding a postgres binary and a data folder with one marker file
+// skipProcessScan makes the search for running steampipe services find none: no test postgres is one, and
+// listing every process takes seconds on macOS
+func skipProcessScan(t *testing.T) {
+	original := listAllProcesses
+	listAllProcesses = func(context.Context) ([]*psutils.Process, error) { return nil, nil }
+	t.Cleanup(func() { listAllProcesses = original })
+}
+
 func writeFakeInstall(t *testing.T, location string) {
 	t.Helper()
+	skipProcessScan(t)
 	if err := os.MkdirAll(filepath.Join(location, "postgres", "bin"), 0755); err != nil {
 		t.Fatal(err)
 	}

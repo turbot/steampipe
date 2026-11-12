@@ -118,7 +118,7 @@ func GetClientCount(ctx context.Context) (*ClientCount, error) {
 	// for a pg_hba.conf rule that requires one.
 	state, stateErr := GetState()
 	if stateErr != nil || state == nil {
-		// the service stopped since
+		// the service stopped since, or its state cannot be read
 		return nil, err
 	}
 	counts, err = countClients(ctx, &CreateDbOptions{Username: constants.DatabaseUser, Password: state.Password})
@@ -256,6 +256,13 @@ func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 	return ServiceStopped, nil
 }
 
+// how long each step of doThreeStepPostgresExit waits for the process to exit; variables so tests can shorten them
+var (
+	smartShutdownWait     = 2 * time.Second
+	fastShutdownWait      = 2 * time.Second
+	immediateShutdownWait = 5 * time.Second
+)
+
 /*
 Postgres has three levels of shutdown:
 
@@ -293,7 +300,7 @@ func doThreeStepPostgresExit(ctx context.Context, process *psutils.Process) erro
 	if err != nil {
 		return err
 	}
-	exitSuccessful = waitForProcessExit(process, 2*time.Second)
+	exitSuccessful = waitForProcessExit(process, smartShutdownWait)
 	if !exitSuccessful {
 		// process didn't quit
 
@@ -305,7 +312,7 @@ func doThreeStepPostgresExit(ctx context.Context, process *psutils.Process) erro
 		if err != nil {
 			return err
 		}
-		exitSuccessful = waitForProcessExit(process, 2*time.Second)
+		exitSuccessful = waitForProcessExit(process, fastShutdownWait)
 	}
 	if !exitSuccessful {
 		// process didn't quit
@@ -314,7 +321,7 @@ func doThreeStepPostgresExit(ctx context.Context, process *psutils.Process) erro
 		if err != nil {
 			return err
 		}
-		exitSuccessful = waitForProcessExit(process, 5*time.Second)
+		exitSuccessful = waitForProcessExit(process, immediateShutdownWait)
 	}
 
 	if !exitSuccessful {

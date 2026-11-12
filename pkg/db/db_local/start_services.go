@@ -666,8 +666,11 @@ func killInstanceIfAny(ctx context.Context) bool {
 }
 
 func FindAllSteampipePostgresInstances(ctx context.Context) ([]*psutils.Process, error) {
-	return findSteampipePostgresInstances(ctx, psutils.ProcessesWithContext)
+	return findSteampipePostgresInstances(ctx, listAllProcesses)
 }
+
+// listAllProcesses is a variable so tests can skip reading every process on the machine, which takes seconds on macOS
+var listAllProcesses = psutils.ProcessesWithContext
 
 // readProcessCmdline is a variable so tests can simulate a process whose
 // command line is still empty when first read.

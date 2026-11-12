@@ -340,6 +340,7 @@ func TestMoveDataFromSameMajorInstall_TooLongSocketPathGivesNoOldInstallAdvice(t
 	originalInstallDir := app_specific.InstallDir
 	t.Cleanup(func() { app_specific.InstallDir = originalInstallDir })
 	app_specific.InstallDir = installDir
+	skipProcessScan(t)
 	oldLocation := filepath.Join(installDir, "db", "14.19.0")
 	if err := os.MkdirAll(filepath.Join(oldLocation, "data"), 0700); err != nil {
 		t.Fatal(err)
