@@ -97,8 +97,12 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		moved = true
 	}
 
+	// no other version is installed and this version's data folder already holds a database: only its programs
+	// were missing, and the database needs nothing further
+	dataReady := moved || (err == nil && !found && !needsInit())
+
 	var dbName *string
-	if !moved {
+	if !dataReady {
 		statushooks.SetStatus(ctx, "Preparing backups…")
 
 		// call prepareBackup to generate the db dump file if necessary
@@ -121,8 +125,8 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return fmt.Errorf("Download & install steampipe-postgres-fdw... FAILED!")
 	}
 
-	// a moved data folder is already initialised
-	if !moved {
+	// a moved or kept data folder is already initialised
+	if !dataReady {
 		// run the database installation
 		err = runInstall(ctx, dbName)
 		if err != nil {
