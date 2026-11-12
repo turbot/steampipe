@@ -42,6 +42,8 @@ type pgRunningInfo struct {
 	dataDir string
 	port    int
 	dbName  string
+	// restoreHba puts back the pg_hba.conf the data directory had before the server was started
+	restoreHba func()
 }
 
 // stop is used for shutting down postgres instance spun up for extracting dump
@@ -96,6 +98,8 @@ func prepareBackup(ctx context.Context) (*string, error) {
 		log.Printf("[TRACE] Error while starting old db in %s: %v", location, err)
 		return nil, err
 	}
+	// the old data directory stays until the restore completes, and the version that wrote it must still connect
+	defer runConfig.restoreHba()
 	//nolint:golint,errcheck // this will probably never error - if it does, it's not something we can recover from with code
 	defer runConfig.stop(ctx)
 
@@ -167,10 +171,15 @@ Then run Steampipe again`,
 		return fmt.Errorf("could not start the database in %s: %w", oldLocation, err)
 	}
 	if err := runConfig.stop(ctx); err != nil {
+		runConfig.restoreHba()
 		return fmt.Errorf("could not stop the database in %s: %w", oldLocation, err)
 	}
 
-	return moveDataFolder(oldLocation, newDataLocation)
+	if err := moveDataFolder(oldLocation, newDataLocation); err != nil {
+		runConfig.restoreHba()
+		return err
+	}
+	return nil
 }
 
 // removeNewInstall removes the new installation's binaries, and its data folder and install folder when the data
@@ -269,8 +278,41 @@ func backupCmd(ctx context.Context, config *pgRunningInfo) *exec.Cmd {
 	)
 }
 
+// savePgHbaConf returns a function that puts the data directory's pg_hba.conf back exactly as it is now,
+// or removes it if there is none. The versions of Steampipe that wrote the data directory connect over TCP
+// as root, which the rules written for the upgrade do not allow.
+func savePgHbaConf(dataDir string) (restore func(), err error) {
+	path := filepath.Join(dataDir, pgHbaFileName)
+	content, readErr := os.ReadFile(path)
+	existed := readErr == nil
+	if readErr != nil && !errors.Is(readErr, fs.ErrNotExist) {
+		return nil, readErr
+	}
+	mode := os.FileMode(0600)
+	if existed {
+		info, statErr := os.Stat(path)
+		if statErr != nil {
+			return nil, statErr
+		}
+		mode = info.Mode().Perm()
+	}
+	return func() {
+		var restoreErr error
+		if existed {
+			restoreErr = os.WriteFile(path, content, mode) //nolint:gosec // G703: a fixed file name under the old database data directory
+		} else if restoreErr = os.Remove(path); errors.Is(restoreErr, fs.ErrNotExist) {
+			restoreErr = nil
+		}
+		if restoreErr != nil {
+			log.Printf("[WARN] Could not restore %s: %s", path, restoreErr)
+		}
+	}, nil
+}
+
 // startDatabaseInLocation starts up the postgres binary in a specific installation directory
-// returns a pgRunningInfo instance
+// returns a pgRunningInfo instance. The rewritten pg_hba.conf stays in place while the server runs: the caller
+// calls restoreHba on the result when the old data directory stays where it is, and nothing is left to restore
+// if this returns an error.
 func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningInfo, error) {
 	binaryLocation := filepath.Join(location, "postgres", "bin", "postgres")
 	dataLocation := filepath.Join(location, "data")
@@ -278,11 +320,20 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 	if err != nil {
 		return nil, err
 	}
-	// nothing may be written to the old data directory before this: a failed upgrade must leave it
-	// startable by the version that wrote it
+	// the old pg_hba.conf is rewritten below, so nothing may fail before this check without being undone
 	if err := checkSocketPathLengthForUpgrade(dataLocation, port); err != nil {
 		return nil, err
 	}
+	restoreHba, err := savePgHbaConf(dataLocation)
+	if err != nil {
+		return nil, err
+	}
+	started := false
+	defer func() {
+		if !started {
+			restoreHba()
+		}
+	}()
 	// the old data directory gets the same check as a start: Steampipe's file or an older default is
 	// written, the user's file is kept, and an edited file stops the backup before postgres starts
 	if err := preparePgHbaConf(dataLocation); err != nil {
@@ -315,7 +366,7 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 		return nil, err
 	}
 
-	runConfig := &pgRunningInfo{cmd: cmd, dataDir: dataLocation, port: port}
+	runConfig := &pgRunningInfo{cmd: cmd, dataDir: dataLocation, port: port, restoreHba: restoreHba}
 
 	dbName, err := getDatabaseName(ctx, dataLocation, port)
 	if err != nil {
@@ -325,6 +376,7 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 	}
 
 	runConfig.dbName = dbName
+	started = true
 
 	return runConfig, nil
 }

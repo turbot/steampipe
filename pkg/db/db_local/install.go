@@ -106,8 +106,8 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		dbName, err = prepareBackup(ctx)
 		if err != nil {
 			log.Printf("[ERROR] prepareBackup failed: %s", err.Error())
-			if errors.Is(err, errDbInstanceRunning) {
-				return abortInstallAfterRunningInstance(err)
+			if abortErr := abortInstallAfterBackupError(err); abortErr != nil {
+				return abortErr
 			}
 			if backupErrorStopsInstall(err) {
 				// remove the new binaries - otherwise, the backup won't get triggered, even if the user fixes the cause
@@ -148,6 +148,20 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return fmt.Errorf("Updating install records... FAILED!")
 	}
 
+	return nil
+}
+
+// abortInstallAfterBackupError returns the error that stops the install when the backup failed in a way that
+// carrying on would hide, and nil for any other backup error.
+func abortInstallAfterBackupError(err error) error {
+	if errors.Is(err, errDbInstanceRunning) {
+		return abortInstallAfterRunningInstance(err)
+	}
+	// the new binaries go, so the next run installs again and retries the upgrade once the user has moved the old directory
+	if errors.Is(err, errSocketPathTooLong) {
+		removeNewInstall(filepaths.DatabaseInstanceDir(), filepaths.GetDataLocation())
+		return err
+	}
 	return nil
 }
 
