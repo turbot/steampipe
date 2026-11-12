@@ -13,6 +13,9 @@ type runningPlugin struct {
 	initialized    chan struct{}
 	failed         chan struct{}
 	error          error
+	// set (under the plugin manager lock) when the user rate limiters changed while the plugin was starting,
+	// so startPlugin sends them once the plugin has started
+	limitersChangedWhileStarting bool
 }
 
 // isStarting returns true if this is still the placeholder added by addRunningPlugin,
