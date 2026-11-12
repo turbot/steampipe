@@ -148,3 +148,69 @@ func TestStartDatabaseInLocation_WritesPgHbaAndSetsSocket(t *testing.T) {
 
 	assertRecordedStart(t, recordDir)
 }
+
+// A pg_hba.conf that cannot be written must stop postgres from being started at all. Writing it after the start
+// would let a server run, briefly, with whatever rules the data folder held. A file stands where the pg_hba.conf.d
+// folder belongs, so the write fails; the stand-in postgres records if it was ever launched.
+func assertNotStartedWhenPgHbaCannotBeWritten(t *testing.T, recordDir, dataLocation string, start func() error) {
+	t.Helper()
+	if err := os.MkdirAll(dataLocation, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dataLocation, pgHbaDirName), nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := start(); err == nil {
+		t.Fatal("expected an error when pg_hba.conf cannot be written")
+	}
+
+	// a stand-in that was launched records itself within milliseconds
+	time.Sleep(time.Second)
+	if _, err := os.Stat(filepath.Join(recordDir, "done")); err == nil {
+		t.Error("postgres was started although pg_hba.conf could not be written first")
+	}
+}
+
+func TestStartPostgresProcess_DoesNotStartWhenPgHbaCannotBeWritten(t *testing.T) {
+	setWiringInstallDir(t)
+	recordDir := writeRecordingPostgres(t, filepaths.GetPostgresBinaryExecutablePath())
+
+	assertNotStartedWhenPgHbaCannotBeWritten(t, recordDir, filepaths.GetDataLocation(), func() error {
+		cmd, err := startPostgresProcess(context.Background(), []string{"127.0.0.1"}, 9193, constants.InvokerService)
+		if cmd != nil {
+			t.Cleanup(func() {
+				_ = cmd.Process.Kill()
+				_ = cmd.Wait()
+			})
+		}
+		return err
+	})
+}
+
+func TestStartServiceForInstall_DoesNotStartWhenPgHbaCannotBeWritten(t *testing.T) {
+	setWiringInstallDir(t)
+	recordDir := writeRecordingPostgres(t, filepaths.GetPostgresBinaryExecutablePath())
+
+	assertNotStartedWhenPgHbaCannotBeWritten(t, recordDir, filepaths.GetDataLocation(), func() error {
+		process, err := startServiceForInstall(9193)
+		if process != nil {
+			t.Cleanup(func() { _ = process.Kill() })
+		}
+		return err
+	})
+}
+
+func TestStartDatabaseInLocation_DoesNotStartWhenPgHbaCannotBeWritten(t *testing.T) {
+	setWiringInstallDir(t)
+	location := filepath.Join(app_specific.InstallDir, "db", "13.0.0")
+	recordDir := writeRecordingPostgres(t, filepath.Join(location, "postgres", "bin", "postgres"))
+
+	assertNotStartedWhenPgHbaCannotBeWritten(t, recordDir, filepath.Join(location, "data"), func() error {
+		// cancelled at the end so that a process started by mistake is killed with it
+		ctx, cancel := context.WithCancel(context.Background())
+		t.Cleanup(cancel)
+		_, err := startDatabaseInLocation(ctx, location)
+		return err
+	})
+}
