@@ -257,6 +257,35 @@ func TestSavePgHbaConf_RestoreKeepsALinkToAMissingFile(t *testing.T) {
 	}
 }
 
+func TestSavePgHbaConf_RestoreKeepsAChainOfLinksToAMissingFile(t *testing.T) {
+	dir := t.TempDir()
+	linkDir := t.TempDir()
+	target := filepath.Join(t.TempDir(), "missing_hba.conf")
+	middle := filepath.Join(linkDir, "middle")
+	if err := os.Symlink(target, middle); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(middle, filepath.Join(dir, pgHbaFileName)); err != nil {
+		t.Fatal(err)
+	}
+
+	restore, err := savePgHbaConf(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := writePgHbaConf(dir); err != nil {
+		t.Fatal(err)
+	}
+	restore()
+
+	if info, err := os.Lstat(middle); err != nil || info.Mode()&os.ModeSymlink == 0 {
+		t.Errorf("the link %s must be kept: %v", middle, err)
+	}
+	if _, err := os.Stat(target); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("the file at the end of the links did not exist before and must not be left behind: %v", err)
+	}
+}
+
 // fakeOldInstall sets up an installation that an older Steampipe wrote, with a postgres binary that starts,
 // and returns its location and the path of its pg_hba.conf.
 func fakeOldInstall(t *testing.T, version string, stopFails bool) (oldLocation, hbaPath string) {

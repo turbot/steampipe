@@ -195,26 +195,27 @@ EOF
   rm "$long_dir"
 }
 
-# this test is last: it leaves no service running, and stops this install's processes itself
-@test "a running service with no socket in the data directory says to stop it once with --force" {
+# this test is last: it leaves no service running, and stops this install's processes itself if service stop fails
+@test "a running service with no socket in the data directory stops with service stop" {
   run start_service
   assert_success
   # a service that an earlier version of Steampipe started has no socket in the data directory
   rm "$HBA_DATA_DIR/.s.PGSQL.$PG_PORT"
-
-  run steampipe service stop
-  assert_failure
-  assert_output --partial "started by an older version of Steampipe"
-  assert_output --partial "steampipe service stop --force"
-
-  # stop only this service's processes, by the pids it recorded: service stop --force would stop every
-  # service on the machine. The plugins are children of the plugin manager.
+  # the plugins are children of the plugin manager
   local pg_pid=$(jq -r .pid "$STEAMPIPE_INSTALL_DIR/internal/steampipe.json")
   local pm_pid=$(jq -r .pid "$STEAMPIPE_INSTALL_DIR/internal/plugin_manager.json")
   local pids=$(echo $pg_pid $pm_pid $(pgrep -P "$pm_pid") | tr ' ' ',')
-  kill ${pids//,/ } || true
+
+  run steampipe service stop
+  local stop_status=$status stop_output=$output
+
+  # whatever happened, stop only this service's processes, by the pids it recorded: service stop --force
+  # would stop every service on the machine
+  kill ${pids//,/ } 2> /dev/null || true
   for _ in $(seq 50); do ps -p "$pids" > /dev/null || break; sleep 0.2; done
-  run ps -p "$pids"
-  assert_failure
   rm -f "$STEAMPIPE_INSTALL_DIR/internal/steampipe.json" "$STEAMPIPE_INSTALL_DIR/internal/plugin_manager.json"
+
+  echo "$stop_output"
+  assert_equal "$stop_status" 0
+  [[ "$stop_output" == *"Steampipe database service stopped"* ]]
 }

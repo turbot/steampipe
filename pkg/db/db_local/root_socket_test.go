@@ -378,6 +378,9 @@ func TestStartDatabaseInLocation_TooLongNewSocketPathLeavesOldDataUntouched(t *t
 	if !strings.Contains(err.Error(), "Move "+installDir) {
 		t.Errorf("the error must say to move the install directory: %v", err)
 	}
+	if got, readErr := os.ReadFile(hbaPath); readErr != nil || string(got) != olderSteampipeHba {
+		t.Errorf("the old data directory's pg_hba.conf must not be rewritten, got %q, %v", got, readErr)
+	}
 	if _, statErr := os.Stat(filepath.Join(oldDataDir, pgHbaDirName)); statErr == nil {
 		t.Errorf("%s must not be created in the old data directory", pgHbaDirName)
 	}
