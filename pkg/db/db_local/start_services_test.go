@@ -47,6 +47,21 @@ func TestFindSteampipePostgresInstancesSkipsExitedProcess(t *testing.T) {
 
 	exited := &psutils.Process{Pid: int32(exitedCmd.Process.Pid)}     //nolint:gosec // G115: test child PID
 	postgres := &psutils.Process{Pid: int32(postgresCmd.Process.Pid)} //nolint:gosec // G115: test child PID
+
+	// On Linux the command line of a just-started child can read back empty
+	// for a moment after Start returns, so wait until it is populated.
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		cmdLine, err := postgres.CmdlineSliceWithContext(context.Background())
+		if err == nil && slices.Contains(cmdLine, fakePostgresArg) {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("fake postgres process never showed its command line, last read %q (err %v)", cmdLine, err)
+		}
+		time.Sleep(time.Millisecond)
+	}
+
 	listProcesses := func(context.Context) ([]*psutils.Process, error) {
 		return []*psutils.Process{exited, postgres}, nil
 	}
