@@ -1,0 +1,70 @@
+# TEMPORARY - remove from the PR once it has run.
+# Proves this repo's GITHUB_TOKEN can push to ghcr.io/turbot/steampipe/db
+# without creating a tag or version: it starts a blob upload and cancels it.
+name: GHCR Push Probe
+on:
+  pull_request:
+
+permissions:
+  packages: write
+
+jobs:
+  probe:
+    name: Probe push access
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Start and cancel a blob upload to ghcr.io/turbot/steampipe/db
+        env:
+          ACTOR: ${{ github.actor }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          repo="turbot/steampipe/db"
+
+          # a. Registry token. Credentials go to curl on stdin, never on the command line or in the log.
+          token_status=$(printf 'user = "%s:%s"\n' "$ACTOR" "$GH_TOKEN" | curl -sS -K - \
+            -o token.json -w '%{http_code}' \
+            "https://ghcr.io/token?service=ghcr.io&scope=repository:${repo}:pull,push")
+          echo "Registry token request: HTTP $token_status"
+          if [ "$token_status" != "200" ]; then
+            echo "::error::Registry token request failed: HTTP $token_status $(jq -c '.errors // empty' token.json 2>/dev/null || true)"
+            exit 1
+          fi
+          reg_token=$(jq -r '.token // empty' token.json)
+          rm -f token.json
+          if [ -z "$reg_token" ]; then
+            echo "::error::Registry token response had no token"
+            exit 1
+          fi
+          echo "::add-mask::$reg_token"
+
+          # b. Start a blob upload. 202 means push access; 401 or 403 means none.
+          post_status=$(printf 'header = "Authorization: Bearer %s"\n' "$reg_token" | curl -sS -K - \
+            -X POST -H 'Content-Length: 0' -D post_headers.txt -o post_body.json -w '%{http_code}' \
+            "https://ghcr.io/v2/${repo}/blobs/uploads/")
+          echo "Start blob upload: HTTP $post_status (want 202)"
+          if [ "$post_status" != "202" ]; then
+            echo "::error::No push access to ghcr.io/${repo}: HTTP $post_status $(jq -c '.errors // empty' post_body.json 2>/dev/null || true)"
+            exit 1
+          fi
+
+          location=$(grep -i '^location:' post_headers.txt | head -1 | cut -d' ' -f2- | tr -d '\r' || true)
+          if [ -z "$location" ]; then
+            echo "::error::202 had no Location header, so the upload cannot be cancelled"
+            exit 1
+          fi
+          case "$location" in
+            /*) location="https://ghcr.io${location}" ;;
+          esac
+
+          # c. Cancel the upload so nothing is left behind.
+          del_status=$(printf 'header = "Authorization: Bearer %s"\n' "$reg_token" | curl -sS -K - \
+            -X DELETE -o del_body.json -w '%{http_code}' "$location")
+          echo "Cancel blob upload: HTTP $del_status"
+          case "$del_status" in
+            2*) echo "Upload cancelled." ;;
+            *) echo "::warning::Cancel returned HTTP $del_status $(jq -c '.errors // empty' del_body.json 2>/dev/null || true). The unfinished upload holds no tag or version and expires on its own." ;;
+          esac
+
+          echo "PASS: GITHUB_TOKEN from $GITHUB_REPOSITORY can push to ghcr.io/${repo}"
