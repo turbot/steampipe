@@ -1,6 +1,7 @@
 # TEMPORARY - remove from the PR once it has run.
 # Proves this repo's GITHUB_TOKEN can push to ghcr.io/turbot/steampipe/db
-# without creating a tag or version: it starts a blob upload and cancels it.
+# without creating a tag or version: it starts a blob upload and asks to cancel it.
+# ghcr.io answers 405 to the cancel; the unfinished upload holds nothing and expires.
 name: GHCR Push Probe
 on:
   pull_request:
