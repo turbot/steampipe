@@ -74,9 +74,10 @@ func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 	// send notification if there were any errors or warnings
 	if !errorsAndWarnings.Empty() {
 		w.pluginManager.SendPostgresErrorsAndWarningsNotification(ctx, errorsAndWarnings)
-		// if there was an error return
+		// loadConfig skips bad files and blocks with a warning, so an error here means
+		// no usable config was loaded, and refreshing would drop every connection.
 		if errorsAndWarnings.GetError() != nil {
-			log.Printf("[WARN] error loading updated connection config: %v", errorsAndWarnings.GetError())
+			log.Printf("[ERROR] error loading updated connection config - NO connections will be refreshed until this is resolved: %v", errorsAndWarnings.GetError())
 			return
 		}
 	}

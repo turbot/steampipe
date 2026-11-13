@@ -3,7 +3,7 @@ package connection
 import (
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/pipe-fittings/v2/modconfig"
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v6/grpc/proto"
 )
 
 type ConnectionConfigMap map[string]*sdkproto.ConnectionConfig
@@ -46,10 +46,8 @@ func (m ConnectionConfigMap) Diff(otherMap ConnectionConfigMap) (addedConnection
 			if connection.PluginInstance != otherConnection.PluginInstance {
 				addedConnections[otherConnection.PluginInstance] = append(addedConnections[otherConnection.PluginInstance], otherConnection)
 				deletedConnections[connection.PluginInstance] = append(deletedConnections[connection.PluginInstance], connection)
-			} else {
-				if !connection.Equals(otherConnection) {
-					changedConnections[connection.PluginInstance] = append(changedConnections[connection.PluginInstance], otherConnection)
-				}
+			} else if !connection.Equals(otherConnection) {
+				changedConnections[connection.PluginInstance] = append(changedConnections[connection.PluginInstance], otherConnection)
 			}
 		}
 	}

@@ -7,7 +7,7 @@ import (
 
 	"github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/pipe-fittings/v2/utils"
-	sdkversion "github.com/turbot/steampipe-plugin-sdk/v5/version"
+	sdkversion "github.com/turbot/steampipe-plugin-sdk/v6/version"
 )
 
 func (u *ConnectionUpdates) validate() {

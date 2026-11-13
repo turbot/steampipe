@@ -13,7 +13,7 @@ func PromptSuggestions() []prompt.Suggest {
 		suggestions = append(suggestions, prompt.Suggest{Text: k, Description: definition.description, Output: k})
 	}
 
-	sort.SliceStable(suggestions[:], func(i, j int) bool {
+	sort.SliceStable(suggestions, func(i, j int) bool {
 		return suggestions[i].Text < suggestions[j].Text
 	})
 

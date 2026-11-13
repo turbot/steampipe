@@ -14,8 +14,8 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/logging"
 	"github.com/turbot/go-kit/types"
-	sdklogging "github.com/turbot/steampipe-plugin-sdk/v5/logging"
-	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	sdklogging "github.com/turbot/steampipe-plugin-sdk/v6/logging"
+	"github.com/turbot/steampipe-plugin-sdk/v6/plugin"
 	"github.com/turbot/steampipe/v2/pkg/cmdconfig"
 	"github.com/turbot/steampipe/v2/pkg/connection"
 	"github.com/turbot/steampipe/v2/pkg/constants"
@@ -42,7 +42,7 @@ func runPluginManagerCmd(cmd *cobra.Command, _ []string) {
 		}
 		if err != nil {
 			// write to stdout so the plugin manager can extract the error message
-			fmt.Println(fmt.Sprintf("%s%s", plugin.PluginStartupFailureMessage, err.Error()))
+			fmt.Printf("%s%s\n", plugin.PluginStartupFailureMessage, err.Error()) //nolint:forbidigo // acceptable
 		}
 		os.Exit(1)
 	}()

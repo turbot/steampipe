@@ -1,13 +1,16 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
+load ../helpers/steampipe_processes
 
 ## workspace tests
 
 @test "generic config precedence test" {
   cp $FILE_PATH/test_data/source_files/config_tests/default.spc $STEAMPIPE_INSTALL_DIR/config/default.spc
   
-  # setup test folder and read the test-cases file
-  cd $FILE_PATH/test_data/source_files/config_tests
+  # steampipe creates install dirs and sample profile files relative to the
+  # working directory, so run in a copy of the test folder rather than the checkout
+  cp -R $FILE_PATH/test_data/source_files/config_tests/. "$BATS_TEST_TMPDIR"
+  cd "$BATS_TEST_TMPDIR"
   tests=$(cat workspace_tests.json)
   # echo $tests
 
@@ -25,16 +28,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     cwd=$(pwd)
     export STEAMPIPE_CONFIG_DUMP=config_json
 
-    # check the command(query/check/dashboard) and prepare the steampipe
-    # command accordingly
-    cmd=$(echo $tests | jq -c ".[${i}]" | jq ".cmd")
-    if [[ $cmd == '"query"' ]]; then
-      sp_cmd='steampipe query "select 1"'
-    elif [[ $cmd == '"check"' ]]; then
-      sp_cmd='steampipe check all'
-    elif [[ $cmd == '"dashboard"' ]]; then
-      sp_cmd='steampipe dashboard'
-    fi
+    sp_cmd='steampipe query "select 1"'
     # echo $sp_cmd
 
     # key=$(echo $i)
@@ -79,8 +73,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
       exp_val=$(echo $(echo $expected_config | jq --arg KEY $key '.[$KEY]' | tr -d '"'))
       act_val=$(echo $(echo $actual_config | jq --arg KEY $key '.[$KEY]' | tr -d '"'))
 
-      # get the absolute paths for install-dir and mod-location
-      if [[ $key == "install-dir" ]] || [[ $key == "mod-location" ]]; then
+      # get the absolute path for install-dir
+      if [[ $key == "install-dir" ]]; then
         exp_val="${cwd}/${exp_val}"
       fi
       echo "expected $key: $exp_val"
@@ -113,6 +107,6 @@ function teardown_file() {
   ps -ef | grep steampipe
 
   # check if any processes are running
-  num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
+  num=$(count_steampipe_processes)
   assert_equal $num 0
 }

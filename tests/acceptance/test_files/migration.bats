@@ -1,5 +1,6 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
+load ../helpers/steampipe_processes
 
 ## public schema migration
 
@@ -15,7 +16,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   verify_sql[1]="select * from sample_func()"
 
   # create a temp directory to install steampipe(1.0.3)
-  tmpdir="$(mktemp -d)"
+  tmpdir="$BATS_TEST_TMPDIR/old_steampipe"
   mkdir -p "${tmpdir}"
   tmpdir="${tmpdir%/}"
     
@@ -87,7 +88,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   verify_sql[1]="select * from sample_func()"
 
   # create a temp directory to install steampipe(2.2.0)
-  tmpdir="$(mktemp -d)"
+  tmpdir="$BATS_TEST_TMPDIR/old_steampipe"
   mkdir -p "${tmpdir}"
   tmpdir="${tmpdir%/}"
     
@@ -152,17 +153,6 @@ function teardown_file() {
   ps -ef | grep steampipe
 
   # check if any processes are running
-  num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
+  num=$(count_steampipe_processes)
   assert_equal $num 0
-}
-
-function setup() {
-  # skip if this test is run on Linux ARM64, since there is no linux_arm binary available
-  # for v0.13.6 to run this test
-  sys=$(uname -sm)
-  if [[ "$sys" == "Linux aarch64" ]]; then
-    skip
-  else
-    echo "Running migration test..."
-  fi
 }

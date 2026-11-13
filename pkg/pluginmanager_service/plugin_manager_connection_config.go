@@ -3,9 +3,10 @@ package pluginmanager_service
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe-plugin-sdk/v5/error_helpers"
-	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v6/error_helpers"
+	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v6/grpc"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v6/grpc/proto"
+	"github.com/turbot/steampipe/v2/pkg/connection"
 	"log"
 )
 
@@ -41,6 +42,48 @@ func (m *PluginManager) handleConnectionConfigChanges(ctx context.Context, newCo
 	return m.sendUpdateConnectionConfigs(requestMap)
 }
 
+// applyChangesMadeWhileStarting sends a plugin which has just started the changes made to its connections
+// since startedWith, the connection configs it was started with, and the user rate limiters if they changed.
+// Those changes were skipped while the plugin was starting.
+// NOTE: caller must hold m.mut lock
+func (m *PluginManager) applyChangesMadeWhileStarting(p *runningPlugin, startedWith []*sdkproto.ConnectionConfig) {
+	requestMap := m.requestsForChangesMadeWhileStarting(p.pluginInstance, startedWith)
+	if err := m.sendUpdateConnectionConfigs(requestMap); err != nil {
+		log.Printf("[WARN] applyChangesMadeWhileStarting - failed to send connection config changes to plugin '%s': %s", p.pluginInstance, err.Error())
+	}
+
+	if p.limitersChangedWhileStarting && p.reattach.SupportedOperations.RateLimiters {
+		pluginClient, err := sdkgrpc.NewPluginClient(p.client, p.imageRef)
+		if err == nil {
+			err = m.setRateLimitersInternal(p.pluginInstance, pluginClient)
+		}
+		if err != nil {
+			log.Printf("[WARN] applyChangesMadeWhileStarting - failed to send rate limiters to plugin '%s': %s", p.pluginInstance, err.Error())
+		}
+	}
+}
+
+// requestsForChangesMadeWhileStarting builds the update requests which bring a plugin started with startedWith
+// up to date with the current connection config. It also updates the plugin's reattach connections
+// NOTE: caller must hold m.mut lock
+func (m *PluginManager) requestsForChangesMadeWhileStarting(pluginInstance string, startedWith []*sdkproto.ConnectionConfig) map[string]*sdkproto.UpdateConnectionConfigsRequest {
+	startedWithMap := make(connection.ConnectionConfigMap, len(startedWith))
+	for _, c := range startedWith {
+		startedWithMap[c.Connection] = c
+	}
+	currentMap := make(connection.ConnectionConfigMap)
+	for _, c := range m.pluginConnectionConfigMap[pluginInstance] {
+		currentMap[c.Connection] = c
+	}
+
+	added, deleted, changed := startedWithMap.Diff(currentMap)
+	requestMap := make(map[string]*sdkproto.UpdateConnectionConfigsRequest)
+	m.handleDeletedConnections(deleted, requestMap)
+	m.handleAddedConnections(added, requestMap)
+	m.handleUpdatedConnections(changed, requestMap)
+	return requestMap
+}
+
 func (m *PluginManager) sendUpdateConnectionConfigs(requestMap map[string]*sdkproto.UpdateConnectionConfigsRequest) error {
 	var errors []error
 	for pluginInstance, req := range requestMap {
@@ -48,6 +91,13 @@ func (m *PluginManager) sendUpdateConnectionConfigs(requestMap map[string]*sdkpr
 
 		// if the pluginInstance is not running (or is not multi connection, so is not in this map), return
 		if !pluginAlreadyRunning {
+			continue
+		}
+		// if the plugin is still starting it is not ready for the update
+		// (the plugin was started with the connection configs read before this change -
+		// startPlugin sends it the changes made since, once it has started)
+		if runningPlugin.isStarting() {
+			log.Printf("[DEBUG] sendUpdateConnectionConfigs - plugin '%s' is still starting - connection config update will be sent when it has started", pluginInstance)
 			continue
 		}
 
@@ -76,6 +126,13 @@ func (m *PluginManager) handleAddedConnections(addedConnections map[string][]*sd
 			log.Printf("[TRACE] handleAddedConnections - plugin '%s' has been added to connection config and is not running - doing nothing here as it will be started by refreshConnections", p)
 			continue
 		}
+		// if the plugin is still starting it has no reattach config yet - treat it as not running
+		// (the plugin was started with the connection configs read before this change -
+		// startPlugin sends it the changes made since, once it has started)
+		if runningPlugin.isStarting() {
+			log.Printf("[DEBUG] handleAddedConnections - plugin '%s' is still starting - added connections will be sent when it has started", p)
+			continue
+		}
 
 		// get or create req for this plugin
 		req, ok := requestMap[p]
@@ -100,6 +157,13 @@ func (m *PluginManager) handleDeletedConnections(deletedConnections map[string][
 	for p, connections := range deletedConnections {
 		runningPlugin, pluginAlreadyRunning := m.runningPluginMap[p]
 		if !pluginAlreadyRunning {
+			continue
+		}
+		// if the plugin is still starting it has no reattach config yet - treat it as not running
+		// (the plugin was started with the connection configs read before this change -
+		// startPlugin sends it the changes made since, once it has started)
+		if runningPlugin.isStarting() {
+			log.Printf("[DEBUG] handleDeletedConnections - plugin '%s' is still starting - deleted connections will be sent when it has started", p)
 			continue
 		}
 

@@ -2,13 +2,13 @@ package db_common
 
 import (
 	"context"
+	"errors"
 	"log"
 	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/v2/pkg/constants"
@@ -36,7 +36,7 @@ func WithTimeout(d time.Duration) WaitOption {
 	}
 }
 
-func WaitForConnection(ctx context.Context, connStr string, options ...WaitOption) (conn *pgx.Conn, err error) {
+func WaitForConnection(ctx context.Context, connConfig *pgx.ConnConfig, options ...WaitOption) (conn *pgx.Conn, err error) {
 	utils.LogTime("db_common.waitForConnection start")
 	defer utils.LogTime("db.waitForConnection end")
 
@@ -57,10 +57,14 @@ func WaitForConnection(ctx context.Context, connStr string, options ...WaitOptio
 	// create a connection to the service.
 	// Retry after a backoff, but only upto a maximum duration.
 	err = retry.Do(ctx, backoff, func(rCtx context.Context) error {
-		log.Println("[TRACE] Trying to create client with: ", connStr)
-		dbConnection, err := pgx.Connect(rCtx, connStr)
+		log.Println("[TRACE] Trying to create client with: ", connConfig.ConnString())
+		dbConnection, err := pgx.ConnectConfig(rCtx, connConfig)
 		if err != nil {
 			log.Println("[TRACE] could not connect:", err)
+			// a refused login, or a role that does not exist, does not change while postgres starts
+			if IsAuthFailure(err) || IsMissingRole(err) {
+				return err
+			}
 			return retry.RetryableError(err)
 		}
 		log.Println("[TRACE] connected to database")

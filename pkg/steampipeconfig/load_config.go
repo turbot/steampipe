@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -28,7 +29,7 @@ import (
 	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/pipe-fittings/v2/versionfile"
 	"github.com/turbot/pipe-fittings/v2/workspace_profile"
-	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
+	"github.com/turbot/steampipe-plugin-sdk/v6/sperr"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 	"github.com/turbot/steampipe/v2/pkg/db/db_common"
 	"github.com/turbot/steampipe/v2/pkg/error_helpers"
@@ -114,7 +115,7 @@ func ensureDefaultConfigFile(configFolder string) error {
 
 	// case: if sample is modified - always write new sample file content
 	if sampleModified {
-		err := os.WriteFile(defaultConfigSampleFile, []byte(constants.DefaultConnectionConfigContent), 0755)
+		err := os.WriteFile(defaultConfigSampleFile, []byte(constants.DefaultConnectionConfigContent), 0600)
 		if err != nil {
 			return err
 		}
@@ -122,7 +123,7 @@ func ensureDefaultConfigFile(configFolder string) error {
 
 	// case: if sample is modified but default is not modified - write the new default file content
 	if sampleModified && !userModifiedDefault {
-		err := os.WriteFile(defaultConfigFile, []byte(constants.DefaultConnectionConfigContent), 0755)
+		err := os.WriteFile(defaultConfigFile, []byte(constants.DefaultConnectionConfigContent), 0600)
 		if err != nil {
 			return err
 		}
@@ -250,7 +251,14 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 		return perror_helpers.DiagsToErrorsAndWarnings("Failed to load all config files", diags)
 	}
 
-	body, diags := pparse.ParseHclFiles(fileData)
+	fileData, parseDiags := dropFilesWithErrors(fileData)
+	diags = append(diags, downgradeToWarnings(parseDiags)...)
+	if parseDiags.HasErrors() {
+		steampipeConfig.configFileDropped = true
+	}
+
+	body, moreDiags := pparse.ParseHclFiles(fileData)
+	diags = append(diags, moreDiags...)
 	if diags.HasErrors() {
 		return perror_helpers.DiagsToErrorsAndWarnings("Failed to load all config files", diags)
 	}
@@ -260,6 +268,13 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 	if moreDiags.HasErrors() {
 		diags = append(diags, moreDiags...)
 		return perror_helpers.DiagsToErrorsAndWarnings("Failed to load config", diags)
+	}
+
+	// skipped keeps, as errors, why each dropped file and block was dropped
+	skipped := parseDiags
+	skip := func(reasons ...*hcl.Diagnostic) {
+		skipped = append(skipped, reasons...)
+		diags = append(diags, downgradeToWarnings(reasons)...)
 	}
 
 	// store block types which we have found in this folder - each is only allowed once
@@ -272,41 +287,57 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 
 		case schema.BlockTypePlugin:
 			plugin, moreDiags := parse.DecodePlugin(block)
-			diags = append(diags, moreDiags...)
 			if moreDiags.HasErrors() {
+				steampipeConfig.skippedPluginInstances[block.Labels[0]] = struct{}{}
+				skip(moreDiags...)
 				continue
 			}
+			diags = append(diags, moreDiags...)
 			// add plugin to steampipeConfig
 			// NOTE: this errors if there is a plugin block with a duplicate label
 			if err := steampipeConfig.addPlugin(plugin); err != nil {
-				return perror_helpers.NewErrorsAndWarning(err)
+				steampipeConfig.skippedPluginInstances[block.Labels[0]] = struct{}{}
+				skip(blockError(block, err.Error()))
+				continue
 			}
 
 		case schema.BlockTypeConnection:
 			connection, moreDiags := pparse.DecodeConnection(block)
-			diags = append(diags, moreDiags...)
 			if moreDiags.HasErrors() {
+				skip(moreDiags...)
 				continue
 			}
+			diags = append(diags, moreDiags...)
+			// NOTE: bad files and blocks are skipped with a warning, and the
+			// load fails only if something was skipped and no connection loaded.
+			// LoadConnectionConfig re-parses the entire config folder, and the
+			// connection watcher aborts the refresh when it returns an error -
+			// so failing here for one bad connection would stop ALL connections
+			// from being synced (no schemas created, no credential updates
+			// applied) for as long as the offending block exists, while the file
+			// watcher itself keeps running.
 			if existingConnection, alreadyThere := steampipeConfig.Connections[connection.Name]; alreadyThere {
-				err := getDuplicateConnectionError(existingConnection, connection)
-				return perror_helpers.NewErrorsAndWarning(err)
+				skip(blockError(block, getDuplicateConnectionError(existingConnection, connection).Error()))
+				continue
 			}
 			if ok, errorMessage := db_common.IsSchemaNameValid(connection.Name); !ok {
-				return perror_helpers.NewErrorsAndWarning(sperr.New("invalid connection name: '%s' in '%s'. %s ", connection.Name, block.TypeRange.Filename, errorMessage))
+				skip(blockError(block, fmt.Sprintf("invalid connection name: '%s' in '%s'. %s ", connection.Name, block.TypeRange.Filename, errorMessage)))
+				continue
 			}
 			steampipeConfig.Connections[connection.Name] = connection
 
 		case schema.BlockTypeOptions:
 			// check this options type is permitted based on the options passed in
 			if err := optionsBlockPermitted(block, optionBlockMap, opts); err != nil {
-				return perror_helpers.NewErrorsAndWarning(err)
+				skip(blockError(block, err.Error()))
+				continue
 			}
 			opts, moreDiags := pparse.DecodeOptions(block, SteampipeOptionsBlockMapping)
 			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
+				skip(moreDiags...)
 				continue
 			}
+			optionBlockMap[block.Labels[0]] = true
 			// set options on steampipe config
 			// if options are already set, this will merge the new options over the top of the existing options
 			// i.e. new options have precedence
@@ -332,6 +363,10 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 	if diags.HasErrors() {
 		return perror_helpers.DiagsToErrorsAndWarnings("Failed to load config", diags)
 	}
+	// refreshing on a config where every connection was dropped would drop every schema
+	if skipped.HasErrors() && len(steampipeConfig.Connections) == 0 {
+		return perror_helpers.DiagsToErrorsAndWarnings("Failed to load config", skipped)
+	}
 
 	res := perror_helpers.DiagsToErrorsAndWarnings("", diags)
 
@@ -344,6 +379,46 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 	return res
 }
 
+// dropFilesWithErrors parses each file on its own and drops those with errors,
+// returning the rest and the dropped files' diagnostics.
+func dropFilesWithErrors(fileData map[string][]byte) (map[string][]byte, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+	res := make(map[string][]byte, len(fileData))
+	for _, path := range slices.Sorted(maps.Keys(fileData)) {
+		data := fileData[path]
+		body, fileDiags := pparse.ParseHclFiles(map[string][]byte{path: data})
+		if !fileDiags.HasErrors() {
+			_, moreDiags := body.Content(pparse.SteampipeConfigBlockSchema)
+			fileDiags = append(fileDiags, moreDiags...)
+		}
+		if fileDiags.HasErrors() {
+			diags = append(diags, fileDiags...)
+			continue
+		}
+		res[path] = data
+	}
+	return res, diags
+}
+
+// downgradeToWarnings returns copies, since skipped keeps the originals as errors.
+func downgradeToWarnings(diags hcl.Diagnostics) hcl.Diagnostics {
+	res := make(hcl.Diagnostics, len(diags))
+	for i, diag := range diags {
+		warning := *diag
+		warning.Severity = hcl.DiagWarning
+		res[i] = &warning
+	}
+	return res
+}
+
+func blockError(block *hcl.Block, summary string) *hcl.Diagnostic {
+	return &hcl.Diagnostic{
+		Severity: hcl.DiagError,
+		Summary:  summary,
+		Subject:  hclhelpers.BlockRangePointer(block),
+	}
+}
+
 func getDuplicateConnectionError(existingConnection, newConnection *modconfig.SteampipeConnection) error {
 	return sperr.New("duplicate connection name: '%s'\n\t(%s:%d)\n\t(%s:%d)",
 		existingConnection.Name, existingConnection.DeclRange.Filename, existingConnection.DeclRange.Start.Line,
@@ -351,12 +426,12 @@ func getDuplicateConnectionError(existingConnection, newConnection *modconfig.St
 }
 
 func optionsBlockPermitted(block *hcl.Block, blockMap map[string]bool, opts *loadConfigOptions) error {
-	// keep track of duplicate block types
+	// reject a block type which has already been loaded
+	// (the caller adds it to blockMap once the block has decoded without error)
 	blockType := block.Labels[0]
 	if _, ok := blockMap[blockType]; ok {
 		return fmt.Errorf("multiple instances of '%s' options block", blockType)
 	}
-	blockMap[blockType] = true
 	permitted := len(opts.allowedOptions) == 0 ||
 		slices.Contains(opts.allowedOptions, blockType)
 

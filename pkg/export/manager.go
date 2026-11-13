@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"slices"
 	"strings"
 	"sync"
 
 	"github.com/turbot/pipe-fittings/v2/utils"
-	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
+	"github.com/turbot/steampipe-plugin-sdk/v6/sperr"
 	"github.com/turbot/steampipe/v2/pkg/error_helpers"
 	"github.com/turbot/steampipe/v2/pkg/statushooks"
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
 
 type Manager struct {

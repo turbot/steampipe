@@ -2,7 +2,6 @@ package db_local
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -33,7 +32,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, opts ...db_c
 
 	listenAddresses := StartListenType(ListenTypeLocal).ToListenAddresses()
 	port := viper.GetInt(pconstants.ArgDatabasePort)
-	log.Println(fmt.Sprintf("[TRACE] GetLocalClient - listenAddresses=%s, port=%d", listenAddresses, port))
+	log.Printf("[TRACE] GetLocalClient - listenAddresses=%s, port=%d", listenAddresses, port)
 	// start db if necessary
 	if err := EnsureDBInstalled(ctx); err != nil {
 		return nil, error_helpers.NewErrorsAndWarning(err)
@@ -82,7 +81,7 @@ func newLocalClient(ctx context.Context, invoker constants.Invoker, opts ...db_c
 		return nil, err
 	}
 
-	client := &LocalDbClient{DbClient: *dbClient, invoker: invoker}
+	client := &LocalDbClient{DbClient: *dbClient, invoker: invoker} //nolint:govet // copylocks: reverted from an embedded pointer (rule 1: no practical regression test - the original *DbClient is never retained after construction, so there's no currently-triggerable divergence), see #5053
 	log.Printf("[INFO] created local client %p", client)
 
 	if err := client.initNotificationListener(ctx); err != nil {

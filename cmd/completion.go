@@ -103,8 +103,8 @@ To load completions:
 	helpString = includeZshHelp(helpString)
 	helpString = includeFishHelp(helpString)
 
-	fmt.Println(helpString)
-	fmt.Println(cmd.UsageString())
+	fmt.Println(helpString) //nolint:forbidigo // acceptable
+	fmt.Println(cmd.UsageString()) //nolint:forbidigo // acceptable
 }
 
 func runGenCompletionScriptsCmd(cmd *cobra.Command, args []string) {
@@ -117,11 +117,11 @@ func runGenCompletionScriptsCmd(cmd *cobra.Command, args []string) {
 
 	switch completionFor {
 	case "bash":
-		cmd.Root().GenBashCompletionV2(os.Stdout, false)
+		_ = cmd.Root().GenBashCompletionV2(os.Stdout, false)
 	case "zsh":
-		cmd.Root().GenZshCompletionNoDesc(os.Stdout)
+		_ = cmd.Root().GenZshCompletionNoDesc(os.Stdout)
 	case "fish":
-		cmd.Root().GenFishCompletion(os.Stdout, false)
+		_ = cmd.Root().GenFishCompletion(os.Stdout, false)
 	default:
 		completionHelp(cmd, args)
 	}

@@ -2,6 +2,7 @@ package versionfile
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -58,4 +59,22 @@ func TestWriteDatabaseVersionFile(t *testing.T) {
 	}
 
 	os.Remove(fileName)
+}
+
+func TestWriteDatabaseVersionFilePermissions(t *testing.T) {
+	var v DatabaseVersionFile
+
+	path := filepath.Join(t.TempDir(), "test.json")
+
+	if err := v.write(path); err != nil {
+		t.Fatalf("Error writing file: %s", err.Error())
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("failed to stat %s: %v", path, err)
+	}
+	if perm := info.Mode().Perm(); perm != 0600 {
+		t.Errorf("expected %s to have permissions 0600, got %o", path, perm)
+	}
 }

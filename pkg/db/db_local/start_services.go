@@ -3,6 +3,7 @@ package db_local
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	psutils "github.com/shirou/gopsutil/process"
@@ -20,7 +22,7 @@ import (
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	perror_helpers "github.com/turbot/pipe-fittings/v2/error_helpers"
 	putils "github.com/turbot/pipe-fittings/v2/utils"
-	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
+	"github.com/turbot/steampipe-plugin-sdk/v6/sperr"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 	"github.com/turbot/steampipe/v2/pkg/db/db_common"
 	"github.com/turbot/steampipe/v2/pkg/error_helpers"
@@ -230,15 +232,15 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 		// if there was an error and we started the service, stop it again
 		if res.Error != nil {
 			if res.Status == ServiceStarted {
-				StopServices(ctx, false, invoker)
+				_, _ = StopServices(ctx, false, invoker)
 			}
 			// remove the state file if we are going back with an error
-			removeRunningInstanceInfo()
+			_ = removeRunningInstanceInfo()
 			// we are going back with an error
 			// if the process was started,
 			if postgresCmd != nil && postgresCmd.Process != nil {
 				// kill it
-				postgresCmd.Process.Kill()
+				_ = postgresCmd.Process.Kill()
 			}
 		}
 	}()
@@ -287,7 +289,7 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 		return res.SetError(err)
 	}
 
-	databaseName, err := getDatabaseName(ctx, port)
+	databaseName, err := getDatabaseName(ctx, filepaths.GetDataLocation(), port)
 	if err != nil {
 		return res.SetError(err)
 	}
@@ -347,14 +349,16 @@ func ensureService(ctx context.Context, databaseName string) error {
 	return nil
 }
 
+var errNoSteampipeDatabase = errors.New("the server holds no Steampipe database to connect to")
+
 // getDatabaseName connects to the service and retrieves the database name
-func getDatabaseName(ctx context.Context, port int) (string, error) {
-	databaseName, err := retrieveDatabaseNameFromService(ctx, port)
+func getDatabaseName(ctx context.Context, dataDir string, port int) (string, error) {
+	databaseName, err := retrieveDatabaseNameFromService(ctx, dataDir, port)
 	if err != nil {
 		return "", err
 	}
 	if len(databaseName) == 0 {
-		return "", fmt.Errorf("could not find database to connect to")
+		return "", errNoSteampipeDatabase
 	}
 	return databaseName, nil
 }
@@ -383,12 +387,18 @@ func startPostgresProcess(ctx context.Context, listenAddresses []string, port in
 	if err := writePGConf(ctx); err != nil {
 		return nil, err
 	}
+	if err := preparePgHbaConf(filepaths.GetDataLocation()); err != nil {
+		return nil, err
+	}
 
-	postgresCmd := createCmd(ctx, port, listenAddresses)
+	postgresCmd, err := createCmd(ctx, port, listenAddresses)
+	if err != nil {
+		return nil, err
+	}
 	log.Printf("[TRACE] startPostgresProcess - postgres command: %s", postgresCmd)
 
 	setupLogCollection(postgresCmd)
-	err := postgresCmd.Start()
+	err = postgresCmd.Start()
 	if err != nil {
 		return nil, err
 	}
@@ -396,10 +406,15 @@ func startPostgresProcess(ctx context.Context, listenAddresses []string, port in
 	return postgresCmd, nil
 }
 
-func retrieveDatabaseNameFromService(ctx context.Context, port int) (string, error) {
-	connection, err := createMaintenanceClient(ctx, port)
+func retrieveDatabaseNameFromService(ctx context.Context, dataDir string, port int) (string, error) {
+	connection, err := createMaintenanceClient(ctx, dataDir, port)
 	if err != nil {
-		return "", fmt.Errorf("failed to connect to the database: %v - please try again or reset your steampipe database", err)
+		// its message says what to do
+		var stop *pgHbaStopError
+		if errors.As(err, &stop) {
+			return "", err
+		}
+		return "", fmt.Errorf("failed to connect to the database: %v", err)
 	}
 	defer connection.Close(ctx)
 
@@ -408,6 +423,10 @@ func retrieveDatabaseNameFromService(ctx context.Context, port int) (string, err
 	var databaseName string
 	err = out.Scan(&databaseName)
 	if err != nil {
+		// no row means the server holds no Steampipe database: getDatabaseName reports that
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", nil
+		}
 		return "", err
 	}
 
@@ -442,8 +461,13 @@ func updateDatabaseNameInRunningInfo(ctx context.Context, databaseName string) (
 	return runningInfo, runningInfo.Save()
 }
 
-func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cmd {
-	postgresCmd := exec.Command(
+func createCmd(ctx context.Context, port int, listenAddresses []string) (*exec.Cmd, error) {
+	socketArgs, err := postgresSocketArgs(filepaths.GetDataLocation(), port)
+	if err != nil {
+		return nil, err
+	}
+
+	postgresCmd := exec.Command( //nolint:gosec // G204: filepaths.GetPostgresBinaryExecutablePath() is steampipe's own installed postgres binary path, not user input
 		filepaths.GetPostgresBinaryExecutablePath(),
 		// by this time, we are sure that the port is free to listen to
 		"-p", fmt.Sprint(port),
@@ -462,6 +486,8 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cm
 
 		// Data Directory
 		"-D", filepaths.GetDataLocation())
+
+	postgresCmd.Args = append(postgresCmd.Args, socketArgs...)
 
 	if sslpassword := viper.GetString(pconstants.ArgDatabaseSSLPassword); sslpassword != "" {
 		postgresCmd.Args = append(
@@ -493,7 +519,7 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cm
 		Foreground: false,
 	}
 
-	return postgresCmd
+	return postgresCmd, nil
 }
 
 func setupLogCollection(cmd *exec.Cmd) {
@@ -636,7 +662,7 @@ func killInstanceIfAny(ctx context.Context) bool {
 	for _, process := range processes {
 		wg.Add(1)
 		go func(p *psutils.Process) {
-			doThreeStepPostgresExit(ctx, p)
+			_ = doThreeStepPostgresExit(ctx, p)
 			wg.Done()
 		}(process)
 	}
@@ -645,21 +671,71 @@ func killInstanceIfAny(ctx context.Context) bool {
 }
 
 func FindAllSteampipePostgresInstances(ctx context.Context) ([]*psutils.Process, error) {
+	return findSteampipePostgresInstances(ctx, listAllProcesses)
+}
+
+// listAllProcesses is a variable so tests can skip reading every process on the machine, which takes seconds on macOS
+var listAllProcesses = psutils.ProcessesWithContext
+
+// readProcessCmdline is a variable so tests can simulate a process whose
+// command line is still empty when first read.
+var readProcessCmdline = func(ctx context.Context, p *psutils.Process) ([]string, error) {
+	return p.CmdlineSliceWithContext(ctx)
+}
+
+const (
+	emptyCmdlineRetries    = 5
+	emptyCmdlineRetryDelay = 20 * time.Millisecond
+	recentlyStartedWindow  = 10 * time.Second
+)
+
+// findSteampipePostgresInstances returns the running steampipe postgres
+// processes. A process that cannot be read is treated as not being one. So is
+// one with an empty command line, except that if it started in the last 10
+// seconds it is read again for up to about 100ms first. If ctx is cancelled
+// during that wait, it returns the matches found so far together with ctx.Err().
+func findSteampipePostgresInstances(ctx context.Context, listProcesses func(context.Context) ([]*psutils.Process, error)) ([]*psutils.Process, error) {
 	var instances []*psutils.Process
-	allProcesses, err := psutils.ProcessesWithContext(ctx)
+	allProcesses, err := listProcesses(ctx)
 	if err != nil {
 		log.Println("[TRACE] FindAllSteampipePostgresInstances - error retrieving process list: ", err.Error())
 		return nil, err
 	}
-	for _, p := range allProcesses {
-		cmdLine, err := p.CmdlineSliceWithContext(ctx)
-		if err != nil {
-			log.Printf("[TRACE] FindAllSteampipePostgresInstances - error retrieving cmdline for pid %d: %s", p.Pid, err.Error())
-			return nil, err
+	// a process that has only just started can report an empty command line on
+	// Linux, so those are read again below
+	var emptyCmdline []*psutils.Process
+	scan := func(processes []*psutils.Process) {
+		emptyCmdline = nil
+		for _, p := range processes {
+			cmdLine, err := readProcessCmdline(ctx, p)
+			if err != nil {
+				// the process may have exited since the list was taken, or its
+				// command line may not be readable by this user
+				log.Printf("[TRACE] FindAllSteampipePostgresInstances - skipping pid %d, error retrieving cmdline: %s", p.Pid, err.Error())
+				continue
+			}
+			if len(cmdLine) == 0 {
+				// kernel threads and zombies always read empty, so only a
+				// recently started process is worth reading again
+				if createdMs, err := p.CreateTimeWithContext(ctx); err == nil &&
+					time.Since(time.UnixMilli(createdMs)) < recentlyStartedWindow {
+					emptyCmdline = append(emptyCmdline, p)
+				}
+				continue
+			}
+			if isSteampipePostgresProcess(ctx, cmdLine) {
+				instances = append(instances, p)
+			}
 		}
-		if isSteampipePostgresProcess(ctx, cmdLine) {
-			instances = append(instances, p)
+	}
+	scan(allProcesses)
+	for attempt := 0; attempt < emptyCmdlineRetries && len(emptyCmdline) > 0; attempt++ {
+		select {
+		case <-ctx.Done():
+			return instances, ctx.Err()
+		case <-time.After(emptyCmdlineRetryDelay):
 		}
+		scan(emptyCmdline)
 	}
 	return instances, nil
 }

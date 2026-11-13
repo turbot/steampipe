@@ -18,7 +18,7 @@ import (
 	"github.com/turbot/pipe-fittings/v2/plugin"
 	"github.com/turbot/pipe-fittings/v2/versionfile"
 	"github.com/turbot/pipe-fittings/v2/workspace_profile"
-	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
+	"github.com/turbot/steampipe-plugin-sdk/v6/sperr"
 	"github.com/turbot/steampipe/v2/pkg/options"
 )
 
@@ -31,6 +31,14 @@ type SteampipeConfig struct {
 	PluginsInstances map[string]*plugin.Plugin
 	// map of connection name to partially parsed connection config
 	Connections map[string]*modconfig.SteampipeConnection
+	// connections whose plugin block was skipped when loading, or may have been in a file that was dropped:
+	// a refresh keeps their schema, and sets their state to error if the plugin block cannot be resolved
+	ConnectionsWithSkippedPlugin map[string]struct{}
+
+	// labels of the plugin blocks loadConfig skipped
+	skippedPluginInstances map[string]struct{}
+	// a dropped file could have held any plugin block
+	configFileDropped bool
 
 	// Steampipe options
 	DatabaseOptions *options.Database
@@ -45,6 +53,8 @@ func NewSteampipeConfig(commandName string) *SteampipeConfig {
 		Connections:      make(map[string]*modconfig.SteampipeConnection),
 		Plugins:          make(map[string][]*plugin.Plugin),
 		PluginsInstances: make(map[string]*plugin.Plugin),
+
+		skippedPluginInstances: make(map[string]struct{}),
 	}
 }
 
@@ -230,9 +240,14 @@ func duplicatePluginError(existingPlugin, newPlugin *plugin.Plugin) error {
 // even if there is not an explicit HCL config for it
 // NOTE: this populates the  Plugin and PluginInstance field of the connections
 func (c *SteampipeConfig) initializePlugins() {
+	c.ConnectionsWithSkippedPlugin = make(map[string]struct{})
 	for _, connection := range c.Connections {
 		plugin, err := c.resolvePluginInstanceForConnection(connection)
+		if c.pluginBlockSkipped(connection, err) {
+			c.ConnectionsWithSkippedPlugin[connection.Name] = struct{}{}
+		}
 		if err != nil {
+			err = c.describeSkippedPluginBlock(connection, err)
 			log.Printf("[WARN] cannot resolve plugin for connection '%s': %s", connection.Name, err.Error())
 			connection.Error = err
 			continue
@@ -265,6 +280,31 @@ func (c *SteampipeConfig) initializePlugins() {
 
 	}
 
+}
+
+// pluginBlockSkipped returns whether the plugin block the connection refers to was skipped when loading,
+// or may have been, because the connection's plugin does not resolve and a config file was dropped
+func (c *SteampipeConfig) pluginBlockSkipped(connection *modconfig.SteampipeConnection, resolveErr error) bool {
+	if connection.PluginInstance == nil {
+		return false
+	}
+	_, skipped := c.skippedPluginInstances[*connection.PluginInstance]
+	return skipped || (resolveErr != nil && c.configFileDropped)
+}
+
+// describeSkippedPluginBlock says in the error that the plugin block a connection refers to is missing
+// because loadConfig skipped it, or may be missing because it was in a file loadConfig dropped
+func (c *SteampipeConfig) describeSkippedPluginBlock(connection *modconfig.SteampipeConnection, resolveErr error) error {
+	if connection.PluginInstance == nil {
+		return resolveErr
+	}
+	if _, skipped := c.skippedPluginInstances[*connection.PluginInstance]; skipped {
+		return fmt.Errorf("plugin block 'plugin.%s' failed to load, see the config warnings: %w", *connection.PluginInstance, resolveErr)
+	}
+	if c.configFileDropped {
+		return fmt.Errorf("plugin block 'plugin.%s' was not found and may be in a config file that failed to load, see the config warnings: %w", *connection.PluginInstance, resolveErr)
+	}
+	return resolveErr
 }
 
 /*
@@ -307,7 +347,7 @@ func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconf
 		pluginBinaryPath := filepaths.PluginBinaryPath(imageRef, connection.PluginAlias)
 		if _, err := os.Stat(pluginBinaryPath); err != nil {
 			log.Printf("[INFO] plugin '%s' is not installed", imageRef)
-			return nil, nil
+			return nil, nil //nolint:nilerr // any os.Stat error here means the binary can't be used, so it is treated as "not installed" rather than propagated
 		}
 
 		// so the plugin binary exists but it does not exist in the versions.json

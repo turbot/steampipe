@@ -9,15 +9,15 @@ on:
           Version number for the OCI image for this release - usually the same as the
           postgres version
         required: true
-        default: 14.19.0
+        default: 14.24.0
 
       postgres_version:
         description: "Postgres Version to package (eg 14.2.0)"
         required: true
-        default: 14.19.0
+        default: 14.24.0
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 env:
@@ -28,8 +28,6 @@ env:
   CONFIG_SCHEMA_VERSION: "2020-11-18"
   VERSION: ${{ github.event.inputs.version }}
   PG_VERSION: ${{ github.event.inputs.postgres_version }}
-  PATH_BASE: https://repo1.maven.org/maven2/io/zonky/test/postgres
-  NAME_PREFIX: embedded-postgres-binaries
   STEAMPIPE_UPDATE_CHECK: false
   ORAS_VERSION: 1.1.0
 
@@ -66,50 +64,37 @@ jobs:
             exit 1
           fi
 
-      - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-        with:
-          ref: ${{ github.event.inputs.branch }}
-
       # Login to GHCR
       - name: Log in to the Container registry
         uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
         with:
           registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GH_PUBLISH_ACCESS_TOKEN }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Pull & Extract - darwin amd64
+      # The packages are assets on a draft release named embedded-pg-<postgres version>.
+      # Draft releases are visible only to tokens with write access, hence contents: write.
+      - name: Download packages from the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |-
-          EXTRACT_DIR=extracted-darwin-amd64
-          # new link (darwin-amd64.txz) - https://drive.google.com/file/d/1eFFtffVnZiyGbqdSEsT1rJwsx6B8UPfW/view?usp=drive_link
-          curl -L -o darwin-amd64.txz "https://drive.google.com/uc?export=download&id=1eFFtffVnZiyGbqdSEsT1rJwsx6B8UPfW"
-          mkdir $EXTRACT_DIR
-          tar -xf darwin-amd64.txz --directory $EXTRACT_DIR
+          mkdir packages
+          gh release download "embedded-pg-${PG_VERSION}" --repo turbot/steampipe --dir packages --pattern '*.txz'
 
-      - name: Pull & Extract - darwin arm64
+      - name: Extract packages
         run: |-
-          EXTRACT_DIR=extracted-darwin-arm64
-          # new link (darwin-arm64.txz) - https://drive.google.com/file/d/1JWaAsd6_DUpUPLgwmvlGkeeuv70V9Hfx/view?usp=drive_link
-          curl -L -o darwin-arm64.txz "https://drive.google.com/uc?export=download&id=1JWaAsd6_DUpUPLgwmvlGkeeuv70V9Hfx"
-          mkdir $EXTRACT_DIR
-          tar -xf darwin-arm64.txz --directory $EXTRACT_DIR
-
-      - name: Pull & Extract - linux amd64
-        run: |-
-          EXTRACT_DIR=extracted-linux-amd64
-          # new link (linux-amd64.txz) - https://drive.google.com/file/d/17XnB7ipjnnDzvjAVAMCjvePRVyOvyiC-/view?usp=drive_link
-          curl -L -o linux-amd64.txz "https://drive.google.com/uc?export=download&id=17XnB7ipjnnDzvjAVAMCjvePRVyOvyiC-"
-          mkdir $EXTRACT_DIR
-          tar -xf linux-amd64.txz --directory $EXTRACT_DIR
-
-      - name: Pull & Extract - linux arm64
-        run: |-
-          EXTRACT_DIR=extracted-linux-arm64
-          # new link (linux-arm64.txz) - https://drive.google.com/file/d/1dBKin4bgTbbBSk7fToLnkNxWhixGIbtt/view?usp=drive_link
-          curl -L -o linux-arm64.txz "https://drive.google.com/uc?export=download&id=1dBKin4bgTbbBSk7fToLnkNxWhixGIbtt"
-          mkdir $EXTRACT_DIR
-          tar -xf linux-arm64.txz --directory $EXTRACT_DIR
+          for pair in \
+            postgres-darwin-x86_64.txz:extracted-darwin-amd64 \
+            postgres-darwin-arm_64.txz:extracted-darwin-arm64 \
+            postgres-linux-x86_64.txz:extracted-linux-amd64 \
+            postgres-linux-arm_64.txz:extracted-linux-arm64; do
+            if [ ! -s "packages/${pair%%:*}" ]; then
+              echo "Missing or empty package: ${pair%%:*}"
+              exit 1
+            fi
+            mkdir "${pair#*:}"
+            tar -xf "packages/${pair%%:*}" --directory "${pair#*:}"
+          done
 
       - name: Build Config JSON
         run: |-

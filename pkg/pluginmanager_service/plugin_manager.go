@@ -21,11 +21,11 @@ import (
 	"github.com/turbot/pipe-fittings/v2/filepaths"
 	"github.com/turbot/pipe-fittings/v2/plugin"
 	"github.com/turbot/pipe-fittings/v2/utils"
-	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
-	sdkshared "github.com/turbot/steampipe-plugin-sdk/v5/grpc/shared"
-	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
+	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v6/grpc"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v6/grpc/proto"
+	sdkshared "github.com/turbot/steampipe-plugin-sdk/v6/grpc/shared"
+	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v6/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v6/sperr"
 	"github.com/turbot/steampipe/v2/pkg/connection"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 	"github.com/turbot/steampipe/v2/pkg/db/db_local"
@@ -384,8 +384,10 @@ func (m *PluginManager) startPluginIfNeeded(pluginInstance string, connectionCon
 
 			// NOTE: ensure the connections assigned to this plugin are correct
 			// (may be out of sync if a connection is being added)
+			// use the current connections, not connectionConfigs, which may have been read before
+			// a change that startPlugin has since applied
 			m.mut.Lock()
-			startingPlugin.reattach.UpdateConnections(connectionConfigs)
+			startingPlugin.reattach.UpdateConnections(m.pluginConnectionConfigMap[pluginInstance])
 			m.mut.Unlock()
 
 			log.Printf("[TRACE] waitForPluginLoad succeeded %s (%p)", pluginInstance, req)
@@ -452,7 +454,9 @@ func (m *PluginManager) startPlugin(pluginInstance string, connectionConfigs []*
 		return nil, err
 	}
 
+	m.mut.Lock()
 	startingPlugin.client = client
+	m.mut.Unlock()
 
 	// set the connection configs and build a ReattachConfig
 	reattach, err := m.initializePlugin(connectionConfigs, client, req)
@@ -460,7 +464,13 @@ func (m *PluginManager) startPlugin(pluginInstance string, connectionConfigs []*
 		log.Printf("[WARN] initializePlugin failed: %s (%p)", err.Error(), req)
 		return nil, err
 	}
+
+	// config changes which arrived while the plugin was starting were not sent to it,
+	// so send them now. Holding the lock means any later change sees the started plugin and is sent as normal
+	m.mut.Lock()
 	startingPlugin.reattach = reattach
+	m.applyChangesMadeWhileStarting(startingPlugin, connectionConfigs)
+	m.mut.Unlock()
 
 	// close initialized chan to advertise that this plugin is ready
 	close(startingPlugin.initialized)
@@ -533,6 +543,8 @@ func (m *PluginManager) startPluginProcess(pluginInstance string, connectionConf
 	}
 
 	cmd := exec.Command(pluginPath)
+	// the plugin gets our environment from cmd.Env only (SkipHostEnv below)
+	cmd.Env = os.Environ()
 	m.setPluginMaxMemory(pluginConfig, cmd)
 
 	pluginStartTimeoutDuration := time.Duration(viper.GetInt64(pconstants.ArgPluginStartTimeout)) * time.Second
@@ -544,6 +556,9 @@ func (m *PluginManager) startPluginProcess(pluginInstance string, connectionConf
 		Cmd:              cmd,
 		AllowedProtocols: []goplugin.Protocol{goplugin.ProtocolGRPC},
 		StartTimeout:     pluginStartTimeoutDuration,
+		// without this, go-plugin appends our environment again after cmd.Env, and a GOMEMLIMIT
+		// in our environment would replace the plugin's memory limit
+		SkipHostEnv: true,
 
 		// pass our logger to the plugin client to ensure plugin logs end up in logfile
 		Logger: m.logger,
@@ -569,8 +584,8 @@ func (m *PluginManager) setPluginMaxMemory(pluginConfig *plugin.Plugin, cmd *exe
 	if maxMemoryBytes != 0 {
 		log.Printf("[INFO] Setting max memory for plugin '%s' to %d Mb", pluginConfig.Instance, maxMemoryBytes/(1024*1024))
 		// set GOMEMLIMIT for the plugin command env
-		// TODO should I check for GOMEMLIMIT or does this just override
-		cmd.Env = append(os.Environ(), fmt.Sprintf("GOMEMLIMIT=%d", maxMemoryBytes))
+		// this is the last GOMEMLIMIT in cmd.Env, so it replaces one from our environment
+		cmd.Env = append(cmd.Env, fmt.Sprintf("GOMEMLIMIT=%d", maxMemoryBytes))
 	}
 }
 

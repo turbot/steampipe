@@ -10,7 +10,7 @@ import (
 	"github.com/turbot/pipe-fittings/v2/error_helpers"
 	"github.com/turbot/pipe-fittings/v2/modconfig"
 	"github.com/turbot/pipe-fittings/v2/utils"
-	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v6/plugin"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 	"github.com/turbot/steampipe/v2/pkg/filepaths"
 	"golang.org/x/exp/maps"
@@ -146,7 +146,7 @@ func (m ConnectionStateMap) Save() error {
 		log.Println("[ERROR]", "Error while writing state file", err)
 		return err
 	}
-	return os.WriteFile(connFilePath, connFileJSON, 0644)
+	return os.WriteFile(connFilePath, connFileJSON, 0600)
 }
 
 func (m ConnectionStateMap) Equals(other ConnectionStateMap) bool {

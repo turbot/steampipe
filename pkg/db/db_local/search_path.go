@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"slices"
 	"sort"
 	"strings"
 
@@ -28,7 +29,7 @@ func SetUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error
 		prefix := viper.GetStringSlice(constants.ConfigKeyServerSearchPathPrefix)
 		// no config set - set user search path to default
 		// - which is all the connection names, book-ended with public and internal
-		searchPath = append(prefix, getDefaultSearchPath()...)
+		searchPath = slices.Concat(prefix, getDefaultSearchPath())
 	}
 
 	// escape the schema names

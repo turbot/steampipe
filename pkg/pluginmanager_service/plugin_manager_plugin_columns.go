@@ -7,9 +7,9 @@ import (
 	"slices"
 	"strings"
 
-	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
-	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
-	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v6/grpc"
+	"github.com/turbot/steampipe-plugin-sdk/v6/grpc/proto"
+	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v6/plugin"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 	"github.com/turbot/steampipe/v2/pkg/db/db_common"
 	"github.com/turbot/steampipe/v2/pkg/db/db_local"
@@ -34,7 +34,8 @@ func (m *PluginManager) shouldBootstrapPluginColumnTable(ctx context.Context) bo
 	query := fmt.Sprintf(`SELECT column_name
   FROM information_schema.columns
  WHERE table_schema = '%s'
-   AND table_name   = '%s'`, constants.InternalSchema, constants.PluginColumnTable)
+   AND table_name   = '%s'
+ ORDER BY ordinal_position`, constants.InternalSchema, constants.PluginColumnTable)
 
 	rows, err := m.pool.Query(ctx, query)
 	if err != nil {
@@ -57,7 +58,7 @@ func (m *PluginManager) shouldBootstrapPluginColumnTable(ctx context.Context) bo
 		return true
 	}
 
-	expectedColumns := []string{"plugin_", "table_name", "name", "type", " description", "list_config", "get_config", "hydrate_name", "default_value"}
+	expectedColumns := []string{"plugin", "table_name", "name", "type", "description", "list_config", "get_config", "hydrate_name", "default_value"}
 	return !slices.Equal(columns, expectedColumns)
 }
 
@@ -68,31 +69,26 @@ func (m *PluginManager) bootstrapPluginColumnTable(ctx context.Context) error {
 		return err
 	}
 
-	if err := m.createPluginColumnsTable(ctx); err != nil {
-		log.Printf("[WARN] createPluginColumnsTable error: %s", err.Error())
-		return err
-	}
-	// now populate the table
 	log.Printf("[INFO] bootstrapPluginColumnTable loaded schema for plugins:  %s", strings.Join(maps.Keys(schemas), ","))
 
-	return m.populatePluginColumnsTable(ctx, schemas)
-}
-
-func (m *PluginManager) createPluginColumnsTable(ctx context.Context) error {
+	// drop, create and fill the table in one transaction: if the table were left
+	// created but empty, the next start would see the right columns and not refill it
 	queries := []db_common.QueryWithArgs{
 		introspection.GetPluginColumnTableDropSql(),
 		introspection.GetPluginColumnTableCreateSql(),
 		introspection.GetPluginColumnTableGrantSql(),
 	}
-
-	conn, err := m.pool.Acquire(ctx)
+	populateQueries, err := pluginColumnsPopulateQueries(schemas)
 	if err != nil {
 		return err
 	}
-	defer conn.Release()
+	queries = append(queries, populateQueries...)
 
-	_, err = db_local.ExecuteSqlWithArgsInTransaction(ctx, conn.Conn(), queries...)
-	return err
+	if err := m.executeInTransaction(ctx, queries); err != nil {
+		log.Printf("[WARN] bootstrapPluginColumnTable error: %s", err.Error())
+		return err
+	}
+	return nil
 }
 
 func (m *PluginManager) populatePluginColumnsTable(ctx context.Context, schemas map[string]*proto.Schema) error {
@@ -101,6 +97,15 @@ func (m *PluginManager) populatePluginColumnsTable(ctx context.Context, schemas 
 		return nil
 	}
 	log.Printf("[INFO] populating plugin_columns table for plugins %s", strings.Join(maps.Keys(schemas), ","))
+	queries, err := pluginColumnsPopulateQueries(schemas)
+	if err != nil {
+		return err
+	}
+	return m.executeInTransaction(ctx, queries)
+}
+
+// pluginColumnsPopulateQueries returns the queries which replace the rows of each given plugin
+func pluginColumnsPopulateQueries(schemas map[string]*proto.Schema) ([]db_common.QueryWithArgs, error) {
 	var queries []db_common.QueryWithArgs
 	for plugin, schema := range schemas {
 		// drop entries for this plugin
@@ -112,11 +117,14 @@ func (m *PluginManager) populatePluginColumnsTable(ctx context.Context, schemas 
 		}
 		pluginQueries, err := introspection.GetPluginColumnTablePopulateSqlForPlugin(plugin, schema.Schema)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		queries = append(queries, pluginQueries...)
 	}
+	return queries, nil
+}
 
+func (m *PluginManager) executeInTransaction(ctx context.Context, queries []db_common.QueryWithArgs) error {
 	conn, err := m.pool.Acquire(ctx)
 	if err != nil {
 		return err
@@ -138,15 +146,7 @@ func (m *PluginManager) removePluginsFromPluginColumnsTable(ctx context.Context,
 		// drop entries for this plugin
 		queries = append(queries, introspection.GetPluginColumnTableDeletePluginSql(plugin))
 	}
-
-	conn, err := m.pool.Acquire(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Release()
-
-	_, err = db_local.ExecuteSqlWithArgsInTransaction(ctx, conn.Conn(), queries...)
-	return err
+	return m.executeInTransaction(ctx, queries)
 }
 
 // load the schemas for the given plugin connections

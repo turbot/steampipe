@@ -1,8 +1,9 @@
 package connection
 
 import (
+	"maps"
+
 	"github.com/turbot/pipe-fittings/v2/plugin"
-	"golang.org/x/exp/maps"
 )
 
 // PluginLimiterMap map of plugin image ref to Limiter map for the plugin

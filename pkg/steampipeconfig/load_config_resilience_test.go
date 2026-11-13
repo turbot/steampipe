@@ -1,0 +1,382 @@
+package steampipeconfig
+
+import (
+	"context"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/turbot/pipe-fittings/v2/app_specific"
+	"github.com/turbot/pipe-fittings/v2/plugin"
+	"github.com/turbot/pipe-fittings/v2/versionfile"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+)
+
+// setInstallDir points the app at a scratch install dir; several filepath
+// helpers panic if it is unset.
+func setInstallDir(t *testing.T) {
+	t.Helper()
+	prev := app_specific.InstallDir
+	app_specific.InstallDir = t.TempDir()
+	t.Cleanup(func() { app_specific.InstallDir = prev })
+}
+
+// writeConfigFile writes a .spc file into dir.
+func writeConfigFile(t *testing.T, dir, name, content string) {
+	t.Helper()
+	if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0600); err != nil {
+		t.Fatalf("failed to write %s: %v", name, err)
+	}
+}
+
+func connectionConfig(name string) string {
+	return `
+connection "` + name + `" {
+  plugin = "chaos"
+}
+`
+}
+
+// TestLoadConfig_DuplicateConnectionDoesNotFailWholeLoad asserts that a single
+// duplicate connection name is reported as a warning and skipped, while every
+// other connection still loads.
+//
+// This matters because loadConfig re-parses the WHOLE config folder and the
+// connection watcher aborts the refresh when it returns an error: failing the
+// entire load for one bad block stops all connections from being synced (no
+// schemas created, no connection config updates applied) for as long as the
+// offending block exists, while the file watcher keeps running.
+func TestLoadConfig_DuplicateConnectionDoesNotFailWholeLoad(t *testing.T) {
+	setInstallDir(t)
+	dir := t.TempDir()
+	writeConfigFile(t, dir, "a.spc", connectionConfig("conn_a"))
+	writeConfigFile(t, dir, "b.spc", connectionConfig("conn_b"))
+	// duplicates conn_a, declared in a second file
+	writeConfigFile(t, dir, "c.spc", connectionConfig("conn_a"))
+
+	config := NewSteampipeConfig("")
+	res := loadConfig(context.TODO(), dir, config, &loadConfigOptions{include: []string{"*.spc"}})
+
+	if err := res.GetError(); err != nil {
+		t.Fatalf("a duplicate connection must not fail the whole config load, got error: %v", err)
+	}
+	if len(res.Warnings) == 0 {
+		t.Error("expected a warning describing the duplicate connection")
+	}
+	for _, name := range []string{"conn_a", "conn_b"} {
+		if _, ok := config.Connections[name]; !ok {
+			t.Errorf("connection %q should still have loaded despite the duplicate", name)
+		}
+	}
+}
+
+// TestLoadConfig_InvalidConnectionNameDoesNotFailWholeLoad asserts the same
+// contract for a connection whose name is not a valid schema name.
+func TestLoadConfig_InvalidConnectionNameDoesNotFailWholeLoad(t *testing.T) {
+	setInstallDir(t)
+	dir := t.TempDir()
+	writeConfigFile(t, dir, "good.spc", connectionConfig("conn_good"))
+	// "pg_catalog" is reserved, so this connection name is invalid
+	writeConfigFile(t, dir, "bad.spc", connectionConfig("pg_catalog"))
+
+	config := NewSteampipeConfig("")
+	res := loadConfig(context.TODO(), dir, config, &loadConfigOptions{include: []string{"*.spc"}})
+
+	if err := res.GetError(); err != nil {
+		t.Fatalf("an invalid connection name must not fail the whole config load, got error: %v", err)
+	}
+	if _, ok := config.Connections["conn_good"]; !ok {
+		t.Error("the valid connection should still have loaded")
+	}
+	if _, ok := config.Connections["pg_catalog"]; ok {
+		t.Error("the invalid connection must be skipped")
+	}
+}
+
+func TestLoadConfig_PerFileAndPerBlockFailuresDoNotFailWholeLoad(t *testing.T) {
+	tests := []struct {
+		name    string
+		badFile string
+		// addPlugin only checks for duplicates among installed plugins
+		chaosInstalled bool
+	}{
+		{name: "malformed_hcl", badFile: `connection "broken" {
+  plugin = "chaos"
+`},
+		{name: "unknown_block_type", badFile: `widget "w" {}`},
+		{name: "connection_missing_plugin", badFile: `connection "no_plugin" {}`},
+		{name: "duplicate_plugin_label", badFile: `plugin "chaos_one" {
+  source = "chaos"
+}
+plugin "chaos_one" {
+  source = "chaos"
+}`, chaosInstalled: true},
+		{name: "duplicate_options_block", badFile: `options "database" {
+  port = 9193
+}
+options "database" {
+  port = 9194
+}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setInstallDir(t)
+			dir := t.TempDir()
+			writeConfigFile(t, dir, "good.spc", connectionConfig("conn_good"))
+			writeConfigFile(t, dir, "bad.spc", tt.badFile)
+
+			config := NewSteampipeConfig("")
+			if tt.chaosInstalled {
+				config.PluginVersions = map[string]*versionfile.InstalledVersion{
+					plugin.ResolvePluginImageRef("chaos"): {},
+				}
+			}
+			res := loadConfig(context.TODO(), dir, config, &loadConfigOptions{include: []string{"*.spc"}})
+
+			if err := res.GetError(); err != nil {
+				t.Fatalf("a failure in bad.spc must not fail the whole config load, got error: %v", err)
+			}
+			if len(res.Warnings) == 0 || !strings.Contains(strings.Join(res.Warnings, "\n"), "bad.spc") {
+				t.Errorf("expected a warning naming bad.spc, got %v", res.Warnings)
+			}
+			if _, ok := config.Connections["conn_good"]; !ok {
+				t.Error("the connection in good.spc should still have loaded")
+			}
+		})
+	}
+}
+
+// A connection whose plugin block was skipped must be recorded, so that a refresh
+// keeps its schema, even when the connection itself is in a valid file.
+func TestLoadConfig_ConnectionsWithSkippedPluginBlockAreRecorded(t *testing.T) {
+	tests := []struct {
+		name    string
+		badFile string
+		// addPlugin only checks for duplicates among installed plugins
+		chaosInstalled bool
+		want           bool
+	}{
+		{name: "undecodable_plugin_block", badFile: `plugin "chaos_one" {
+  source = ["chaos"]
+}`, want: true},
+		{name: "duplicate_plugin_label", badFile: `plugin "chaos_one" {
+  source = "chaos"
+}
+plugin "chaos_one" {
+  source = "chaos"
+}`, chaosInstalled: true, want: true},
+		{name: "plugin_block_in_dropped_file", badFile: `plugin "chaos_one" {
+  source = "chaos"
+`, want: true},
+		{name: "plugin_block_never_defined", badFile: `# nothing skipped`, want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setInstallDir(t)
+			dir := t.TempDir()
+			writeConfigFile(t, dir, "bad.spc", tt.badFile)
+			writeConfigFile(t, dir, "good.spc", connectionConfig("conn_alias")+`
+connection "conn_instance" {
+  plugin = plugin.chaos_one
+}
+`)
+
+			config := NewSteampipeConfig("")
+			if tt.chaosInstalled {
+				config.PluginVersions = map[string]*versionfile.InstalledVersion{
+					plugin.ResolvePluginImageRef("chaos"): {},
+				}
+			}
+			res := loadConfig(context.TODO(), dir, config, &loadConfigOptions{include: []string{"*.spc"}})
+
+			if err := res.GetError(); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if _, got := config.ConnectionsWithSkippedPlugin["conn_instance"]; got != tt.want {
+				t.Errorf("conn_instance recorded = %v, want %v", got, tt.want)
+			}
+			if _, got := config.ConnectionsWithSkippedPlugin["conn_alias"]; got {
+				t.Error("conn_alias does not use the skipped plugin block and must not be recorded")
+			}
+		})
+	}
+}
+
+// When something was skipped and no connection loaded, the load must fail:
+// whatever else the folder holds, refreshing on it would drop every schema.
+func TestLoadConfig_NoConnectionLoadedAfterSkipFails(t *testing.T) {
+	tests := []struct {
+		name  string
+		files map[string]string
+	}{
+		{name: "default_spc_comments_only", files: map[string]string{
+			"default.spc": constants.DefaultConnectionConfigContent,
+			"bad.spc":     `connection "broken" {`,
+		}},
+		{name: "default_spc_options_block", files: map[string]string{
+			"default.spc": `options "database" {
+  port = 9193
+}`,
+			"connections.spc": connectionConfig("conn_a") + connectionConfig("conn_b") + `connection "conn_c" {
+  plugin = "chaos"
+`,
+		}},
+		{name: "every_connection_block_undecodable", files: map[string]string{
+			"bad.spc": `connection "a" {}
+connection "b" {}`,
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setInstallDir(t)
+			dir := t.TempDir()
+			for name, content := range tt.files {
+				writeConfigFile(t, dir, name, content)
+			}
+
+			config := NewSteampipeConfig("")
+			res := loadConfig(context.TODO(), dir, config, &loadConfigOptions{include: []string{"*.spc"}})
+
+			if res.GetError() == nil {
+				t.Fatalf("expected an error when no connection loaded, got warnings %v", res.Warnings)
+			}
+		})
+	}
+}
+
+// loadConfig runs a second time for workspace.spc, so a call that loads nothing
+// new must not fail while the config already holds connections.
+func TestLoadConfig_WorkspaceDuplicatingLoadedConnectionDoesNotFail(t *testing.T) {
+	setInstallDir(t)
+	configDir, workspaceDir := t.TempDir(), t.TempDir()
+	writeConfigFile(t, configDir, "a.spc", connectionConfig("conn_a"))
+	writeConfigFile(t, workspaceDir, "workspace.spc", connectionConfig("conn_a"))
+
+	config := NewSteampipeConfig("")
+	opts := &loadConfigOptions{include: []string{"*.spc"}}
+	first := loadConfig(context.TODO(), configDir, config, opts)
+	if err := first.GetError(); err != nil {
+		t.Fatalf("failed to load the config folder: %v", err)
+	}
+
+	res := loadConfig(context.TODO(), workspaceDir, config, opts)
+
+	if err := res.GetError(); err != nil {
+		t.Fatalf("a workspace.spc duplicating a loaded connection must not fail the load, got error: %v", err)
+	}
+	if len(res.Warnings) == 0 {
+		t.Error("expected a warning describing the duplicate connection")
+	}
+	if _, ok := config.Connections["conn_a"]; !ok {
+		t.Error("connection conn_a should still be loaded")
+	}
+}
+
+func TestLoadConfig_UndecodableOptionsBlockDoesNotBlockLaterOne(t *testing.T) {
+	setInstallDir(t)
+	dir := t.TempDir()
+	writeConfigFile(t, dir, "a.spc", `options "database" {
+  port = "not a number"
+}`)
+	writeConfigFile(t, dir, "b.spc", `options "database" {
+  port = 9194
+}`)
+	writeConfigFile(t, dir, "good.spc", connectionConfig("conn_good"))
+
+	config := NewSteampipeConfig("")
+	res := loadConfig(context.TODO(), dir, config, &loadConfigOptions{include: []string{"*.spc"}})
+
+	if err := res.GetError(); err != nil {
+		t.Fatalf("an undecodable options block must not fail the whole config load, got error: %v", err)
+	}
+	if config.DatabaseOptions == nil || config.DatabaseOptions.Port == nil || *config.DatabaseOptions.Port != 9194 {
+		t.Errorf("the valid database options block should have been applied, got %+v", config.DatabaseOptions)
+	}
+}
+
+// The error on a connection that refers to a missing plugin block must say what is known:
+// that the block failed to load, or only that it may be in a file that did.
+func TestLoadConfig_MissingPluginBlockErrorSaysWhatIsKnown(t *testing.T) {
+	tests := []struct {
+		name    string
+		badFile string
+		want    string
+	}{
+		{name: "undecodable_block", badFile: `plugin "chaos_one" {
+  source = ["chaos"]
+}`, want: "plugin block 'plugin.chaos_one' failed to load"},
+		{name: "block_in_dropped_file", badFile: `plugin "chaos_one" {
+  source = "chaos"
+`, want: "plugin.chaos_one' was not found and may be in a config file that failed to load"},
+		{name: "unrelated_dropped_file", badFile: `connection "broken" {
+`, want: "plugin.chaos_one' was not found and may be in a config file that failed to load"},
+		{name: "no_file_dropped", badFile: `# nothing skipped`, want: "does not exist"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setInstallDir(t)
+			dir := t.TempDir()
+			writeConfigFile(t, dir, "bad.spc", tt.badFile)
+			writeConfigFile(t, dir, "good.spc", `connection "conn_instance" {
+  plugin = plugin.chaos_one
+}
+`)
+
+			config := NewSteampipeConfig("")
+			res := loadConfig(context.TODO(), dir, config, &loadConfigOptions{include: []string{"*.spc"}})
+
+			if err := res.GetError(); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			connErr := config.Connections["conn_instance"].Error
+			if connErr == nil || !strings.Contains(connErr.Error(), tt.want) {
+				t.Errorf("conn_instance error = %v, want it to contain %q", connErr, tt.want)
+			}
+		})
+	}
+}
+
+// From a skipped plugin block through the required state to the connection a refresh keeps:
+// the kept connection is in error and names the plugin block, and unrelated connections are left alone.
+func TestLoadConfig_ConnectionWithSkippedPluginBlockIsKeptInError(t *testing.T) {
+	setInstallDir(t)
+	dir := t.TempDir()
+	writeConfigFile(t, dir, "bad.spc", `plugin "chaos_one" {
+  source = ["chaos"]
+}`)
+	writeConfigFile(t, dir, "good.spc", connectionConfig("conn_alias")+`
+connection "conn_instance" {
+  plugin = plugin.chaos_one
+}
+`)
+	config := NewSteampipeConfig("")
+	res := loadConfig(context.TODO(), dir, config, &loadConfigOptions{include: []string{"*.spc"}})
+	if err := res.GetError(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	current := ConnectionStateMap{
+		"conn_instance": {ConnectionName: "conn_instance", State: constants.ConnectionStateReady, SchemaHash: "hash"},
+		"conn_alias":    {ConnectionName: "conn_alias", State: constants.ConnectionStateReady, SchemaHash: "hash"},
+	}
+	required, _, stateRes := GetRequiredConnectionStateMap(config.Connections, current)
+	if stateRes.Error != nil {
+		t.Fatalf("unexpected error: %v", stateRes.Error)
+	}
+
+	kept := takeConnectionsToKeep(config.ConnectionsWithSkippedPlugin, required, current)
+
+	state, ok := kept["conn_instance"]
+	if !ok {
+		t.Fatal("conn_instance should be kept")
+	}
+	if state.State != constants.ConnectionStateError || !strings.Contains(state.Error(), "plugin block 'plugin.chaos_one' failed to load") {
+		t.Errorf("kept state = %q with error %q, want error naming the plugin block", state.State, state.Error())
+	}
+	if _, ok := kept["conn_alias"]; ok {
+		t.Error("conn_alias does not use the skipped plugin block and must not be kept")
+	}
+	if _, ok := required["conn_alias"]; !ok {
+		t.Error("conn_alias must stay in the comparison")
+	}
+}

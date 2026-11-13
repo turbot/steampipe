@@ -2,11 +2,11 @@ package pluginmanager_service
 
 import (
 	"context"
+	"maps"
 
 	"github.com/turbot/pipe-fittings/v2/plugin"
 	"github.com/turbot/steampipe/v2/pkg/connection"
 	"github.com/turbot/steampipe/v2/pkg/db/db_local"
-	"golang.org/x/exp/maps"
 )
 
 func (m *PluginManager) handlePluginInstanceChanges(ctx context.Context, newPlugins connection.PluginMap) error {

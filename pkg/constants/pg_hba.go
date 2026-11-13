@@ -1,46 +1,32 @@
 package constants
 
-var MinimalPgHbaContent string = `
-hostssl all root samehost trust
-host all root samehost trust
+// PgHbaHeader starts every pg_hba.conf that Steampipe writes. A checksum line follows it.
+// Steampipe recognises a file that it wrote by the first line, and reads the checksum only
+// from a file that starts with every line of the header followed by the checksum prefix. Any
+// other file with that first line counts as edited, except a file with no rules and the exact
+// file that builds from develop wrote before the checksum existed. Changing any header line must keep accepting the
+// old header, or every file written with it counts as edited.
+const PgHbaHeader = `# Written by Steampipe each time the database starts. DO NOT EDIT.
+# Put your own rules in pg_hba.conf.d/<name>.conf. They come first, so they win.
+# To manage this file yourself, delete these header lines. Steampipe then does not change it,
+# until a Postgres major version upgrade starts a new data folder with Steampipe's file.
 `
 
-// PgHbaTemplate is to be formatted with two variables:
-//   - databaseName
-//   - username
-//
-// Example:
-//
-//	fmt.Sprintf(template, datName, username)
-var PgHbaTemplate string = `
-# PostgreSQL Client Authentication Configuration File
-# ===================================================
-#
-# STEAMPIPE
-#
-# The root user is assumed by steampipe to manage the database configuration.
-# Access is not granted to users of steampipe.
-#
-# The configuration is:
-# * Access is restricted to samehost
-# * Future - access via SSL only (remove host line)
-#
-hostssl all root samehost trust
-host    all root samehost trust
+// PgHbaChecksumPrefix starts the line after PgHbaHeader. The rest of the line is the hex
+// SHA-256 of every line after it, so Steampipe can tell that someone edited its file.
+const PgHbaChecksumPrefix = "# checksum: sha256:"
 
-# All user queries (steampipe query, steampipe service etc.) are run as the
-# steampipe user. The steampipe user is restricted in access to the steampipe
-# database, and further restricted by permissions to only read from steampipe
-# managed schemas. Write access is allowed to the public schema in the
-# steampipe database.
-#
-# The configuration is:
-# * Access from samehost does not require a password (trust)
-# * Access from any other host does require a password
-# * Future - access via SSL only (remove host line)
-#
-hostssl %[1]s %[2]s samehost trust
-host    %[1]s %[2]s samehost trust
-hostssl %[1]s %[2]s all scram-sha-256
-host    %[1]s %[2]s all scram-sha-256
+// PgHbaSteampipeRules are Steampipe's own rules. They are written after every rule
+// in pg_hba.conf.d.
+//
+// The database column is "all": at install, CONNECT is revoked from PUBLIC on the postgres
+// and template1 databases, so the steampipe user can reach only its own database. A database
+// that someone creates later is not covered by those grants.
+const PgHbaSteampipeRules = `local all root      trust
+host  all steampipe samehost trust
+host  all steampipe all      scram-sha-256
 `
+
+// PgHbaRootRule is the rule that Steampipe tells the user to add to a pg_hba.conf they manage,
+// so that Steampipe can connect as root through the unix socket.
+const PgHbaRootRule = "local all root trust"

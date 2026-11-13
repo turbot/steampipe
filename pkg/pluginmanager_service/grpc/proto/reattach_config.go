@@ -4,7 +4,7 @@ import (
 	"slices"
 
 	"github.com/hashicorp/go-plugin"
-	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v6/grpc/proto"
 )
 
 func NewReattachConfig(pluginName string, src *plugin.ReattachConfig, supportedOperations *SupportedOperations, connections []string) *ReattachConfig {

@@ -18,9 +18,9 @@ import (
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	perror_helpers "github.com/turbot/pipe-fittings/v2/error_helpers"
 	"github.com/turbot/pipe-fittings/v2/utils"
-	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
+	"github.com/turbot/steampipe-plugin-sdk/v6/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v6/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v6/sperr"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 	"github.com/turbot/steampipe/v2/pkg/db/db_common"
 	"github.com/turbot/steampipe/v2/pkg/db/db_local"
@@ -84,7 +84,7 @@ func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager,
 	nonSearchPathConnections := steampipeconfig.GlobalConfig.GetNonSearchPathConnections(searchPath)
 	// sort alphabetically
 	slices.Sort(nonSearchPathConnections)
-	connectionOrder := append(searchPath, nonSearchPathConnections...)
+	connectionOrder := slices.Concat(searchPath, nonSearchPathConnections)
 
 	res := &refreshConnectionState{
 		pool:                       pool,
@@ -485,7 +485,6 @@ func (s *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 		}
 	}
 	log.Printf("[INFO] executeUpdateQueries complete")
-	return
 }
 
 // convert map update sets (used for dynamic schemas) to an array of the underlying connection states
@@ -627,15 +626,13 @@ func (s *refreshConnectionState) executeUpdateForConnections(ctx context.Context
 		// - all other errors are written to the state table
 		if err := s.executeUpdateQuery(ctx, sql, connectionName); err != nil {
 			errChan <- &connectionError{connectionName, err}
-		} else {
+		} else if !haveExemplarSchema && connectionState.CanCloneSchema() {
 			// we can clone this plugin, add to exemplarSchemaMap
 			// (AFTER executing the update query)
-			if !haveExemplarSchema && connectionState.CanCloneSchema() {
-				// Fix #4757: Protect map write with mutex to prevent race condition
-				s.exemplarSchemaMapMut.Lock()
-				s.exemplarSchemaMap[connectionState.Plugin] = connectionName
-				s.exemplarSchemaMapMut.Unlock()
-			}
+			// Fix #4757: Protect map write with mutex to prevent race condition
+			s.exemplarSchemaMapMut.Lock()
+			s.exemplarSchemaMap[connectionState.Plugin] = connectionName
+			s.exemplarSchemaMapMut.Unlock()
 		}
 	}
 }
@@ -651,9 +648,9 @@ func (s *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql, co
 	}
 	defer func() {
 		if err != nil {
-			tx.Rollback(ctx)
+			_ = tx.Rollback(ctx)
 		} else {
-			tx.Commit(ctx)
+			_ = tx.Commit(ctx)
 		}
 	}()
 
@@ -698,14 +695,8 @@ func (s *refreshConnectionState) UpdateCommentsInParallel(ctx context.Context, u
 	sem := semaphore.NewWeighted(maxUpdateThreads)
 
 	go func() {
-		for {
-			select {
-			case connectionError := <-errChan:
-				if connectionError == nil {
-					return
-				}
-				errors = append(errors, connectionError.err)
-			}
+		for connectionError := range errChan {
+			errors = append(errors, connectionError.err)
 		}
 	}()
 
@@ -791,9 +782,9 @@ func (s *refreshConnectionState) executeCommentQuery(ctx context.Context, sql, c
 	}
 	defer func() {
 		if err != nil {
-			tx.Rollback(ctx)
+			_ = tx.Rollback(ctx)
 		} else {
-			tx.Commit(ctx)
+			_ = tx.Commit(ctx)
 		}
 	}()
 

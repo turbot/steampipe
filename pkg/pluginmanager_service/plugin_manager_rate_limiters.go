@@ -9,9 +9,9 @@ import (
 	"github.com/turbot/pipe-fittings/v2/error_helpers"
 	"github.com/turbot/pipe-fittings/v2/ociinstaller"
 	"github.com/turbot/pipe-fittings/v2/plugin"
-	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
-	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
+	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v6/grpc"
+	"github.com/turbot/steampipe-plugin-sdk/v6/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v6/sperr"
 	"github.com/turbot/steampipe/v2/pkg/connection"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 	"github.com/turbot/steampipe/v2/pkg/db/db_common"
@@ -149,6 +149,14 @@ func (m *PluginManager) setRateLimitersForPlugin(pluginShortName string) error {
 	runningPlugin, ok := m.runningPluginMap[imageRef]
 	if !ok {
 		log.Printf("[INFO] handleUserLimiterChanges: plugin %s is not currently running - ignoring", pluginShortName)
+		return nil
+	}
+	// if the plugin is still starting it may have no client or reattach config yet.
+	// initializePlugin may already have sent m.userLimiters, so mark the plugin and
+	// startPlugin sends the limiters again once it has started
+	if runningPlugin.isStarting() {
+		runningPlugin.limitersChangedWhileStarting = true
+		log.Printf("[DEBUG] handleUserLimiterChanges: plugin %s is still starting - rate limiters will be sent when it has started", pluginShortName)
 		return nil
 	}
 	if !runningPlugin.reattach.SupportedOperations.RateLimiters {

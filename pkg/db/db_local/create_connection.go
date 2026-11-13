@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/viper"
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	putils "github.com/turbot/pipe-fittings/v2/utils"
-	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
+	"github.com/turbot/steampipe-plugin-sdk/v6/sperr"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 	"github.com/turbot/steampipe/v2/pkg/constants/runtime"
 	"github.com/turbot/steampipe/v2/pkg/db/db_common"
@@ -52,27 +52,50 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 		opts.DatabaseName = "postgres"
 	}
 
-	psqlInfoMap := map[string]string{
-		"host":   putils.GetFirstListenAddress(info.ResolvedListenAddresses),
-		"port":   fmt.Sprintf("%d", info.Port),
-		"user":   opts.Username,
-		"dbname": opts.DatabaseName,
+	var psqlInfoMap map[string]string
+	if opts.Username == constants.DatabaseSuperUser {
+		// root connects through the unix socket in the data directory
+		if err := checkRootSocket(filepaths.GetDataLocation(), info.Port); err != nil {
+			return "", err
+		}
+		psqlInfoMap = rootConnectionParams(info.Port)
+		psqlInfoMap["dbname"] = opts.DatabaseName
+	} else {
+		psqlInfoMap = map[string]string{
+			"host":   putils.GetFirstListenAddress(info.ResolvedListenAddresses),
+			"port":   fmt.Sprintf("%d", info.Port),
+			"user":   opts.Username,
+			"dbname": opts.DatabaseName,
+		}
+		psqlInfoMap = putils.MergeMaps(psqlInfoMap, dsnSSLParams())
 	}
-	log.Println("[TRACE] SQLInfoMap >>>", psqlInfoMap)
-	psqlInfoMap = putils.MergeMaps(psqlInfoMap, dsnSSLParams())
 	log.Println("[TRACE] SQLInfoMap >>>", psqlInfoMap)
 
 	psqlInfo := []string{}
 	for k, v := range psqlInfoMap {
-		psqlInfo = append(psqlInfo, fmt.Sprintf("%s=%s", k, v))
+		psqlInfo = append(psqlInfo, fmt.Sprintf("%s=%s", k, quoteConnStringValue(v)))
 	}
 	log.Println("[TRACE] PSQLInfo >>>", psqlInfo)
 
 	return strings.Join(psqlInfo, " "), nil
 }
 
+// quoteConnStringValue quotes a value for a keyword/value connection string, so that
+// spaces, quotes and backslashes (in a path or the SSL passphrase) are kept as is
+func quoteConnStringValue(v string) string {
+	v = strings.ReplaceAll(v, `\`, `\\`)
+	v = strings.ReplaceAll(v, `'`, `\'`)
+	return `'` + v + `'`
+}
+
 type CreateDbOptions struct {
 	DatabaseName, Username string
+	// Password is set on the parsed connection, so that it stays out of the logged connection string
+	Password string
+}
+
+func isRootConnection(opts *CreateDbOptions) bool {
+	return opts != nil && opts.Username == constants.DatabaseSuperUser
 }
 
 // CreateLocalDbConnection connects and returns a connection to the given database using
@@ -94,15 +117,25 @@ func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.C
 		return nil, err
 	}
 
+	if isRootConnection(opts) {
+		setRootSocketHost(connConfig, filepaths.GetDataLocation())
+	}
+	if opts != nil && opts.Password != "" {
+		connConfig.Password = opts.Password
+	}
+
 	// set an app name so that we can track database connections from this Steampipe execution
 	// this is used to determine whether the database can safely be closed
 	// and also in pipes to allow accurate usage tracking (it excludes system calls)
 	connConfig.Config.RuntimeParams = map[string]string{
 		constants.RuntimeParamsKeyApplicationName: runtime.ServiceConnectionAppName,
 	}
-	err = db_common.AddRootCertToConfig(&connConfig.Config, filepaths.GetRootCertLocation())
-	if err != nil {
-		return nil, err
+	// the unix socket that root uses does not use SSL
+	if connConfig.User != constants.DatabaseSuperUser {
+		err = db_common.AddRootCertToConfig(&connConfig.Config, filepaths.GetRootCertLocation())
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	conn, err := pgx.ConnectConfig(ctx, connConfig)
@@ -132,13 +165,17 @@ func CreateConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnect
 		return nil, err
 	}
 
+	if isRootConnection(opts) {
+		setRootSocketHost(poolConfig.ConnConfig, filepaths.GetDataLocation())
+	}
+
 	const (
 		connMaxIdleTime = 1 * time.Minute
 		connMaxLifetime = 10 * time.Minute
 	)
 
 	poolConfig.MinConns = 0
-	poolConfig.MaxConns = int32(maxConnections)
+	poolConfig.MaxConns = int32(maxConnections) //nolint:gosec // G115: the sole caller (plugin_manager.go) passes a hardcoded literal (20), never user input
 	poolConfig.MaxConnLifetime = connMaxLifetime
 	poolConfig.MaxConnIdleTime = connMaxIdleTime
 
@@ -172,11 +209,22 @@ func CreateConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnect
 //
 // this is called immediately after the service process is started and hence
 // all special handling related to service startup failures SHOULD be handled here
-func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
+func createMaintenanceClient(ctx context.Context, dataDir string, port int) (*pgx.Conn, error) {
 	putils.LogTime("db_local.createMaintenanceClient start")
 	defer putils.LogTime("db_local.createMaintenanceClient end")
 
-	connStr := fmt.Sprintf("host=127.0.0.1 port=%d user=%s dbname=postgres sslmode=disable application_name=%s", port, constants.DatabaseSuperUser, runtime.ServiceConnectionAppName)
+	// the socket appears in the data directory when postgres starts listening
+	if err := waitForRootSocket(ctx, dataDir, port); err != nil {
+		return nil, sperr.Wrap(err, sperr.WithMessage("connection setup failed"))
+	}
+
+	connParams := rootConnectionParams(port)
+	connStr := fmt.Sprintf("port=%d user=%s dbname=postgres sslmode=%s application_name=%s", port, connParams["user"], connParams["sslmode"], runtime.ServiceConnectionAppName)
+	connConfig, err := pgx.ParseConfig(connStr)
+	if err != nil {
+		return nil, sperr.Wrap(err, sperr.WithMessage("connection setup failed"))
+	}
+	setRootSocketHost(connConfig, dataDir)
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(viper.GetInt(pconstants.ArgDatabaseStartTimeout))*time.Second)
 	defer cancel()
@@ -184,12 +232,17 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	statushooks.SetStatus(ctx, "Waiting for connection")
 	conn, err := db_common.WaitForConnection(
 		timeoutCtx,
-		connStr,
+		connConfig,
 		db_common.WithRetryInterval(constants.DBConnectionRetryBackoff),
 		db_common.WithTimeout(time.Duration(viper.GetInt(pconstants.ArgDatabaseStartTimeout))*time.Second),
 	)
 	if err != nil {
 		log.Println("[TRACE] could not connect to service")
+		// postgres refuses root through the socket: pg_hba.conf, or a rule in pg_hba.conf.d, stops it
+		if db_common.IsAuthFailure(err) {
+			log.Printf("[TRACE] root connection refused: %v", err)
+			return nil, rootRefusedError(dataDir)
+		}
 		return nil, sperr.Wrap(err, sperr.WithMessage("connection setup failed"))
 	}
 
@@ -198,7 +251,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 		timeoutCtx,
 		conn,
 		db_common.WithRetryInterval(constants.DBConnectionRetryBackoff),
-		db_common.WithTimeout(viper.GetDuration(pconstants.ArgDatabaseStartTimeout)*time.Second),
+		db_common.WithTimeout(time.Duration(viper.GetInt(pconstants.ArgDatabaseStartTimeout))*time.Second),
 	)
 	if err != nil {
 		conn.Close(ctx)

@@ -13,8 +13,8 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/pipe-fittings/v2/modconfig"
 	"github.com/turbot/pipe-fittings/v2/utils"
-	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v6/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v6/plugin"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 	"github.com/turbot/steampipe/v2/pkg/db/db_common"
 	pluginshared "github.com/turbot/steampipe/v2/pkg/pluginmanager_service/grpc/shared"
@@ -95,6 +95,9 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 		return nil, NewErrorRefreshConnectionResult(connectionStateResult.Error)
 	}
 	log.Printf("[INFO] built required connection state")
+
+	// the comparison below must neither update nor delete these, so it never sees them
+	keptConnections := takeConnectionsToKeep(GlobalConfig.ConnectionsWithSkippedPlugin, requiredConnectionStateMap, currentConnectionStateMap)
 
 	// build lookup of disabled connections
 	disabled := make(map[string]struct{})
@@ -193,7 +196,8 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 	for _, name := range foreignSchemaNames {
 		_, existsInCurrentState := currentConnectionStateMap[name]
 		_, existsInRequiredState := requiredConnectionStateMap[name]
-		if !existsInCurrentState && !existsInRequiredState {
+		_, kept := keptConnections[name]
+		if !existsInCurrentState && !existsInRequiredState && !kept {
 			log.Printf("[TRACE] connection %s exists in db foreign schemas state but not current or required state - marking for deletion\n", name)
 			updates.Delete[name] = struct{}{}
 		}
@@ -229,10 +233,46 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 	// for all updates/deletes, if there are any aggregators of the same plugin type, update those as well
 	updates.populateAggregators()
 
+	for name, state := range keptConnections {
+		updates.FinalConnectionState[name] = state
+		updates.CurrentConnectionState[name] = state
+	}
+
 	// before we return, merge in connection state warnings
 	res.AddWarning(connectionStateResult.Warnings...)
 
 	return updates, res
+}
+
+// takeConnectionsToKeep removes the named connections that may have a schema from both state maps
+// and returns their state: startup sets ready connections to pending, and without an update
+// nothing else would move them on. A connection that cannot be resolved is kept in error,
+// with the reason it is in error, as the plugin manager has no config for it. Startup sets
+// that error state to pending-incomplete, so those states may hold a schema too.
+func takeConnectionsToKeep(names map[string]struct{}, required, current ConnectionStateMap) ConnectionStateMap {
+	kept := make(ConnectionStateMap)
+	for name := range names {
+		state, ok := current[name]
+		if !ok {
+			continue
+		}
+		requiredState := required[name]
+		inError := requiredState != nil && requiredState.State == constants.ConnectionStateError
+		mayHaveSchema := state.State == constants.ConnectionStateReady || state.State == constants.ConnectionStatePending ||
+			(inError && (state.State == constants.ConnectionStateError || state.State == constants.ConnectionStatePendingIncomplete))
+		if !mayHaveSchema {
+			continue
+		}
+		if inError {
+			state.SetError(requiredState.Error())
+		} else {
+			state.State = constants.ConnectionStateReady
+		}
+		kept[name] = state
+		delete(required, name)
+		delete(current, name)
+	}
+	return kept
 }
 
 type connectionRequiresUpdateResult struct {
