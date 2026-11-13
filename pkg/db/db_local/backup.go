@@ -132,6 +132,13 @@ func moveDataFromSameMajorInstall(ctx context.Context, oldLocation, newDataLocat
 		if err == nil {
 			return
 		}
+		// the message says what to do, and the user can do it before the next run
+		var hbaStop *pgHbaStopError
+		if errors.As(err, &hbaStop) {
+			err = abortInstallRemovingNewInstall(hbaStop, "pg_hba.conf is fixed")
+			return
+		}
+
 		newLocation := filepaths.DatabaseInstanceDir()
 		err = fmt.Errorf("could not move the database from %s to %s: %w", oldLocation, newLocation, err)
 
@@ -416,10 +423,9 @@ func replaceFile(path string, content []byte, mode os.FileMode) error {
 }
 
 // startDatabaseInLocation starts up the postgres binary in a specific installation directory
-// returns a pgRunningInfo instance. The rewritten pg_hba.conf stays in place while the server runs: the caller
-// calls restoreHba on the result when the old data directory stays where it is, and pg_hba.conf is already
-// restored if this returns an error. The pg_hba.conf.d folder that writing it creates is left, as an older version
-// does not read it.
+// returns a pgRunningInfo instance. The old pg_hba.conf is rewritten only when it is Steampipe's, and stays
+// rewritten while the server runs: the caller calls restoreHba on the result when the old data directory stays
+// where it is, and pg_hba.conf is already restored if this returns an error.
 func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningInfo, error) {
 	binaryLocation := filepath.Join(location, "postgres", "bin", "postgres")
 	dataLocation := filepath.Join(location, "data")
@@ -452,8 +458,9 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 			restoreHba()
 		}
 	}()
-	// whatever an older Steampipe left in the old data directory, the backup must connect as root
-	if err := writePgHbaConf(dataLocation); err != nil {
+	// the old data directory gets the same check as a start: Steampipe's file or an older default is
+	// written, the user's file is kept, and an edited file stops the backup before postgres starts
+	if err := preparePgHbaConf(dataLocation); err != nil {
 		return nil, err
 	}
 	socketArgs, err := postgresSocketArgs(dataLocation, port)

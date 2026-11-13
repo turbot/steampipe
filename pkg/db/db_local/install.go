@@ -180,13 +180,17 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 }
 
 // abortInstallAfterBackupError returns the error that stops the install when the backup failed in a way that
-// carrying on would hide, and nil for any other backup error.
+// carrying on would hide, and nil for any other backup error. The user can fix each of these errors, and the
+// backup must run again at the next start.
 func abortInstallAfterBackupError(err error) error {
-	if errors.Is(err, errDbInstanceRunning) {
+	var hbaStop *pgHbaStopError
+	switch {
+	case errors.Is(err, errDbInstanceRunning):
 		return abortInstallRemovingNewInstall(err, "the old server is stopped")
-	}
-	if errors.Is(err, errSocketPathTooLong) {
+	case errors.Is(err, errSocketPathTooLong):
 		return abortInstallRemovingNewInstall(err, "the install directory is moved")
+	case errors.As(err, &hbaStop):
+		return abortInstallRemovingNewInstall(err, "pg_hba.conf is fixed")
 	}
 	return nil
 }
@@ -524,7 +528,7 @@ func resolveDatabaseName(oldDbName *string) string {
 }
 
 func startServiceForInstall(port int) (*psutils.Process, error) {
-	if err := writePgHbaConf(filepaths.GetDataLocation()); err != nil {
+	if err := preparePgHbaConf(filepaths.GetDataLocation()); err != nil {
 		return nil, err
 	}
 	socketArgs, err := postgresSocketArgs(filepaths.GetDataLocation(), port)
@@ -613,9 +617,9 @@ func initDatabase() error {
 		return err
 	}
 
-	// initdb's pg_hba.conf trusts every local connection. Remove it, so that the first start
-	// writes Steampipe's file and does not keep initdb's as the user's rules.
-	return os.Remove(filepaths.GetPgHbaConfLocation())
+	// initdb's pg_hba.conf trusts every local connection, and would count as the user's own file.
+	// Write Steampipe's over it at once, so that pg_hba.conf is never missing.
+	return writeSteampipePgHba(filepaths.GetDataLocation())
 }
 
 func installDatabaseWithPermissions(ctx context.Context, databaseName string, rawClient *pgx.Conn) error {

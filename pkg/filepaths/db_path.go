@@ -114,10 +114,6 @@ func GetPostmasterPidLocation() string {
 	return filepath.Join(GetDataLocation(), "postmaster.pid")
 }
 
-func GetPgHbaConfLocation() string {
-	return filepath.Join(GetDataLocation(), "pg_hba.conf")
-}
-
 // GetSetupUnfinishedMarkerLocation is a file that exists from just before the data folder is initialised until
 // its setup finishes; a start that finds no database in the data folder removes it. It sits beside the data folder
 // because initdb needs that folder empty.

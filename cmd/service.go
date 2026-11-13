@@ -330,6 +330,13 @@ func restartService(ctx context.Context) (_ *db_local.StartResult) {
 		return
 	}
 
+	// find out before the running service stops whether pg_hba.conf would stop the start
+	if err := db_local.CheckPgHbaConf(ctx); err != nil {
+		exitCode = constants.ExitCodeServiceStartupFailure
+		error_helpers.ShowError(ctx, err)
+		return
+	}
+
 	// stop db
 	stopStatus, err := db_local.StopServices(ctx, viper.GetBool(pconstants.ArgForce), constants.InvokerService)
 	if err != nil {

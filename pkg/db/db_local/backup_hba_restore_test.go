@@ -3,6 +3,7 @@ package db_local
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -15,8 +16,9 @@ import (
 	"github.com/turbot/steampipe/v2/pkg/filepaths"
 )
 
-// the rules an older Steampipe wrote: root connects over TCP, which the upgrade's rules do not allow
-const olderSteampipeHba = "# written by an older Steampipe\nhost all root samehost trust\n"
+// the root-only file an older Steampipe wrote: root connects over TCP, which the upgrade's rules do not
+// allow, and which the upgrade replaces
+const olderSteampipeHba = "hostssl all root samehost trust\nhost all root samehost trust\n"
 
 func TestStartDatabaseInLocation_StartFailureRestoresOldPgHba(t *testing.T) {
 	installDir := shortTempDir(t)
@@ -91,6 +93,41 @@ func TestMoveDataFromSameMajorInstall_FailureRestoresOldPgHba(t *testing.T) {
 	}
 	if string(got) != olderSteampipeHba {
 		t.Errorf("the old pg_hba.conf must be restored exactly, got:\n%s", got)
+	}
+}
+
+func TestMoveDataFromSameMajorInstall_EditedPgHbaMessageIsShownAsItIs(t *testing.T) {
+	original := app_specific.InstallDir
+	defer func() { app_specific.InstallDir = original }()
+	app_specific.InstallDir = filepath.Join(shortTempDir(t), ".steampipe")
+
+	oldLocation := filepath.Join(app_specific.InstallDir, "db", "14.19.0")
+	writeFakeInstall(t, oldLocation)
+	oldDataDir := filepath.Join(oldLocation, "data")
+	steampipeFileWith(t, oldDataDir, nil)
+	edited := readHba(t, oldDataDir) + "host all bob all md5\n"
+	writeFile(t, filepath.Join(oldDataDir, pgHbaFileName), edited)
+	newBinaries := filepath.Join(filepaths.DatabaseInstanceDir(), "postgres")
+	if err := os.MkdirAll(newBinaries, 0700); err != nil {
+		t.Fatal(err)
+	}
+
+	err := moveDataFromSameMajorInstall(context.Background(), oldLocation, filepaths.GetDataLocation())
+	var stop *pgHbaStopError
+	if !errors.As(err, &stop) {
+		t.Fatalf("want a pgHbaStopError, got %v", err)
+	}
+	if !strings.HasPrefix(err.Error(), stop.message) {
+		t.Errorf("the message must start with the instructions, not a wrapper:\n%s", err)
+	}
+	if strings.Contains(err.Error(), "could not move the database") || strings.Contains(err.Error(), "could not start") {
+		t.Errorf("the message must not be wrapped:\n%s", err)
+	}
+	if _, statErr := os.Stat(newBinaries); !os.IsNotExist(statErr) {
+		t.Errorf("the new binaries must be removed so the next run retries the move, stat err: %v", statErr)
+	}
+	if got := readHba(t, oldDataDir); got != edited {
+		t.Errorf("the edited file changed:\n%s", got)
 	}
 }
 
@@ -177,7 +214,7 @@ func TestSavePgHbaConf_RestoreKeepsALink(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := writePgHbaConf(dir); err != nil {
+	if err := writeSteampipePgHba(dir); err != nil {
 		t.Fatal(err)
 	}
 	restore()
@@ -218,7 +255,7 @@ func TestSavePgHbaConf_RestoreThroughALinkIntoAFolderThatCannotBeWritten(t *test
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := writePgHbaConf(dir); err != nil {
+	if err := writeSteampipePgHba(dir); err != nil {
 		t.Fatal(err)
 	}
 	restore()
@@ -244,7 +281,7 @@ func TestSavePgHbaConf_RestoreKeepsALinkToAMissingFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := writePgHbaConf(dir); err != nil {
+	if err := writeSteampipePgHba(dir); err != nil {
 		t.Fatal(err)
 	}
 	restore()
@@ -273,7 +310,7 @@ func TestSavePgHbaConf_RestoreKeepsAChainOfLinksToAMissingFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := writePgHbaConf(dir); err != nil {
+	if err := writeSteampipePgHba(dir); err != nil {
 		t.Fatal(err)
 	}
 	restore()
@@ -440,6 +477,42 @@ func TestAbortInstallAfterBackupError_SocketPathTooLongKeepsNewDataThatHoldsData
 	}
 	if _, statErr := os.Stat(filepath.Join(newDataLocation, "PG_VERSION")); statErr != nil {
 		t.Errorf("new data should have been kept: %v", statErr)
+	}
+}
+
+func TestAbortInstallAfterBackupError_PgHbaStopErrorStopsTheInstall(t *testing.T) {
+	original := app_specific.InstallDir
+	defer func() { app_specific.InstallDir = original }()
+	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
+
+	newLocation := filepaths.DatabaseInstanceDir()
+	_ = filepaths.GetDatabaseLocation()
+	_ = filepaths.GetDataLocation()
+
+	backupErr := fmt.Errorf("start: %w", &pgHbaStopError{message: "fix pg_hba.conf"})
+	err := abortInstallAfterBackupError(backupErr)
+	var stop *pgHbaStopError
+	if !errors.As(err, &stop) {
+		t.Fatalf("the install must stop with the pg_hba.conf error: %v", err)
+	}
+	if _, statErr := os.Stat(newLocation); !os.IsNotExist(statErr) {
+		t.Errorf("new installation should have been removed so the next run installs again, stat err: %v", statErr)
+	}
+}
+
+func TestAbortInstallAfterBackupError_PgHbaStopErrorKeepsNewDataThatHoldsData(t *testing.T) {
+	original := app_specific.InstallDir
+	defer func() { app_specific.InstallDir = original }()
+	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
+
+	newDataLocation := filepaths.GetDataLocation()
+	if err := os.WriteFile(filepath.Join(newDataLocation, "PG_VERSION"), []byte("14\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	err := abortInstallAfterBackupError(&pgHbaStopError{message: "fix pg_hba.conf"})
+	if err == nil || !strings.Contains(err.Error(), newDataLocation+" holds data and was kept") {
+		t.Errorf("the error must say the new data folder was kept: %v", err)
 	}
 }
 

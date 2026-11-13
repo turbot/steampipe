@@ -238,6 +238,11 @@ func createMaintenanceClient(ctx context.Context, dataDir string, port int) (*pg
 	)
 	if err != nil {
 		log.Println("[TRACE] could not connect to service")
+		// postgres refuses root through the socket: pg_hba.conf, or a rule in pg_hba.conf.d, stops it
+		if db_common.IsAuthFailure(err) {
+			log.Printf("[TRACE] root connection refused: %v", err)
+			return nil, rootRefusedError(dataDir)
+		}
 		return nil, sperr.Wrap(err, sperr.WithMessage("connection setup failed"))
 	}
 

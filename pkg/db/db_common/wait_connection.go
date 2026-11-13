@@ -61,6 +61,10 @@ func WaitForConnection(ctx context.Context, connConfig *pgx.ConnConfig, options 
 		dbConnection, err := pgx.ConnectConfig(rCtx, connConfig)
 		if err != nil {
 			log.Println("[TRACE] could not connect:", err)
+			// a refused login, or a role that does not exist, does not change while postgres starts
+			if IsAuthFailure(err) || IsMissingRole(err) {
+				return err
+			}
 			return retry.RetryableError(err)
 		}
 		log.Println("[TRACE] connected to database")
