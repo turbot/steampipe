@@ -1,3 +1,29 @@
+## v2.5.0 [2026-11-13]
+_Whats new_
+- Update the embedded PostgreSQL to `14.24.0`. A same-major upgrade now keeps your existing data folder, and the upgrade carries over the newest older database. ([#4961](https://github.com/turbot/steampipe/issues/4961), [#5103](https://github.com/turbot/steampipe/issues/5103))
+- The PostgreSQL unix socket now lives in the data directory instead of `/tmp`. If the resulting path is too long, Steampipe stops with a message saying how to shorten it before it touches your existing data. ([#5118](https://github.com/turbot/steampipe/issues/5118))
+- `pg_hba.conf` is now written before every start, with rules from `pg_hba.conf.d` placed first. Steampipe never rewrites a `pg_hba.conf` it did not write, and tells you what to do when it stops because of one. ([#5100](https://github.com/turbot/steampipe/issues/5100), [#5119](https://github.com/turbot/steampipe/issues/5119))
+- Only the OS user who runs Steampipe can connect as `root`, and only through the unix socket. ([#5101](https://github.com/turbot/steampipe/issues/5101))
+- Update `steampipe-plugin-sdk` to v6 and the embedded `steampipe-postgres-fdw` to `v2.3.0`.
+
+_Bug fixes_
+- A bad connection or a bad config file no longer stops all other connections from syncing. ([#5039](https://github.com/turbot/steampipe/issues/5039))
+- A connection whose plugin failed to load is now reported as `error` instead of `ready`.
+- Fix a plugin manager panic, and a lost update, when a connection config changes while a plugin is starting.
+- Use each plugin's `memory_max_mb` even when `GOMEMLIMIT` is set in the environment. ([#5095](https://github.com/turbot/steampipe/issues/5095))
+- Rebuild `steampipe_plugin_column` only when it is missing or wrong. ([#5089](https://github.com/turbot/steampipe/issues/5089))
+- Fix `steampipe service status --all` panicking on a process that has exited. ([#5133](https://github.com/turbot/steampipe/issues/5133))
+- Find a database process that has only just started when forcing a stop, and skip unreadable processes when scanning for Steampipe instances. ([#5061](https://github.com/turbot/steampipe/issues/5061), [#5116](https://github.com/turbot/steampipe/issues/5116))
+- Make installation state writes atomic. ([#5038](https://github.com/turbot/steampipe/issues/5038))
+- Reinstalling the current version's programs keeps its database, and a leftover backup is kept out of the kept database. ([#5120](https://github.com/turbot/steampipe/issues/5120), [#5136](https://github.com/turbot/steampipe/issues/5136))
+- Stop with a clear message on an unfinished or other-major data folder, and keep non-empty new data when a major upgrade finds a running server. ([#5137](https://github.com/turbot/steampipe/issues/5137), [#5112](https://github.com/turbot/steampipe/issues/5112))
+- Remove old database folders that hold no database after an upgrade. ([#5117](https://github.com/turbot/steampipe/issues/5117))
+- Print absolute export paths as-is in the export status message.
+- Make an install directory containing a comma or a double quote work.
+
+_Dependencies_
+- Bump `google.golang.org/grpc`, `golang.org/x/crypto`, `golang.org/x/net`, `github.com/containerd/containerd`, `github.com/jackc/pgx/v5` and the OpenTelemetry modules to their latest releases.
+
 ## v2.4.9 [2026-10-29]
 _Dependencies_
 - Bump `github.com/klauspost/compress` from v1.18.5 to v1.18.7 to remediate CVE-2026-63209.
