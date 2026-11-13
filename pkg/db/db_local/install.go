@@ -141,8 +141,8 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		dbName, err = backupOldDb(ctx)
 		if err != nil {
 			log.Printf("[ERROR] prepareBackup failed: %s", err.Error())
-			if errors.Is(err, errDbInstanceRunning) {
-				return abortInstallAfterRunningInstance(err)
+			if abortErr := abortInstallAfterBackupError(err); abortErr != nil {
+				return abortErr
 			}
 			// ignore all other errors with the backup, displaying a warning instead
 			statushooks.Message(ctx, noBackupWarning())
@@ -179,12 +179,25 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	return nil
 }
 
-// abortInstallAfterRunningInstance removes the new binaries - otherwise, the backup won't get triggered, even if
-// the user stops the service. A new data folder that holds data is kept, and the returned error says so.
-func abortInstallAfterRunningInstance(err error) error {
+// abortInstallAfterBackupError returns the error that stops the install when the backup failed in a way that
+// carrying on would hide, and nil for any other backup error.
+func abortInstallAfterBackupError(err error) error {
+	if errors.Is(err, errDbInstanceRunning) {
+		return abortInstallRemovingNewInstall(err, "the old server is stopped")
+	}
+	if errors.Is(err, errSocketPathTooLong) {
+		return abortInstallRemovingNewInstall(err, "the install directory is moved")
+	}
+	return nil
+}
+
+// abortInstallRemovingNewInstall removes the new binaries - otherwise, the install would not retry the upgrade
+// on the next run, even once the user has fixed the problem. A new data folder that holds data is kept, and the
+// returned error says so; fixed completes the sentence "Once ..." that says what the user does first.
+func abortInstallRemovingNewInstall(err error, fixed string) error {
 	newDataLocation := filepaths.GetDataLocation()
 	if removeNewInstall(filepaths.DatabaseInstanceDir(), newDataLocation) {
-		return fmt.Errorf("%w\n\n%s holds data and was kept. Once the old server is stopped, the next run upgrades the old database. If %s holds a database, it asks you to move it somewhere else first", err, newDataLocation, newDataLocation)
+		return fmt.Errorf("%w\n\n%s holds data and was kept. Once %s, the next run upgrades the old database. If %s holds a database, it asks you to move it somewhere else first", err, newDataLocation, fixed, newDataLocation)
 	}
 	return err
 }
@@ -414,6 +427,12 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	putils.LogTime("db_local.runInstall start")
 	defer putils.LogTime("db_local.runInstall end")
 
+	// before initdb, which marks the database as installed. The free port is taken later, just before the server
+	// starts, so the longest port stands in for it.
+	if err := checkSocketPathLength(filepaths.GetDataLocation(), 65535); err != nil {
+		return err
+	}
+
 	statushooks.SetStatus(ctx, "Cleaning up…")
 
 	err := prepareDataLocation(filepaths.GetDataLocation())
@@ -438,7 +457,6 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 		log.Printf("[TRACE] getNextFreePort failed: %v", err)
 		return fmt.Errorf("Starting database... FAILED!")
 	}
-
 	process, err := startServiceForInstall(port)
 	if err != nil {
 		log.Printf("[TRACE] startServiceForInstall failed: %v", err)
@@ -446,7 +464,7 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	}
 
 	statushooks.SetStatus(ctx, "Connection to database…")
-	client, err := createMaintenanceClient(ctx, port)
+	client, err := createMaintenanceClient(ctx, filepaths.GetDataLocation(), port)
 	if err != nil {
 		log.Printf("[TRACE] createMaintenanceClient failed: %v", err)
 		return fmt.Errorf("Connection to database... FAILED!")
@@ -509,6 +527,10 @@ func startServiceForInstall(port int) (*psutils.Process, error) {
 	if err := writePgHbaConf(filepaths.GetDataLocation()); err != nil {
 		return nil, err
 	}
+	socketArgs, err := postgresSocketArgs(filepaths.GetDataLocation(), port)
+	if err != nil {
+		return nil, err
+	}
 
 	postgresCmd := exec.Command( //nolint:gosec // G204: filepaths.GetPostgresBinaryExecutablePath() is steampipe's own installed postgres binary path, not user input
 		filepaths.GetPostgresBinaryExecutablePath(),
@@ -526,11 +548,11 @@ func startServiceForInstall(port int) (*psutils.Process, error) {
 
 		// Data Directory
 		"-D", filepaths.GetDataLocation())
-	postgresCmd.Args = append(postgresCmd.Args, postgresSocketArgs()...)
+	postgresCmd.Args = append(postgresCmd.Args, socketArgs...)
 
 	setupLogCollection(postgresCmd)
 
-	err := postgresCmd.Start()
+	err = postgresCmd.Start()
 	if err != nil {
 		return nil, err
 	}
@@ -652,8 +674,6 @@ func installDatabaseWithPermissions(ctx context.Context, databaseName string, ra
 		fmt.Sprintf("grant %s to %s", constants.DatabaseUsersRole, constants.DatabaseUser),
 	}
 	for _, statement := range statements {
-		// not logging here, since the password may get logged
-		// we don't want that
 		if _, err := rawClient.Exec(ctx, statement); err != nil {
 			return err
 		}

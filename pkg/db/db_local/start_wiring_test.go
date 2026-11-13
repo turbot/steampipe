@@ -46,7 +46,7 @@ exec sleep 60
 }
 
 // assertRecordedStart waits for the stand-in postgres to have started, then checks what it recorded
-func assertRecordedStart(t *testing.T, recordDir string) {
+func assertRecordedStart(t *testing.T, recordDir, dataDir string) {
 	t.Helper()
 	deadline := time.Now().Add(10 * time.Second)
 	for {
@@ -73,7 +73,7 @@ func assertRecordedStart(t *testing.T, recordDir string) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, setting := range []string{"unix_socket_directories=/tmp", "unix_socket_permissions=0700"} {
+		for _, setting := range []string{`unix_socket_directories="` + dataDir + `"`, "unix_socket_permissions=0700"} {
 			if !strings.Contains(string(args), setting) {
 				t.Errorf("postgres was started without %s:\n%s", setting, args)
 			}
@@ -95,7 +95,7 @@ func TestStartPostgresProcess_WritesPgHbaAndSetsSocket(t *testing.T) {
 		_ = cmd.Wait()
 	})
 
-	assertRecordedStart(t, recordDir)
+	assertRecordedStart(t, recordDir, filepaths.GetDataLocation())
 }
 
 func TestStartServiceForInstall_WritesPgHbaAndSetsSocket(t *testing.T) {
@@ -109,7 +109,7 @@ func TestStartServiceForInstall_WritesPgHbaAndSetsSocket(t *testing.T) {
 	}
 	t.Cleanup(func() { killAndReap(int(process.Pid)) })
 
-	assertRecordedStart(t, recordDir)
+	assertRecordedStart(t, recordDir, filepaths.GetDataLocation())
 }
 
 func TestStartDatabaseInLocation_WritesPgHbaAndSetsSocket(t *testing.T) {
@@ -139,7 +139,7 @@ func TestStartDatabaseInLocation_WritesPgHbaAndSetsSocket(t *testing.T) {
 		}
 	})
 
-	assertRecordedStart(t, recordDir)
+	assertRecordedStart(t, recordDir, filepath.Join(location, "data"))
 }
 
 // A pg_hba.conf that cannot be written must stop postgres from being started at all. Writing it after the start

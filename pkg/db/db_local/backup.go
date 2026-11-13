@@ -2,6 +2,7 @@ package db_local
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -16,8 +17,10 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/shirou/gopsutil/process"
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	putils "github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 	"github.com/turbot/steampipe/v2/pkg/error_helpers"
@@ -38,9 +41,12 @@ const (
 // backup archive, or to shut down cleanly before moving its data folder, and the name of
 // the installed database
 type pgRunningInfo struct {
-	cmd    *exec.Cmd
-	port   int
-	dbName string
+	cmd     *exec.Cmd
+	dataDir string
+	port    int
+	dbName  string
+	// restoreHba puts back the pg_hba.conf the data directory had before the server was started
+	restoreHba func()
 }
 
 // stop is used for shutting down a postgres instance started in an old install location,
@@ -89,6 +95,8 @@ func prepareBackup(ctx context.Context) (*string, error) {
 		log.Printf("[TRACE] Error while starting old db in %s: %v", location, err)
 		return nil, err
 	}
+	// the old data directory stays until the restore completes, and the version that wrote it must still connect
+	defer runConfig.restoreHba()
 	//nolint:golint,errcheck // this will probably never error - if it does, it's not something we can recover from with code
 	defer runConfig.stop(ctx)
 
@@ -116,7 +124,8 @@ func isSameMajorVersion(oldVersion, targetVersion string) bool {
 // new installation's binaries are removed, so the next run installs them again and retries the move. The new data
 // folder is removed only when it is empty: one that holds data is kept, and the error tells the user how to recover.
 // If the old server cannot be used, the error carries the cause and, unless both data folders were kept, says how to
-// look into it and how to move the old installation aside; it never moves or deletes the old installation itself.
+// look into it and how to move the old installation aside; it never moves or deletes the old installation itself. A
+// socket path that is too long is not the old server's fault, so it gets no advice about the old installation.
 func moveDataFromSameMajorInstall(ctx context.Context, oldLocation, newDataLocation string) (err error) {
 	var oldInstallHint string
 	defer func() {
@@ -159,6 +168,10 @@ Then run Steampipe again`,
 	// recovers on the binaries that wrote it. If the stop escalates to an immediate shutdown, the new server
 	// of the same major replays what is left.
 	runConfig, err := startDatabaseInLocation(ctx, oldLocation)
+	if errors.Is(err, errSocketPathTooLong) {
+		// the old server never ran, and the error already says what to do
+		return err
+	}
 	if err != nil {
 		// every run stops here until the user acts, so say what they can do without losing data. The command
 		// uses a free port and no unix socket, so a PostgreSQL already holding 5432 or the default socket folder
@@ -179,10 +192,15 @@ Moving it keeps your data: the folder is not deleted`,
 		return fmt.Errorf("could not use the database in %s: %w", oldLocation, err)
 	}
 	if err := runConfig.stop(ctx); err != nil {
+		runConfig.restoreHba()
 		return fmt.Errorf("could not stop the database in %s: %w", oldLocation, err)
 	}
 
-	return moveDataFolder(oldLocation, newDataLocation)
+	if err := moveDataFolder(oldLocation, newDataLocation); err != nil {
+		runConfig.restoreHba()
+		return err
+	}
+	return nil
 }
 
 // removeNewInstall removes the new installation's binaries, and its data folder and install folder when the data
@@ -252,22 +270,12 @@ func killRunningDbInstance(ctx context.Context) error {
 
 // backup the old pg instance public schema using pg_dump
 func takeBackup(ctx context.Context, config *pgRunningInfo) error {
-	if err := checkSocketOwner(rootSocketPath(config.port)); err != nil {
+	socketDir, cleanup, err := libpqSocketDir(config.dataDir, config.port)
+	if err != nil {
 		return err
 	}
-	cmd := pgDumpCmd(
-		ctx,
-		fmt.Sprintf("--file=%s", filepaths.DatabaseBackupFilePath()),
-		fmt.Sprintf("--format=%s", backupFormat),
-		// of the public schema only
-		"--schema=public",
-		// only backup the database used by steampipe
-		fmt.Sprintf("--dbname=%s", config.dbName),
-		// connection parameters
-		fmt.Sprintf("--host=%s", constants.PostgresSocketDir),
-		fmt.Sprintf("--port=%d", config.port),
-		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
-	)
+	defer cleanup()
+	cmd := backupCmd(ctx, config, socketDir)
 	log.Println("[TRACE] starting pg_dump command:", cmd.String())
 
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -278,8 +286,140 @@ func takeBackup(ctx context.Context, config *pgRunningInfo) error {
 	return nil
 }
 
+// backupCmd is the pg_dump command that takes the backup. It connects as root through the socket
+// in the old installation's data directory.
+func backupCmd(ctx context.Context, config *pgRunningInfo, socketDir string) *exec.Cmd {
+	return pgDumpCmd(
+		ctx,
+		fmt.Sprintf("--file=%s", filepaths.DatabaseBackupFilePath()),
+		fmt.Sprintf("--format=%s", backupFormat),
+		// of the public schema only
+		"--schema=public",
+		// only backup the database used by steampipe
+		fmt.Sprintf("--dbname=%s", config.dbName),
+		// connection parameters
+		fmt.Sprintf("--host=%s", socketDir),
+		fmt.Sprintf("--port=%d", config.port),
+		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
+	)
+}
+
+// savePgHbaConf returns a function that puts the data directory's pg_hba.conf back exactly as it is now,
+// or removes it if there is none, and does not touch a file that is still as it was. The versions of Steampipe that wrote the data directory connect over TCP
+// as root, which the rules written for the upgrade do not allow.
+func savePgHbaConf(dataDir string) (restore func(), err error) {
+	path, isLink, err := pgHbaConfTarget(dataDir)
+	if err != nil {
+		return nil, err
+	}
+	content, readErr := os.ReadFile(path)
+	existed := readErr == nil
+	if readErr != nil && !errors.Is(readErr, fs.ErrNotExist) {
+		return nil, readErr
+	}
+	mode := os.FileMode(0600)
+	if existed {
+		info, statErr := os.Stat(path)
+		if statErr != nil {
+			return nil, statErr
+		}
+		mode = info.Mode().Perm()
+	}
+	return func() {
+		var restoreErr error
+		if existed {
+			// a file that is unchanged is left alone
+			if current, err := os.ReadFile(path); err != nil || !bytes.Equal(current, content) {
+				if isLink {
+					// written in place, as the upgrade wrote it: the link's folder may not let a file be made there
+					restoreErr = os.WriteFile(path, content, mode) //nolint:gosec // G703: the file the data directory's own pg_hba.conf links to, which the upgrade has just written through
+
+				} else {
+					restoreErr = replaceFile(path, content, mode)
+				}
+			}
+		} else if restoreErr = os.Remove(path); errors.Is(restoreErr, fs.ErrNotExist) {
+			restoreErr = nil
+		}
+		if restoreErr != nil {
+			log.Printf("[WARN] Could not restore %s: %s", path, restoreErr)
+		}
+	}, nil
+}
+
+// pgHbaConfTarget is the file the data directory's pg_hba.conf is, or the file it links to, which the upgrade
+// writes through the link whether or not it exists. A link stays a link.
+func pgHbaConfTarget(dataDir string) (path string, isLink bool, err error) {
+	path = filepath.Join(dataDir, pgHbaFileName)
+	info, err := os.Lstat(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return path, false, nil
+	}
+	if err != nil {
+		return "", false, err
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		return path, false, nil
+	}
+	if target, err := filepath.EvalSymlinks(path); err == nil {
+		return target, true, nil
+	}
+	// links that end at a missing file: follow them to it. Links that loop never end.
+	for hops := 0; ; hops++ {
+		if hops == 255 {
+			return "", false, fmt.Errorf("%s: too many links", filepath.Join(dataDir, pgHbaFileName))
+		}
+		target, err := os.Readlink(path)
+		if err != nil {
+			return "", false, err
+		}
+		if !filepath.IsAbs(target) {
+			// resolve the folder first: Join would cancel a ".." against a linked folder's name, where the OS
+			// goes up from the folder it links to
+			dir, err := filepath.EvalSymlinks(filepath.Dir(path))
+			if err != nil {
+				return "", false, err
+			}
+			target = filepath.Join(dir, target)
+		}
+		path = target
+		info, err := os.Lstat(path)
+		if errors.Is(err, fs.ErrNotExist) || (err == nil && info.Mode()&os.ModeSymlink == 0) {
+			return path, true, nil
+		}
+		if err != nil {
+			return "", false, err
+		}
+	}
+}
+
+// replaceFile writes content to a temporary file next to path and renames it over path, so path is never
+// missing or half written.
+func replaceFile(path string, content []byte, mode os.FileMode) error {
+	tmp, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".*.tmp")
+	if err != nil {
+		return err
+	}
+	// a no-op once the file is renamed
+	defer os.Remove(tmp.Name())
+	if _, err := tmp.Write(content); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	if err := os.Chmod(tmp.Name(), mode); err != nil {
+		return err
+	}
+	return os.Rename(tmp.Name(), path)
+}
+
 // startDatabaseInLocation starts up the postgres binary in a specific installation directory
-// returns a pgRunningInfo instance
+// returns a pgRunningInfo instance. The rewritten pg_hba.conf stays in place while the server runs: the caller
+// calls restoreHba on the result when the old data directory stays where it is, and pg_hba.conf is already
+// restored if this returns an error. The pg_hba.conf.d folder that writing it creates is left, as an older version
+// does not read it.
 func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningInfo, error) {
 	binaryLocation := filepath.Join(location, "postgres", "bin", "postgres")
 	dataLocation := filepath.Join(location, "data")
@@ -287,8 +427,37 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 	if err != nil {
 		return nil, err
 	}
+	// these checks come before the old pg_hba.conf is rewritten below, so a failure leaves nothing to undo.
+	// The data then goes to the new data directory, which the install starts on a free port like this one
+	// and the service on the configured port.
+	for _, socket := range []struct {
+		dataDir string
+		port    int
+	}{
+		{dataLocation, port},
+		{filepaths.GetDataLocation(), port},
+		{filepaths.GetDataLocation(), viper.GetInt(pconstants.ArgDatabasePort)},
+	} {
+		if err := checkSocketPathLength(socket.dataDir, socket.port); err != nil {
+			return nil, err
+		}
+	}
+	restoreHba, err := savePgHbaConf(dataLocation)
+	if err != nil {
+		return nil, err
+	}
+	started := false
+	defer func() {
+		if !started {
+			restoreHba()
+		}
+	}()
 	// whatever an older Steampipe left in the old data directory, the backup must connect as root
 	if err := writePgHbaConf(dataLocation); err != nil {
+		return nil, err
+	}
+	socketArgs, err := postgresSocketArgs(dataLocation, port)
+	if err != nil {
 		return nil, err
 	}
 	cmd := exec.CommandContext(
@@ -306,7 +475,7 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 		// Data Directory
 		"-D", dataLocation,
 	)
-	cmd.Args = append(cmd.Args, postgresSocketArgs()...)
+	cmd.Args = append(cmd.Args, socketArgs...)
 
 	log.Println("[TRACE]", cmd.String())
 
@@ -323,9 +492,9 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 		return nil, err
 	}
 
-	runConfig := &pgRunningInfo{cmd: cmd, port: port}
+	runConfig := &pgRunningInfo{cmd: cmd, dataDir: dataLocation, port: port, restoreHba: restoreHba}
 
-	dbName, err := getDatabaseName(ctx, port)
+	dbName, err := getDatabaseName(ctx, dataLocation, port)
 	if err != nil {
 		// best-effort cleanup - we are already returning the getDatabaseName error
 		_ = runConfig.stop(ctx)
@@ -339,6 +508,7 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 	}
 
 	runConfig.dbName = dbName
+	started = true
 
 	return runConfig, nil
 }
@@ -469,10 +639,25 @@ func restoreDBBackup(ctx context.Context) error {
 }
 
 func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listFile string) error {
-	if err := checkSocketOwner(rootSocketPath(info.Port)); err != nil {
+	socketDir, cleanup, err := libpqSocketDir(filepaths.GetDataLocation(), info.Port)
+	if err != nil {
 		return err
 	}
-	cmd := pgRestoreCmd(
+	defer cleanup()
+	cmd := restoreCmd(ctx, info, listFile, socketDir)
+	log.Println("[TRACE] pg_restore command:", cmd.String())
+
+	if output, err := cmd.CombinedOutput(); err != nil {
+		log.Println("[TRACE] runRestoreUsingList process:", string(output))
+		return err
+	}
+	return nil
+}
+
+// restoreCmd is the pg_restore command that restores the backup into the new installation's
+// service. It connects as root through the socket in the new data directory.
+func restoreCmd(ctx context.Context, info *RunningDBInstanceInfo, listFile string, socketDir string) *exec.Cmd {
+	return pgRestoreCmd(
 		ctx,
 		filepaths.DatabaseBackupFilePath(),
 		fmt.Sprintf("--format=%s", backupFormat),
@@ -487,19 +672,11 @@ func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listF
 		// the database name
 		fmt.Sprintf("--dbname=%s", info.Database),
 		// connection parameters
-		fmt.Sprintf("--host=%s", constants.PostgresSocketDir),
+		// the restore goes into the new installation's service
+		fmt.Sprintf("--host=%s", socketDir),
 		fmt.Sprintf("--port=%d", info.Port),
 		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
 	)
-
-	log.Println("[TRACE] pg_restore command:", cmd.String())
-
-	if output, err := cmd.CombinedOutput(); err != nil {
-		log.Println("[TRACE] runRestoreUsingList process:", string(output))
-		return err
-	}
-
-	return nil
 }
 
 // partitionTableOfContents writes back the TableOfContents into a two temporary TableOfContents files:

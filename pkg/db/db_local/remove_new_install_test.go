@@ -38,7 +38,7 @@ func TestRemoveNewInstall_KeepsNonEmptyData(t *testing.T) {
 	}
 }
 
-func TestAbortInstallAfterRunningInstance_KeepsNonEmptyData(t *testing.T) {
+func TestAbortInstallRemovingNewInstall_KeepsNonEmptyData(t *testing.T) {
 	original := app_specific.InstallDir
 	defer func() { app_specific.InstallDir = original }()
 	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
@@ -52,7 +52,7 @@ func TestAbortInstallAfterRunningInstance_KeepsNonEmptyData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err := abortInstallAfterRunningInstance(errDbInstanceRunning)
+	err := abortInstallRemovingNewInstall(errDbInstanceRunning, "the old server is stopped")
 	if !errors.Is(err, errDbInstanceRunning) {
 		t.Errorf("error should wrap errDbInstanceRunning: %v", err)
 	}
@@ -67,7 +67,7 @@ func TestAbortInstallAfterRunningInstance_KeepsNonEmptyData(t *testing.T) {
 	}
 }
 
-func TestAbortInstallAfterRunningInstance_EmptyDataReturnsErrorUnchanged(t *testing.T) {
+func TestAbortInstallRemovingNewInstall_EmptyDataReturnsErrorUnchanged(t *testing.T) {
 	original := app_specific.InstallDir
 	defer func() { app_specific.InstallDir = original }()
 	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
@@ -76,7 +76,7 @@ func TestAbortInstallAfterRunningInstance_EmptyDataReturnsErrorUnchanged(t *test
 	_ = filepaths.GetDatabaseLocation()
 	_ = filepaths.GetDataLocation()
 
-	if err := abortInstallAfterRunningInstance(errDbInstanceRunning); err != errDbInstanceRunning {
+	if err := abortInstallRemovingNewInstall(errDbInstanceRunning, "the old server is stopped"); err != errDbInstanceRunning {
 		t.Errorf("error should be returned unchanged: %v", err)
 	}
 	if _, statErr := os.Stat(newLocation); !os.IsNotExist(statErr) {
@@ -127,7 +127,7 @@ func TestPrepareDataLocation_RefusesToEmptyADatabase(t *testing.T) {
 func TestRunInstall_ReturnsTheRefusalToEmptyADatabase(t *testing.T) {
 	original := app_specific.InstallDir
 	defer func() { app_specific.InstallDir = original }()
-	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
+	app_specific.InstallDir = filepath.Join(shortTempDir(t), ".steampipe")
 
 	newDataLocation := filepaths.GetDataLocation()
 	if err := os.WriteFile(filepath.Join(newDataLocation, "PG_VERSION"), []byte("14\n"), 0600); err != nil {

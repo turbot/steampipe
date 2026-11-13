@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
+	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
@@ -39,9 +40,19 @@ func TestIsSameMajorVersion(t *testing.T) {
 	}
 }
 
-// writeFakeInstall creates a version folder holding a postgres binary and a data folder with one marker file
+// skipProcessScan makes the search for running steampipe services find none: no test postgres is one, and
+// listing every process takes seconds on macOS
+func skipProcessScan(t *testing.T) {
+	original := listAllProcesses
+	listAllProcesses = func(context.Context) ([]*psutils.Process, error) { return nil, nil }
+	t.Cleanup(func() { listAllProcesses = original })
+}
+
+// writeFakeInstall creates a version folder holding a postgres binary and a data folder with one marker file.
+// For the rest of the test, the search for running steampipe services finds none.
 func writeFakeInstall(t *testing.T, location string) {
 	t.Helper()
+	skipProcessScan(t)
 	if err := os.MkdirAll(filepath.Join(location, "postgres", "bin"), 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -214,7 +225,7 @@ func TestMoveDataFromSameMajorInstall_UnusableOldInstallSaysWhatToDo(t *testing.
 			}
 			original := app_specific.InstallDir
 			defer func() { app_specific.InstallDir = original }()
-			app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
+			app_specific.InstallDir = filepath.Join(shortTempDir(t), ".steampipe")
 			// the wait for the server's socket gives up at once at the default of 0, before the script has printed
 			originalTimeout := viper.Get(pconstants.ArgDatabaseStartTimeout)
 			viper.Set(pconstants.ArgDatabaseStartTimeout, 3)

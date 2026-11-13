@@ -7,64 +7,128 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"syscall"
+	"runtime"
+	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
+	"github.com/turbot/pipe-fittings/v2/app_specific"
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 )
 
-// postgresSocketArgs are the settings that every postgres Steampipe starts gets: the socket
-// directory, and a socket that only the OS user who runs postgres can open.
-func postgresSocketArgs() []string {
-	return []string{
-		"-c", fmt.Sprintf("unix_socket_directories=%s", constants.PostgresSocketDir),
-		"-c", "unix_socket_permissions=0700",
+// errStartedByOlderVersion is returned for a root connection to a running service that has no socket
+// in the data directory: earlier versions of Steampipe put the socket in /tmp, and allowed root over TCP.
+var errStartedByOlderVersion = errors.New("the running service was started by an older version of Steampipe")
+
+var errSocketPathTooLong = errors.New("the database socket path is too long")
+
+// postgresSocketArgs are the settings that every postgres Steampipe starts gets: the socket goes in
+// the data directory, and only the OS user who runs postgres can open it. Postgres does not start
+// unless the data directory belongs to that user and no other user can write to it, so no other user
+// can make a file in the socket's place.
+func postgresSocketArgs(dataDir string, port int) ([]string, error) {
+	if err := checkSocketPathLength(dataDir, port); err != nil {
+		return nil, err
 	}
+	return []string{
+		// postgres splits this setting on commas unless an element is double-quoted,
+		// and a double quote inside a quoted element is doubled
+		"-c", fmt.Sprintf(`unix_socket_directories="%s"`, strings.ReplaceAll(dataDir, `"`, `""`)),
+		"-c", "unix_socket_permissions=0700",
+	}, nil
 }
 
-func rootSocketPath(port int) string {
-	return filepath.Join(constants.PostgresSocketDir, fmt.Sprintf(".s.PGSQL.%d", port))
+// libpqSocketDir is the directory to give pg_dump and pg_restore for the socket in dataDir. libpq
+// splits a host on commas with no way to quote one, so a directory with a comma is reached through
+// a private temporary directory that holds a link to the socket. cleanup removes it.
+func libpqSocketDir(dataDir string, port int) (dir string, cleanup func(), err error) {
+	if !strings.Contains(dataDir, ",") {
+		return dataDir, func() {}, nil
+	}
+	tmp := os.TempDir()
+	if strings.Contains(tmp, ",") {
+		tmp = "/tmp"
+	}
+	dir, err = os.MkdirTemp(tmp, "steampipe-socket-")
+	if err != nil {
+		return "", nil, err
+	}
+	// the link is a socket path too, so it has the same limit
+	if checkSocketPathLength(dir, port) != nil && tmp != "/tmp" {
+		_ = os.RemoveAll(dir)
+		if dir, err = os.MkdirTemp("/tmp", "steampipe-socket-"); err != nil {
+			return "", nil, err
+		}
+	}
+	cleanup = func() { _ = os.RemoveAll(dir) }
+	if err := os.Symlink(rootSocketPath(dataDir, port), rootSocketPath(dir, port)); err != nil {
+		cleanup()
+		return "", nil, err
+	}
+	return dir, cleanup, nil
+}
+
+func rootSocketPath(dataDir string, port int) string {
+	return filepath.Join(dataDir, fmt.Sprintf(".s.PGSQL.%d", port))
+}
+
+// maxSocketPathLength is the longest unix socket path the OS accepts: the size of sun_path, less
+// its closing NUL.
+func maxSocketPathLength() int {
+	if runtime.GOOS == "linux" {
+		return 107
+	}
+	return 103
+}
+
+// checkSocketPathLength refuses a socket path that is too long for the OS. Postgres would fail to
+// start with "could not create any Unix-domain sockets", which does not say what to do. The advice
+// is to move the install directory: a new, empty one would leave the database behind.
+func checkSocketPathLength(dataDir string, port int) error {
+	path := rootSocketPath(dataDir, port)
+	if limit := maxSocketPathLength(); len(path) > limit {
+		return fmt.Errorf("%w: %s is %d bytes, and %s allows at most %d. Move %s to a shorter path and set %s to it", errSocketPathTooLong, path, len(path), runtime.GOOS, limit, app_specific.InstallDir, constants.EnvInstallDir)
+	}
+	return nil
 }
 
 // rootConnectionParams are the connection parameters for every connection that Steampipe makes as
-// root: the unix socket, which does not use SSL. The database is up to the caller.
+// root: the unix socket in the data directory, which does not use SSL. The database is up to the
+// caller. The host is left out because pgx splits it on commas: the caller sets it with
+// setRootSocketHost after parsing.
 func rootConnectionParams(port int) map[string]string {
 	return map[string]string{
-		"host":    constants.PostgresSocketDir,
 		"port":    fmt.Sprint(port),
 		"user":    constants.DatabaseSuperUser,
 		"sslmode": "disable",
 	}
 }
 
-// checkSocketOwner refuses a path that another OS user owns, or that is not a socket. The socket
-// directory is shared, so another user can create a file with the socket's name before postgres
-// starts, and root's commands must not reach that user's server. A path that does not exist wraps
-// fs.ErrNotExist, which postgres that is still starting also produces.
-func checkSocketOwner(path string) error {
-	info, err := os.Lstat(path)
-	if err != nil {
-		return err
-	}
-	if stat, ok := info.Sys().(*syscall.Stat_t); ok && int(stat.Uid) != os.Getuid() {
-		return fmt.Errorf("%s is owned by another user (uid %d), not by the user who runs Steampipe (uid %d): not connecting to it as %s", path, stat.Uid, os.Getuid(), constants.DatabaseSuperUser)
-	}
-	if info.Mode()&fs.ModeSocket == 0 {
-		return fmt.Errorf("%s is not a socket: not connecting to it as %s", path, constants.DatabaseSuperUser)
-	}
-	return nil
+// setRootSocketHost points a parsed connection at the socket in the data directory.
+func setRootSocketHost(config *pgx.ConnConfig, dataDir string) {
+	config.Host = dataDir
+	config.Fallbacks = nil
 }
 
-// waitForRootSocket waits for the socket of a postgres that is starting. A missing socket means wait;
-// anything checkSocketOwner refuses stops the wait with an error.
-func waitForRootSocket(ctx context.Context, port int) error {
-	path := rootSocketPath(port)
+// checkRootSocket is for a root connection to a service that is already running. A missing socket
+// means that an older Steampipe started the service.
+func checkRootSocket(dataDir string, port int) error {
+	_, err := os.Stat(rootSocketPath(dataDir, port))
+	if errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("%w. Run `steampipe service stop`, then try again", errStartedByOlderVersion)
+	}
+	return err
+}
+
+// waitForRootSocket waits for the socket of a postgres that is starting.
+func waitForRootSocket(ctx context.Context, dataDir string, port int) error {
+	path := rootSocketPath(dataDir, port)
 	timeout := time.Duration(viper.GetInt(pconstants.ArgDatabaseStartTimeout)) * time.Second
 	deadline := time.Now().Add(timeout)
 	for {
-		err := checkSocketOwner(path)
+		_, err := os.Stat(path)
 		if err == nil {
 			return nil
 		}

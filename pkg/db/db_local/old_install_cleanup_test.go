@@ -20,7 +20,8 @@ func setCleanupInstallDir(t *testing.T) string {
 	t.Helper()
 	original := app_specific.InstallDir
 	t.Cleanup(func() { app_specific.InstallDir = original })
-	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
+	// a short directory: the socket path in the data folder must fit the OS limit
+	app_specific.InstallDir = filepath.Join(shortTempDir(t), ".steampipe")
 	return filepaths.EnsureDatabaseDir()
 }
 

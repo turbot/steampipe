@@ -17,11 +17,6 @@ setup_file() {
 
 teardown_file() {
   steampipe service stop
-  # a socket that the owner-check test left behind belongs to another user and blocks this port
-  if sudo -n true 2> /dev/null; then
-    sudo -n pkill -u nobody -f python3 || true
-    sudo -n rm -f /tmp/.s.PGSQL.$PG_PORT
-  fi
 }
 
 start_service() {
@@ -29,7 +24,7 @@ start_service() {
 }
 
 connect_as_root_by_socket() {
-  psql -w -h /tmp -p $PG_PORT -U root postgres -tAc "select 1"
+  psql -w -h "$HBA_DATA_DIR" -p $PG_PORT -U root postgres -tAc "select 1"
 }
 
 # connect over TCP from this machine and never ask for a password: -w fails instead of prompting
@@ -65,6 +60,14 @@ connect_as() {
   assert_failure
 }
 
+@test "the socket is in the data directory, only its owner can open it, and there is none in /tmp" {
+  local socket="$HBA_DATA_DIR/.s.PGSQL.$PG_PORT"
+  [ -S "$socket" ]
+  run ls -l "$socket"
+  assert_output --regexp '^srwx------'
+  [ ! -e /tmp/.s.PGSQL.$PG_PORT ]
+}
+
 @test "steampipe connects over TCP from this machine with no password" {
   run connect_as steampipe steampipe ""
   assert_success
@@ -77,7 +80,7 @@ connect_as() {
   run connect_as_root_by_socket
   assert_success
 
-  run sudo -n -u nobody psql -w -h /tmp -p $PG_PORT -U root postgres -tAc "select 1"
+  run sudo -n -u nobody psql -w -h "$HBA_DATA_DIR" -p $PG_PORT -U root postgres -tAc "select 1"
   assert_failure
   assert_output --partial "Permission denied"
 }
@@ -108,6 +111,23 @@ connect_as() {
   assert_success
   run connect_as steampipe steampipe ""
   assert_success
+}
+
+@test "an install directory with a comma and a double quote starts, answers a query and stops" {
+  steampipe service stop
+  # postgres splits a socket directory on commas unless it is quoted; pgx and libpq always split a host on commas
+  local odd_dir="$BATS_FILE_TMPDIR/a,b\"c"
+  ln -s "$STEAMPIPE_INSTALL_DIR" "$odd_dir"
+
+  STEAMPIPE_INSTALL_DIR="$odd_dir" STEAMPIPE_DATABASE_PASSWORD=$PG_PASSWORD run steampipe service start --database-port $PG_PORT
+  assert_success
+  STEAMPIPE_INSTALL_DIR="$odd_dir" STEAMPIPE_DATABASE_PASSWORD=$PG_PASSWORD run steampipe query "select 1 as one" --output csv
+  assert_success
+  assert_output --partial "1"
+  [ -S "$odd_dir"/db/*/data/.s.PGSQL.$PG_PORT ]
+  STEAMPIPE_INSTALL_DIR="$odd_dir" run steampipe service stop
+  assert_success
+  rm "$odd_dir"
 }
 
 @test "an install with the old default pg_hba.conf gets the new file at its next start" {
@@ -158,21 +178,44 @@ EOF
   assert_success
 }
 
-# this test is last: it leaves the service stopped
-@test "steampipe stops with an error when another OS user owns the socket" {
-  sudo -n true || skip "sudo -n does not work here"
-  command -v python3 > /dev/null || skip "python3 is required"
-
+@test "service start refuses an install directory that makes the socket path too long" {
   steampipe service stop
-  local socket=/tmp/.s.PGSQL.$PG_PORT
-  sudo -n rm -f $socket
-  # fd 3 is bats's own; closing it keeps bats from waiting for this process
-  sudo -n -u nobody python3 -c "import socket,time; s=socket.socket(socket.AF_UNIX); s.bind('$socket'); s.listen(1); time.sleep(120)" < /dev/null > /dev/null 2>&1 3>&- &
-  disown
-  for _ in $(seq 50); do [ -S $socket ] && break; sleep 0.1; done
-  [ -S $socket ]
+  # the same install, through a link with a long name: the socket path is over the OS's limit
+  local long_dir="$BATS_FILE_TMPDIR/$(printf 'x%.0s' $(seq 100))"
+  ln -s "$STEAMPIPE_INSTALL_DIR" "$long_dir"
 
-  run start_service
+  STEAMPIPE_INSTALL_DIR="$long_dir" run steampipe service start --database-port $PG_PORT
+  assert_equal "$status" 32
+  # the install holds a database, so a new install directory would leave it behind
+  assert_output --partial "Move $long_dir to a shorter path and set STEAMPIPE_INSTALL_DIR to it"
+
+  # postgres did not start
+  run pgrep -f "$long_dir"
   assert_failure
-  assert_output --partial "owned by another user"
+  rm "$long_dir"
+}
+
+# this test is last: it leaves no service running, and stops this install's processes itself if service stop fails
+@test "a running service with no socket in the data directory stops with service stop" {
+  run start_service
+  assert_success
+  # a service that an earlier version of Steampipe started has no socket in the data directory
+  rm "$HBA_DATA_DIR/.s.PGSQL.$PG_PORT"
+  # the plugins are children of the plugin manager
+  local pg_pid=$(jq -r .pid "$STEAMPIPE_INSTALL_DIR/internal/steampipe.json")
+  local pm_pid=$(jq -r .pid "$STEAMPIPE_INSTALL_DIR/internal/plugin_manager.json")
+  local pids=$(echo $pg_pid $pm_pid $(pgrep -P "$pm_pid") | tr ' ' ',')
+
+  run steampipe service stop
+  local stop_status=$status stop_output=$output
+
+  # whatever happened, stop only this service's processes, by the pids it recorded: service stop --force
+  # would stop every service on the machine
+  kill ${pids//,/ } 2> /dev/null || true
+  for _ in $(seq 50); do ps -p "$pids" > /dev/null || break; sleep 0.2; done
+  rm -f "$STEAMPIPE_INSTALL_DIR/internal/steampipe.json" "$STEAMPIPE_INSTALL_DIR/internal/plugin_manager.json"
+
+  echo "$stop_output"
+  assert_equal "$stop_status" 0
+  [[ "$stop_output" == *"Steampipe database service stopped"* ]]
 }
