@@ -1,13 +1,17 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/v2/pkg/db/db_local"
+	"github.com/turbot/steampipe/v2/pkg/pluginmanager"
 )
 
 func TestParseServiceCmdline_EmptyCmdline(t *testing.T) {
@@ -86,4 +90,48 @@ func TestBuildServiceRows_AllProcessesExited(t *testing.T) {
 	if len(rows) != 0 {
 		t.Errorf("rows = %v, want none", rows)
 	}
+}
+
+// service status must say the service is not running when the database state
+// is gone, including when the plugin manager process is still alive. That is
+// the process that would otherwise be formatted as a running database.
+func TestPrintStatus_NilDatabaseIsNotRunning(t *testing.T) {
+	for _, running := range []bool{false, true} {
+		out := captureStdout(t, func() {
+			printStatus(context.Background(), nil, &pluginmanager.State{Running: running}, false)
+		})
+		if !strings.Contains(out, "Service is not running") {
+			t.Errorf("plugin manager running=%v: output %q, want the service not running", running, out)
+		}
+		if strings.Contains(out, "Steampipe service is running") {
+			t.Errorf("plugin manager running=%v: output reported the service running:\n%s", running, out)
+		}
+	}
+}
+
+func captureStdout(t *testing.T, fn func()) string {
+	t.Helper()
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := os.Stdout
+	os.Stdout = w
+	defer func() {
+		os.Stdout = old
+		if rec := recover(); rec != nil {
+			_ = w.Close()
+			t.Fatalf("printStatus panicked: %v", rec)
+		}
+	}()
+	fn()
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = old
+	buf, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(buf)
 }
