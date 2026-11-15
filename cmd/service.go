@@ -577,7 +577,10 @@ func parseServiceCmdline(pid int32, cmdLine []string) (string, string, string, d
 }
 
 func printStatus(ctx context.Context, dbState *db_local.RunningDBInstanceInfo, pmState *pluginmanager.State, alreadyRunning bool) {
-	if dbState == nil && !pmState.Running {
+	// No database process means the service is not running. The plugin manager
+	// can still be alive after the database has exited; the text below is the
+	// database, and formatting a nil dbState would panic.
+	if dbState == nil {
 		fmt.Println("Service is not running") //nolint:forbidigo // acceptable
 		return
 	}
