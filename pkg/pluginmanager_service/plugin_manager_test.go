@@ -29,7 +29,6 @@ func newTestPluginManager(t *testing.T) *PluginManager {
 		runningPluginMap:          make(map[string]*runningPlugin),
 		pluginConnectionConfigMap: make(map[string][]*sdkproto.ConnectionConfig),
 		connectionConfigMap:       make(connection.ConnectionConfigMap),
-		pluginCacheSizeMap:        make(map[string]int64),
 		plugins:                   make(connection.PluginMap),
 		userLimiters:              make(connection.PluginLimiterMap),
 		pluginLimiters:            make(connection.PluginLimiterMap),
@@ -357,26 +356,6 @@ func TestPluginManager_IsShuttingDown_Concurrent(t *testing.T) {
 	}()
 
 	wg.Wait()
-}
-
-// Test 10: Plugin Cache Size Map
-
-func TestPluginManager_SetPluginCacheSizeMap_NoCacheLimit(t *testing.T) {
-	pm := newTestPluginManager(t)
-
-	config1 := newTestConnectionConfig("plugin1", "instance1", "conn1")
-	config2 := newTestConnectionConfig("plugin2", "instance2", "conn2")
-
-	pm.pluginConnectionConfigMap = map[string][]*sdkproto.ConnectionConfig{
-		"instance1": {config1},
-		"instance2": {config2},
-	}
-
-	pm.setPluginCacheSizeMap()
-
-	// When no max size is set, all plugins should have size 0 (unlimited)
-	assert.Equal(t, int64(0), pm.pluginCacheSizeMap["instance1"])
-	assert.Equal(t, int64(0), pm.pluginCacheSizeMap["instance2"])
 }
 
 // Test 11: NonAggregatorConnectionCount

@@ -678,3 +678,31 @@ func TestTildefyPaths_InvalidPaths(t *testing.T) {
 		})
 	}
 }
+
+// STEAMPIPE_CACHE_MAX_SIZE_MB sets the same value as options "database" { cache_max_size_mb },
+// and takes precedence over it, as STEAMPIPE_CACHE_MAX_TTL does for cache_max_ttl
+func TestSetDefaultsFromEnv_CacheEnvVarsOverrideDatabaseOptions(t *testing.T) {
+	tests := []struct {
+		envVar string
+		key    string
+	}{
+		{envVar: constants.EnvCacheMaxTTL, key: pconstants.ArgCacheMaxTtl},
+		{envVar: constants.EnvCacheMaxSize, key: pconstants.ArgMaxCacheSizeMb},
+	}
+	for _, tt := range tests {
+		t.Run(tt.envVar, func(t *testing.T) {
+			viper.Reset()
+			defer viper.Reset()
+
+			// the value from the config file, as initGlobalConfig sets it
+			SetDefaultsFromConfig(map[string]interface{}{tt.key: 250})
+			// then the env var
+			t.Setenv(tt.envVar, "1000")
+			setDefaultsFromEnv()
+
+			if got := viper.GetInt64(tt.key); got != 1000 {
+				t.Errorf("%s=1000 with a config value of 250: expected %s to be 1000, got %d", tt.envVar, tt.key, got)
+			}
+		})
+	}
+}
