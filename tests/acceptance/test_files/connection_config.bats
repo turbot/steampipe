@@ -64,12 +64,9 @@ load ../helpers/steampipe_processes
     cp $SRC_DATA_DIR/chaos.json $STEAMPIPE_INSTALL_DIR/config/chaos2.json
     cp $SRC_DATA_DIR/chaos.json $STEAMPIPE_INSTALL_DIR/config/chaos3.json
 
-    # duplicates are skipped with warnings, but the command must still succeed.
-    # NOTE: exercises the CLI config-loader path only - any command that starts
-    # the service crashes in the pinned FDW, whose vendored loader still
-    # hard-errors on duplicates (#5021). Restore the
-    # `steampipe query` assertion once the FDW vendors the tolerant loader.
-    run steampipe plugin install chaos
+    # duplicates are skipped with warnings, but the command must still succeed,
+    # including a command that starts the service
+    run steampipe query "select time_col from chaos.chaos_cache_check"
 
     # remove the config file
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos2.json
