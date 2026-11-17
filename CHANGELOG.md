@@ -1,3 +1,8 @@
+## v2.5.1 [2026-11-17]
+_Bug fixes_
+- Share the query cache size limit between plugins by connection count instead of giving the full `cache_max_size_mb` to every plugin, and make `STEAMPIPE_CACHE_MAX_SIZE_MB` take effect. ([#5093](https://github.com/turbot/steampipe/issues/5093))
+- Fix `steampipe service status` crashing when only the plugin manager is running, and make `steampipe service stop` clear a leftover plugin manager. ([#5161](https://github.com/turbot/steampipe/issues/5161))
+
 ## v2.5.0 [2026-11-13]
 _Whats new_
 - Update the embedded PostgreSQL to `14.24.0`. A same-major upgrade now keeps your existing data folder, and the upgrade carries over the newest older database. ([#4961](https://github.com/turbot/steampipe/issues/4961), [#5103](https://github.com/turbot/steampipe/issues/5103))
