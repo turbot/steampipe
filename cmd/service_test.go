@@ -92,46 +92,38 @@ func TestBuildServiceRows_AllProcessesExited(t *testing.T) {
 	}
 }
 
-// service status must say the service is not running when the database state
-// is gone, including when the plugin manager process is still alive. That is
-// the process that would otherwise be formatted as a running database.
-func TestPrintStatus_NilDatabaseIsNotRunning(t *testing.T) {
-	for _, running := range []bool{false, true} {
-		out := captureStdout(t, func() {
-			printStatus(context.Background(), nil, &pluginmanager.State{Running: running}, false)
-		})
-		if !strings.Contains(out, "Service is not running") {
-			t.Errorf("plugin manager running=%v: output %q, want the service not running", running, out)
-		}
-		if strings.Contains(out, "Steampipe service is running") {
-			t.Errorf("plugin manager running=%v: output reported the service running:\n%s", running, out)
-		}
-	}
-}
-
-func captureStdout(t *testing.T, fn func()) string {
+func captureStdout(t *testing.T, f func()) string {
 	t.Helper()
+	orig := os.Stdout
 	r, w, err := os.Pipe()
 	if err != nil {
 		t.Fatal(err)
 	}
-	old := os.Stdout
 	os.Stdout = w
-	defer func() {
-		os.Stdout = old
-		if rec := recover(); rec != nil {
-			_ = w.Close()
-			t.Fatalf("printStatus panicked: %v", rec)
-		}
-	}()
-	fn()
-	if err := w.Close(); err != nil {
-		t.Fatal(err)
-	}
-	os.Stdout = old
-	buf, err := io.ReadAll(r)
+	defer func() { os.Stdout = orig }()
+	f()
+	_ = w.Close()
+	out, err := io.ReadAll(r)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return string(buf)
+	return string(out)
+}
+
+func TestPrintStatus_NilDbStatePluginManagerRunning(t *testing.T) {
+	out := captureStdout(t, func() {
+		printStatus(context.Background(), nil, &pluginmanager.State{Running: true}, false)
+	})
+	if !strings.Contains(out, "plugin manager") || !strings.Contains(out, "steampipe service stop") {
+		t.Errorf("output = %q, want a message that the plugin manager is still running and to run `steampipe service stop`", out)
+	}
+}
+
+func TestPrintStatus_NilDbStatePluginManagerStopped(t *testing.T) {
+	out := captureStdout(t, func() {
+		printStatus(context.Background(), nil, &pluginmanager.State{Running: false}, false)
+	})
+	if !strings.Contains(out, "Service is not running") {
+		t.Errorf("output = %q, want %q", out, "Service is not running")
+	}
 }

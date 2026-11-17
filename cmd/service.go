@@ -460,6 +460,11 @@ func runServiceStopCmd(cmd *cobra.Command, _ []string) {
 		}
 
 		if dbState == nil {
+			// the database is down, but the plugin manager may still be running
+			if err := pluginmanager.Stop(); err != nil {
+				exitCode = constants.ExitCodeServiceStopFailure
+				error_helpers.FailOnErrorWithMessage(err, "could not stop the plugin manager")
+			}
 			fmt.Println("Steampipe service is not running.") //nolint:forbidigo // acceptable
 			return
 		}
@@ -577,10 +582,11 @@ func parseServiceCmdline(pid int32, cmdLine []string) (string, string, string, d
 }
 
 func printStatus(ctx context.Context, dbState *db_local.RunningDBInstanceInfo, pmState *pluginmanager.State, alreadyRunning bool) {
-	// No database process means the service is not running. The plugin manager
-	// can still be alive after the database has exited; the text below is the
-	// database, and formatting a nil dbState would panic.
 	if dbState == nil {
+		if pmState.Running {
+			fmt.Printf("The database is not running, but the plugin manager is still running.\nTo clean up, run %s\n", pconstants.Bold("steampipe service stop")) //nolint:forbidigo // acceptable
+			return
+		}
 		fmt.Println("Service is not running") //nolint:forbidigo // acceptable
 		return
 	}
