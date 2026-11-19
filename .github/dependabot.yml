@@ -22,7 +22,6 @@ updates:
     pull-request-branch-name:
       separator: "-"
     assignees:
-      - "pskrbasu"
       - "kaidaguerre"
     labels:
       - "dependencies"
