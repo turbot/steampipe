@@ -1,13 +1,17 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/v2/pkg/db/db_local"
+	"github.com/turbot/steampipe/v2/pkg/pluginmanager"
 )
 
 func TestParseServiceCmdline_EmptyCmdline(t *testing.T) {
@@ -85,5 +89,41 @@ func TestBuildServiceRows_AllProcessesExited(t *testing.T) {
 	rows := buildServiceRows([]*psutils.Process{exitedProcess(t)})
 	if len(rows) != 0 {
 		t.Errorf("rows = %v, want none", rows)
+	}
+}
+
+func captureStdout(t *testing.T, f func()) string {
+	t.Helper()
+	orig := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = w
+	defer func() { os.Stdout = orig }()
+	f()
+	_ = w.Close()
+	out, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(out)
+}
+
+func TestPrintStatus_NilDbStatePluginManagerRunning(t *testing.T) {
+	out := captureStdout(t, func() {
+		printStatus(context.Background(), nil, &pluginmanager.State{Running: true}, false)
+	})
+	if !strings.Contains(out, "plugin manager") || !strings.Contains(out, "steampipe service stop") {
+		t.Errorf("output = %q, want a message that the plugin manager is still running and to run `steampipe service stop`", out)
+	}
+}
+
+func TestPrintStatus_NilDbStatePluginManagerStopped(t *testing.T) {
+	out := captureStdout(t, func() {
+		printStatus(context.Background(), nil, &pluginmanager.State{Running: false}, false)
+	})
+	if !strings.Contains(out, "Service is not running") {
+		t.Errorf("output = %q, want %q", out, "Service is not running")
 	}
 }
