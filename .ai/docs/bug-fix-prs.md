@@ -186,7 +186,9 @@ Create the PR after the first push (before the fix):
 # After phase 1 push
 gh pr create --base develop \
   --title "Brief description closes #1234" \
-  --body "## Summary
+  --body "Changelog: [1-2 sentences a person using Steampipe can read: what is fixed]
+
+## Summary
 [Description]
 
 ## Changes
