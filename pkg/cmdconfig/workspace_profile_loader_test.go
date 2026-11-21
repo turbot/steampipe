@@ -62,9 +62,8 @@ func TestGetWorkspaceProfileLoader_MalformedFileDoesNotStopLoad(t *testing.T) {
 	if got := loader.GetActiveWorkspaceProfile().SnapshotLocation; got == nil || *got != "mine" {
 		t.Errorf("the valid file was not used, snapshot_location = %v", got)
 	}
-	// the config folder's bad files are reported when the connection config loads, not twice
-	if len(warnings) != 0 {
-		t.Errorf("want no warnings for the config folder, got %v", warnings)
+	if len(warnings) == 0 || !strings.Contains(strings.Join(warnings, "\n"), filepath.Join(configDir, "broken.spc")) {
+		t.Errorf("want a warning naming broken.spc, got %v", warnings)
 	}
 	// the bad file is not touched
 	if _, err := os.Stat(filepath.Join(configDir, "broken.spc")); err != nil {
@@ -116,6 +115,24 @@ func TestGetWorkspaceProfileLoader_ErrorInValidFileNamesRealFolder(t *testing.T)
 	}
 	if !strings.Contains(err.Error(), filepath.Join(configDir, "bad_workspace.spc")) || strings.Contains(err.Error(), "steampipe-config-") {
 		t.Errorf("the error should name the file in the real folder, got: %v", err)
+	}
+}
+
+// a typo in the file holding the selected workspace must still name the file: the error alone says only
+// that the workspace is not found
+func TestGetWorkspaceProfileLoader_SelectedWorkspaceInMalformedFileIsNamed(t *testing.T) {
+	configDir := workspaceLoaderEnv(t)
+	t.Setenv("STEAMPIPE_WORKSPACE", "prod")
+	if err := os.WriteFile(filepath.Join(configDir, "prod.spc"), []byte("workspace \"prod\" {\n  snapshot_location = \"mine\"\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	_, warnings, err := getWorkspaceProfileLoader(context.Background())
+	if err == nil {
+		t.Fatal("a workspace which cannot be found should still fail the load")
+	}
+	if !strings.Contains(strings.Join(warnings, "\n"), filepath.Join(configDir, "prod.spc")) {
+		t.Errorf("want a warning naming prod.spc beside the error %q, got %v", err, warnings)
 	}
 }
 

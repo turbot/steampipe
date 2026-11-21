@@ -8,7 +8,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"path/filepath"
 	"runtime/debug"
 	"slices"
 	"strings"
@@ -308,8 +307,9 @@ func setCloudTokenDefault(loader *parse.WorkspaceProfileLoader[*workspace_profil
 
 // getWorkspaceProfileLoader loads the workspace profiles from the config folder.
 // A .spc file which does not parse is left out, like steampipeconfig.loadConfig does for connection config,
-// so one bad file does not stop every command. The warnings returned are for the files left out; they are
-// empty when the folder is the config folder, as loading the connection config reports those files.
+// so one bad file does not stop every command. The warnings returned name the files left out; they are
+// returned with an error too. Loading the connection config words the same warning for a file in the
+// config folder, and a warning is only kept once.
 func getWorkspaceProfileLoader(ctx context.Context) (*parse.WorkspaceProfileLoader[*workspace_profile.SteampipeWorkspaceProfile], []string, error) {
 	// set viper default for workspace profile, using EnvWorkspaceProfile env var
 	SetDefaultFromEnv(constants.EnvWorkspaceProfile, pconstants.ArgWorkspaceProfile, String)
@@ -343,10 +343,6 @@ func getWorkspaceProfileLoader(ctx context.Context) (*parse.WorkspaceProfileLoad
 		if loader, err = parse.NewWorkspaceProfileLoader[*workspace_profile.SteampipeWorkspaceProfile](validDir); err != nil {
 			return nil, nil, err
 		}
-	}
-	if filepath.Clean(workspaceProfileDir) == filepath.Join(installDir, "config") {
-		// loading the connection config reports these
-		warnings = nil
 	}
 
 	// TODO look at unifying this with `GetWorkspaceProfileLoader` func in pipe-fittings/v2/cmdconfig
