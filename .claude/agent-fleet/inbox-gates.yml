@@ -40,11 +40,12 @@ never_run:
   - steampipe login
 
 # The acceptance files start services on steampipe's fixed ports, 9193 (the default, with no
-# environment variable to move it) and 9293 (pg_hba). With either taken, by the owner's own
-# service or another run of this check, every file fails at setup: the need is unmet, not red.
+# environment variable to move it) and 9293 (pg_hba). With either taken, every file fails at
+# setup, so the need is unmet, not red, while something listens there (the owner's own service)
+# or another acceptance runner is running on the machine (it frees the port between files).
 needs:
   steampipe-ports:
-    probe: "bash -c '! (echo > /dev/tcp/127.0.0.1/9193) 2>/dev/null && ! (echo > /dev/tcp/127.0.0.1/9293) 2>/dev/null'"
+    probe: "bash -c '! (echo > /dev/tcp/127.0.0.1/9193) 2>/dev/null && ! (echo > /dev/tcp/127.0.0.1/9293) 2>/dev/null && ! pgrep -f \"tests/acceptance/run-local[.]sh\" >/dev/null'"
 
 checks:
   build: {run: "go build ./...", cost: 1}
