@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
-	"time"
 
 	psutils "github.com/shirou/gopsutil/process"
 	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/pipe-fittings/v2/app_specific"
 	"github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/v2/pkg/filepaths"
@@ -49,43 +50,38 @@ func GetState() (*RunningDBInstanceInfo, error) {
 	return info, nil
 }
 
-// pidIsLiveSteampipeDatabase reports whether pid is a running steampipe
-// database process. A process that has exited, including one still in the
-// process table as a zombie, is not. Neither is a different process that has
-// reused the pid recorded for the database.
+// pidIsLiveSteampipeDatabase reports whether pid should be treated as a running
+// steampipe database. It is false only when the pid is known not to be one: the
+// process has exited (including a zombie still in the process table), or its
+// readable command line belongs to some other program that reused the pid.
+// A live process whose command line cannot be confirmed either way is treated
+// as running, so its state files are kept.
 func pidIsLiveSteampipeDatabase(pid int) (bool, error) {
 	process, err := sputils.FindProcess(pid)
 	if err != nil || process == nil {
 		return false, err
 	}
-	return processIsSteampipeDatabase(context.Background(), process)
-}
-
-// processIsSteampipeDatabase applies the same command-line identity check as
-// the service scan. A process that has only just started can report an empty
-// command line for a short time, so that case is read again.
-func processIsSteampipeDatabase(ctx context.Context, p *psutils.Process) (bool, error) {
-	attempts := 1
-	if createdMs, err := p.CreateTimeWithContext(ctx); err == nil &&
-		time.Since(time.UnixMilli(createdMs)) < recentlyStartedWindow {
-		attempts = emptyCmdlineRetries + 1
+	ctx := context.Background()
+	// reuse the service scan, including its retry for a command line that is still empty
+	listProcess := func(context.Context) ([]*psutils.Process, error) {
+		return []*psutils.Process{process}, nil
 	}
-	for attempt := 0; attempt < attempts; attempt++ {
-		if attempt > 0 {
-			select {
-			case <-ctx.Done():
-				return false, ctx.Err()
-			case <-time.After(emptyCmdlineRetryDelay):
-			}
-		}
-		cmdline, err := readProcessCmdline(ctx, p)
-		if err != nil {
-			return false, nil
-		}
-		if len(cmdline) == 0 {
-			continue
-		}
-		return isSteampipePostgresProcess(ctx, cmdline), nil
+	instances, err := findSteampipePostgresInstances(ctx, listProcess)
+	if err != nil {
+		return false, err
+	}
+	if len(instances) > 0 {
+		return true, nil
+	}
+	cmdline, err := readProcessCmdline(ctx, process)
+	if err != nil || len(cmdline) == 0 {
+		// alive but unreadable: cannot say it is not the database
+		return true, nil
+	}
+	// the install path can be split at spaces (macOS), but the application_name
+	// argument is not, so it still identifies the steampipe database
+	if slices.Contains(cmdline, fmt.Sprintf("application_name=%s", app_specific.AppName)) {
+		return true, nil
 	}
 	return false, nil
 }

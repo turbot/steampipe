@@ -1,6 +1,7 @@
 package db_local
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -207,5 +208,71 @@ func TestGetState_RunningSteampipeDatabaseIsRunning(t *testing.T) {
 	}
 	if state == nil || state.Pid != pid {
 		t.Fatalf("GetState = %+v, want the database pid %d", state, pid)
+	}
+}
+
+// A live process whose command line cannot be matched to the database is not
+// known to be something else, so its state files are kept.
+func TestGetState_OtherPostgresIsNotRunning(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the fake database is a re-exec of this test binary")
+	}
+	setStateTestDirs(t)
+	pid := startFakeDatabase(t)
+	writeStateForPid(t, pid)
+	writePostmasterPid(t, pid)
+
+	prev := readProcessCmdline
+	readProcessCmdline = func(context.Context, *psutils.Process) ([]string, error) {
+		return []string{"/usr/lib/postgresql/16/bin/postgres", "-D", "data"}, nil
+	}
+	t.Cleanup(func() { readProcessCmdline = prev })
+
+	state, err := GetState()
+	if err != nil {
+		t.Fatalf("GetState: %v", err)
+	}
+	if state != nil {
+		t.Fatalf("GetState = %+v, want nil for a postgres that is not steampipe", state)
+	}
+	if _, err := os.Stat(filepaths.RunningInfoFilePath()); err == nil {
+		t.Fatal("state file kept for a postgres that is not steampipe")
+	}
+}
+
+func TestGetState_UnconfirmedLiveDatabaseKeepsState(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the fake database is a re-exec of this test binary")
+	}
+	cases := map[string]func(*psutils.Process) ([]string, error){
+		"command line read fails": func(*psutils.Process) ([]string, error) {
+			return nil, fmt.Errorf("permission denied")
+		},
+		"command line split at a space in the install path": func(*psutils.Process) ([]string, error) {
+			return []string{"/Users/me/My", "Stuff/bin/postgres", "-D", "data", "application_name=steampipe"}, nil
+		},
+	}
+	for name, read := range cases {
+		t.Run(name, func(t *testing.T) {
+			setStateTestDirs(t)
+			pid := startFakeDatabase(t)
+			writeStateForPid(t, pid)
+			writePostmasterPid(t, pid)
+
+			prev := readProcessCmdline
+			readProcessCmdline = func(_ context.Context, p *psutils.Process) ([]string, error) { return read(p) }
+			t.Cleanup(func() { readProcessCmdline = prev })
+
+			state, err := GetState()
+			if err != nil {
+				t.Fatalf("GetState: %v", err)
+			}
+			if state == nil || state.Pid != pid {
+				t.Fatalf("GetState = %+v, want the live pid %d reported as running", state, pid)
+			}
+			if _, err := os.Stat(filepaths.RunningInfoFilePath()); err != nil {
+				t.Fatalf("state file removed for a live database: %v", err)
+			}
+		})
 	}
 }
