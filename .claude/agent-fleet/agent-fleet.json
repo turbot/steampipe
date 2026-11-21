@@ -8,7 +8,8 @@
   "tools": [
     "go",
     "jq",
-    "jd"
+    "jd",
+    "psql"
   ],
   "secrets": {},
   "chores": {

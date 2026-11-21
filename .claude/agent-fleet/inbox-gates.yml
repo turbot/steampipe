@@ -39,6 +39,13 @@ never_run:
   # A real login writes credentials to the machine
   - steampipe login
 
+# The acceptance files start services on steampipe's fixed ports, 9193 (the default, with no
+# environment variable to move it) and 9293 (pg_hba). With either taken, by the owner's own
+# service or another run of this check, every file fails at setup: the need is unmet, not red.
+needs:
+  steampipe-ports:
+    probe: "bash -c '! (echo > /dev/tcp/127.0.0.1/9193) 2>/dev/null && ! (echo > /dev/tcp/127.0.0.1/9293) 2>/dev/null'"
+
 checks:
   build: {run: "go build ./...", cost: 1}
   unit: {run: "go test ./...", cost: 1}
@@ -51,6 +58,7 @@ checks:
   # checkout into a temporary directory; each file gets its own temporary install directory with
   # the chaos plugins from the public registry, and both are removed when it ends.
   acceptance:
+    needs: [steampipe-ports]
     run: "tests/acceptance/run-local.sh migration brew installation plugin connection_config settings pg_hba blank_aggregators search_path chaos_and_query date_time_types dynamic_schema dynamic_aggregators cache performance config_precedence schema_cloning exit_codes"
     cost: 21
 
