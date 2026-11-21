@@ -1,0 +1,90 @@
+# Ships a Steampipe release on the merge of its release PR: builds it, publishes the files with the tag, then writes the Homebrew
+# formula and the changelog page, each waiting for the tag job, so neither points at files that are not on the Release yet. Once
+# the tag job has passed, it starts the repo's own post-release distro test.
+name: Ship
+
+on:
+  push:
+    branches: [main, 'main-*']
+
+permissions: {}
+
+jobs:
+  ship:
+    permissions:
+      contents: read
+      pull-requests: read
+      id-token: write
+    uses: turbot/shipyard-workflows/.github/workflows/go-cli-ship.yml@v0
+    with:
+      automation-logins: github-actions[bot]
+      goreleaser-config: .goreleaser.yml
+  tag:
+    needs: ship
+    if: ${{ always() }}
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: write
+      id-token: write
+    uses: turbot/shipyard-workflows/.github/workflows/tag.yml@v0
+    with:
+      ship-result: ${{ needs.ship.result }}
+      automation-logins: github-actions[bot]
+      product: Steampipe
+      assets: release-assets
+    secrets:
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+  homebrew:
+    # After the tag job has finished, pass or fail: a merge-back that needs a person must not hold the formula back, and the job
+    # refuses by itself when the Release is not published. Never for a build that failed or a push that is no release.
+    needs: [ship, tag]
+    if: ${{ !cancelled() && needs.ship.result == 'success' && needs.ship.outputs.release == 'true' }}
+    permissions:
+      contents: read
+      pull-requests: read
+      id-token: write
+    uses: turbot/shipyard-workflows/.github/workflows/homebrew.yml@v0
+    with:
+      automation-logins: github-actions[bot]
+      tap: turbot/homebrew-tap
+      formula: steampipe
+      versioned: true
+      desc: Steampipe exposes APIs and services as a high-performance relational database, giving you the ability to write SQL-based queries to explore, assess and report on dynamic data.
+      homepage: https://steampipe.io/
+      license: AGPL-3.0
+      # The darwin archives are .zip and the linux ones .tar.gz (goreleaser's format_overrides): {ext} is whichever each has.
+      archive: '{name}_{os}_{arch}.{ext}'
+    secrets:
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+  page:
+    # The changelog page on the site repo, as its own job in this run: the `release` environment is where the key is, and only
+    # main reaches it. Like Homebrew it waits for the tag job to finish and refuses by itself when the Release is not published.
+    # Run it again if it fails: it writes nothing twice. A repo whose `.github/release.json` has no `announce.page` gets no page.
+    needs: [ship, tag]
+    if: ${{ !cancelled() && needs.ship.result == 'success' && needs.ship.outputs.release == 'true' }}
+    permissions:
+      contents: read
+      pull-requests: read
+      id-token: write
+    uses: turbot/shipyard-workflows/.github/workflows/changelog-page.yml@v0
+    with:
+      automation-logins: github-actions[bot]
+      page-targets: turbot/steampipe.io:content/changelog/
+    secrets:
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+  distros:
+    # The repo's own post-release test (an install on four Linux distros, its result sent to Slack), started as its old release
+    # workflow did, once the tag job has published the Release. Shipyard's files do not run it: a CLI keeps its own tests this way.
+    needs: [ship, tag]
+    if: ${{ needs.tag.result == 'success' && needs.ship.outputs.release == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Start the post-release distro test
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.ship.outputs.tag }}
+        run: gh workflow run 12-test-post-release-linux-distros.yaml --ref develop -f version="$TAG"

@@ -12,6 +12,7 @@
     "psql"
   ],
   "secrets": {},
+  "releasePr": { "workflow": "release.yml", "base": "main" },
   "chores": {
     "security-audit": {
       "when": "mon week 3",
