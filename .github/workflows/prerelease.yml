@@ -27,8 +27,10 @@ permissions: {}
 
 jobs:
   start:
+    # GitHub checks every job of the called workflow against this grant, the skipped publish job too, which reads PRs.
     permissions:
       contents: read
+      pull-requests: read
       id-token: write       # so the workflow can run shipyard at its own commit
     uses: turbot/shipyard-workflows/.github/workflows/prerelease.yml@v0
     with:

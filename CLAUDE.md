@@ -366,7 +366,7 @@ When a change spans multiple repos (e.g. adding a new config field):
 
 - **Base branch**: `develop` for all work
 - **Main branch**: `main` takes only release PRs (see Release Process)
-- **Changelog line**: Every PR into `develop` that ships something carries one `Changelog:` line in its body: one or two sentences a person using Steampipe can read. A required check keeps the PR red until it has one. A PR whose files all match `notShipped` in `.github/release.json` (tests, `.github/`, docs) needs none. The PR template has the line.
+- **Changelog line**: Every PR into `develop` that ships something carries one `Changelog:` line in its body: one or two sentences a person using Steampipe can read. The `Changelog line` check fails until it has one. A PR whose files all match `notShipped` in `.github/release.json` (tests, `.github/`, docs) needs none. The PR template has the line.
 - **Bug fixes**: Use the 2-commit pattern (see `.ai/docs/bug-fix-prs.md`)
 - **PR titles**: End with `closes #XXXX` for bug fixes
 - **Merge-to-develop PRs**: When merging a feature branch into `develop`, the PR title must be `Merge branch '<branchname>' into develop`

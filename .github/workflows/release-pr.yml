@@ -54,7 +54,7 @@ jobs:
       review: ${{ github.event_name == 'pull_request_review' }}
       ignore-checks: record / record
       # The workflows behind develop's required checks that can run by hand: Test Linting (10) and Build (11).
-      # The third, the changelog line, runs only on PRs into develop.
+      # The changelog line check runs only on PRs into develop.
       required-check-workflows: 10-test-lint.yaml,11-test-acceptance.yaml
       # The acceptance workflow takes about 9 minutes, close to the 10-minute default.
       check-wait-minutes: '25'

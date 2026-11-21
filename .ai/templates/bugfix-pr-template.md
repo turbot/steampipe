@@ -9,6 +9,8 @@ Brief description closes #<issue>
 ## PR Description
 
 ```markdown
+Changelog: [1-2 sentences a person using Steampipe can read: what is fixed]
+
 ## Summary
 [1-2 sentences: what was wrong and how it's fixed]
 
