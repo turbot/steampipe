@@ -399,7 +399,7 @@ ship.yml: build ──► tag + GitHub Release (archives, .deb, .rpm) + merge-ba
 ```
 
 - `.github/release.json`: product, `notShipped`, the start, the ask channel and the changelog page.
-- `.github/workflows/`: `release-start.yml`, `prep.yml`, `release.yml` (the cut), `release-pr.yml` (results and record), `ask.yml`, `ship.yml`, `announce.yml`, `shipyard-pr.yml` (the Changelog line check; Shipyard's fixed file, the same in every repo, never edited), `prerelease.yml` (betas and release candidates, started on `main` by an approver).
+- `.github/workflows/`: `release-start.yml`, `prep.yml`, `release.yml` (the cut), `release-pr.yml` (results and record), `ask.yml`, `ship.yml`, `announce.yml`, `shipyard-pr.yml` (the Changelog line check; Shipyard's fixed file, the same in every repo, never edited).
 - A release that merged but did not ship (its ship job broke) is finished by a re-ship: `release.yml` with `reship` and `fixes`.
 - A new FDW version is released in turbot/steampipe-postgres-fdw first, and `FdwVersion` in `pkg/constants/db.go` is bumped by a PR into `develop`.
 - The `.claude/skills/release` skill has the steps.

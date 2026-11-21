@@ -1,6 +1,6 @@
 ---
 name: release
-description: Release steampipe through the shared release workflows - the FDW first when it changed, the prep file, the cut and the release PR, the approval, watching the ship (tag, Homebrew, steampipe.io page, distro test, merge-back), a re-ship, a beta, and the hand-over to the Pipes release.
+description: Release steampipe through the shared release workflows - the FDW first when it changed, the prep file, the cut and the release PR, the approval, watching the ship (tag, Homebrew, steampipe.io page, distro test, merge-back), a re-ship, and the hand-over to the Pipes release.
 ---
 
 # Release steampipe
@@ -90,18 +90,7 @@ to its `main`; if the page job passed and the page is still not live, run the si
 on `develop` with `reship` (the version), `commit` (the tip of `main`) and `fixes` (the merge commits of the fix on
 `develop`). A fix that changes `.github/workflows/` cannot go in `fixes`: the cut says how to pick it by hand.
 
-## 5. A beta or release candidate
-
-A member of `turbot/pipelings-release-approvers` starts one on `main`, naming a commit of `develop`:
-
-```bash
-gh workflow run prerelease.yml --repo turbot/steampipe --ref main -f commit=<full sha> -f version={x.y.z} -f pre=beta
-```
-
-The release App makes the tag (`v{x.y.z}-beta.1`, then `-beta.2`) and a GitHub Release marked as a prerelease, with the
-same files a release has. Nothing else changes: no commit, CHANGELOG section, PR, Homebrew formula or page.
-
-## 6. Hand over
+## 5. Hand over
 
 Tell whoever runs the Turbot Pipes release that the new version is live, with its tag (`v{x.y.z}`). Pipes pins the CLI by
 that tag (`steampipeCliVersion`), and the new version ships in the next Pipes release.
