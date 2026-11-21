@@ -366,7 +366,7 @@ When a change spans multiple repos (e.g. adding a new config field):
 
 - **Base branch**: `develop` for all work
 - **Main branch**: `main` takes only release PRs (see Release Process)
-- **Changelog line**: Every PR into `develop` that ships something carries one `Changelog:` line in its body: one or two sentences a person using Steampipe can read. The `Changelog line` check fails until it has one. A PR whose files all match `notShipped` in `.github/release.json` (tests, `.github/`, docs) needs none. The PR template has the line.
+- **Changelog line**: Every PR into `develop` that ships something carries one `Changelog:` line in its body: one or two sentences a person using Steampipe can read. Its `shipyard/changelog-line` status fails until it has one. A PR whose files all match `notShipped` in `.github/release.json` (tests, `.github/`, docs) needs none. The PR template has the line.
 - **Bug fixes**: Use the 2-commit pattern (see `.ai/docs/bug-fix-prs.md`)
 - **PR titles**: End with `closes #XXXX` for bug fixes
 - **Merge-to-develop PRs**: When merging a feature branch into `develop`, the PR title must be `Merge branch '<branchname>' into develop`
@@ -399,7 +399,7 @@ ship.yml: build ──► tag + GitHub Release (archives, .deb, .rpm) + merge-ba
 ```
 
 - `.github/release.json`: product, `notShipped`, the start, the ask channel and the changelog page.
-- `.github/workflows/`: `release-start.yml`, `prep.yml`, `release.yml` (the cut), `release-pr.yml` (results and record), `ask.yml`, `ship.yml`, `announce.yml`, `changelog-line.yml`, `prerelease.yml` (betas and release candidates, started on `main` by an approver).
+- `.github/workflows/`: `release-start.yml`, `prep.yml`, `release.yml` (the cut), `release-pr.yml` (results and record), `ask.yml`, `ship.yml`, `announce.yml`, `shipyard-pr.yml` (the Changelog line check; Shipyard's fixed file, the same in every repo, never edited), `prerelease.yml` (betas and release candidates, started on `main` by an approver).
 - A release that merged but did not ship (its ship job broke) is finished by a re-ship: `release.yml` with `reship` and `fixes`.
 - A new FDW version is released in turbot/steampipe-postgres-fdw first, and `FdwVersion` in `pkg/constants/db.go` is bumped by a PR into `develop`.
 - The `.claude/skills/release` skill has the steps.
