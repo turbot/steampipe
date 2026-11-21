@@ -3,10 +3,12 @@ package cmdconfig
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 	"slices"
 	"strings"
@@ -204,9 +206,9 @@ func initGlobalConfig() perror_helpers.ErrorAndWarnings {
 	ctx := cmd.Context()
 
 	// load workspace profile from the configured install dir
-	loader, err := getWorkspaceProfileLoader(ctx)
+	loader, profileWarnings, err := getWorkspaceProfileLoader(ctx)
 	if err != nil {
-		return perror_helpers.NewErrorsAndWarning(err)
+		return perror_helpers.NewErrorsAndWarning(err, profileWarnings...)
 	}
 
 	// set global workspace profile
@@ -226,6 +228,9 @@ func initGlobalConfig() perror_helpers.ErrorAndWarnings {
 	if loadConfigErrorsAndWarnings.Error != nil {
 		return loadConfigErrorsAndWarnings
 	}
+
+	// a bad file in the workspace profile folder is reported here (see getWorkspaceProfileLoader)
+	loadConfigErrorsAndWarnings.AddWarning(profileWarnings...)
 
 	// store global config
 	steampipeconfig.GlobalConfig = config
@@ -301,7 +306,11 @@ func setCloudTokenDefault(loader *parse.WorkspaceProfileLoader[*workspace_profil
 	return nil
 }
 
-func getWorkspaceProfileLoader(ctx context.Context) (*parse.WorkspaceProfileLoader[*workspace_profile.SteampipeWorkspaceProfile], error) {
+// getWorkspaceProfileLoader loads the workspace profiles from the config folder.
+// A .spc file which does not parse is left out, like steampipeconfig.loadConfig does for connection config,
+// so one bad file does not stop every command. The warnings returned are for the files left out; they are
+// empty when the folder is the config folder, as loading the connection config reports those files.
+func getWorkspaceProfileLoader(ctx context.Context) (*parse.WorkspaceProfileLoader[*workspace_profile.SteampipeWorkspaceProfile], []string, error) {
 	// set viper default for workspace profile, using EnvWorkspaceProfile env var
 	SetDefaultFromEnv(constants.EnvWorkspaceProfile, pconstants.ArgWorkspaceProfile, String)
 	// set viper default for install dir, using EnvInstallDir env var
@@ -310,27 +319,47 @@ func getWorkspaceProfileLoader(ctx context.Context) (*parse.WorkspaceProfileLoad
 	// resolve the workspace profile dir
 	installDir, err := filehelpers.Tildefy(viper.GetString(pconstants.ArgInstallDir))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	workspaceProfileDir, err := filepaths.WorkspaceProfileDir(installDir)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	// create loader
+	// create loader (this also writes the sample workspace file into the folder)
 	loader, err := parse.NewWorkspaceProfileLoader[*workspace_profile.SteampipeWorkspaceProfile](workspaceProfileDir)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+
+	// leave out any file which does not parse, loading the rest from a copy of the folder
+	validDir, warnings, cleanup, err := steampipeconfig.ValidConfigDir(workspaceProfileDir)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer cleanup()
+	if validDir != workspaceProfileDir {
+		if loader, err = parse.NewWorkspaceProfileLoader[*workspace_profile.SteampipeWorkspaceProfile](validDir); err != nil {
+			return nil, nil, err
+		}
+	}
+	if filepath.Clean(workspaceProfileDir) == filepath.Join(installDir, "config") {
+		// loading the connection config reports these
+		warnings = nil
 	}
 
 	// TODO look at unifying this with `GetWorkspaceProfileLoader` func in pipe-fittings/v2/cmdconfig
 	// https://github.com/turbot/steampipe/issues/4486
 	if err = loader.Load(); err != nil {
-		return nil, err
+		if validDir != workspaceProfileDir {
+			// the copy is removed on return: name the real folder in the error
+			err = errors.New(strings.ReplaceAll(err.Error(), validDir, workspaceProfileDir))
+		}
+		return nil, warnings, err
 	}
 
-	return loader, nil
+	return loader, warnings, nil
 }
 
 // now validate  config values have appropriate values
