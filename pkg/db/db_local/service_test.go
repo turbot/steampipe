@@ -211,8 +211,8 @@ func TestGetState_RunningSteampipeDatabaseIsRunning(t *testing.T) {
 	}
 }
 
-// A live process whose command line cannot be matched to the database is not
-// known to be something else, so its state files are kept.
+// A readable postgres command line without application_name=steampipe belongs
+// to another program, so the stale state files are removed.
 func TestGetState_OtherPostgresIsNotRunning(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("the fake database is a re-exec of this test binary")
@@ -240,6 +240,8 @@ func TestGetState_OtherPostgresIsNotRunning(t *testing.T) {
 	}
 }
 
+// A live process whose command line cannot be read or matched to the database
+// is not known to be something else, so its state files are kept.
 func TestGetState_UnconfirmedLiveDatabaseKeepsState(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("the fake database is a re-exec of this test binary")
