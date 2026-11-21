@@ -1,8 +1,15 @@
 {
   "warm": "git submodule update --init --recursive && go mod download",
   "warmProbe": "tests/acceptance/lib/bats-core/bin/bats",
-  "platforms": ["darwin", "linux"],
-  "tools": ["go", "jq", "jd"],
+  "platforms": [
+    "darwin",
+    "linux"
+  ],
+  "tools": [
+    "go",
+    "jq",
+    "jd"
+  ],
   "secrets": {},
   "chores": {
     "security-audit": {
@@ -13,7 +20,17 @@
         "Pipes login and token handling (cmd/login.go)",
         "connection config loading (pkg/steampipeconfig)",
         "plugin manager gRPC service (pkg/pluginmanager_service)"
-      ]
+      ],
+      "off": true
+    },
+    "secret-scan": {
+      "off": true
+    },
+    "dependencies": {
+      "off": true
+    },
+    "dependabot-cant-fix": {
+      "off": true
     }
   }
 }
