@@ -115,20 +115,21 @@ func GetPostmasterPidLocation() string {
 }
 
 // GetSetupUnfinishedMarkerLocation is a file that exists from just before the data folder is initialised until
-// its setup finishes; a start that finds no database in the data folder removes it. It sits beside the data folder
-// because initdb needs that folder empty.
+// its setup finishes; a start that finds no database in the data folder removes it. It sits in the internal folder,
+// with the other runtime state, so that a start writes nothing under the db folder once the database programs are
+// installed: that folder may be read-only. It is named for the database version, as the data folder is.
 func GetSetupUnfinishedMarkerLocation() string {
-	return filepath.Join(DatabaseInstanceDir(), SetupUnfinishedMarkerName)
+	return SetupUnfinishedMarkerLocationForVersion(constants.DatabaseVersion)
 }
 
 // SetupUnfinishedMarkerLocationForVersion is the marker of the data folder of one database version. It creates
-// nothing.
+// nothing in the db folder.
 func SetupUnfinishedMarkerLocationForVersion(version string) string {
 	return filepath.Join(EnsureInternalDir(), SetupUnfinishedMarkerName+"-"+version)
 }
 
 // LegacySetupUnfinishedMarkerLocation is where Steampipe 2.5.1 kept the marker: beside the database programs.
-// It creates nothing.
+// Nothing writes it now, but one a 2.5.1 setup left behind still counts. It creates nothing.
 func LegacySetupUnfinishedMarkerLocation(versionDir string) string {
 	return filepath.Join(versionDir, SetupUnfinishedMarkerName)
 }
