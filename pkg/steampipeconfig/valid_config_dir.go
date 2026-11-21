@@ -22,7 +22,10 @@ func ValidConfigDir(dir string) (validDir string, warnings []string, cleanup fun
 		Flags:   filehelpers.FilesFlat,
 		Include: filehelpers.InclusionsFromExtensions([]string{app_specific.ConfigExtension}),
 	})
-	if err != nil || len(configPaths) == 0 {
+	if err != nil {
+		return "", nil, cleanup, err
+	}
+	if len(configPaths) == 0 {
 		return dir, nil, cleanup, nil
 	}
 	fileData, diags := pparse.LoadFileData(configPaths...)
