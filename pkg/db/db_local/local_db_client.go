@@ -77,6 +77,7 @@ func newLocalClient(ctx context.Context, invoker constants.Invoker, opts ...db_c
 	}
 	dbClient, err := db_client.NewDbClient(ctx, connString, opts...)
 	if err != nil {
+		err = hideConnStringInParseError(err)
 		log.Printf("[TRACE] error getting local client %s", err.Error())
 		return nil, err
 	}

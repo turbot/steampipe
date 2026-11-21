@@ -488,16 +488,19 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) (*exec.C
 		"-D", filepaths.GetDataLocation())
 
 	postgresCmd.Args = append(postgresCmd.Args, socketArgs...)
+	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", app_specific.InstallDir))
 
 	if sslpassword := viper.GetString(pconstants.ArgDatabaseSSLPassword); sslpassword != "" {
+		// postgres runs ssl_passphrase_command with /bin/sh, and every local user can read
+		// the postgres command line - so give postgres the passphrase in its environment,
+		// and use a fixed command that prints it (postgres replaces %% with %)
 		postgresCmd.Args = append(
 			postgresCmd.Args,
-			"-c", fmt.Sprintf("ssl_passphrase_command_supports_reload=%s", "true"),
-			"-c", fmt.Sprintf("ssl_passphrase_command=%s", "echo "+sslpassword),
+			"-c", "ssl_passphrase_command_supports_reload=true",
+			"-c", fmt.Sprintf(`ssl_passphrase_command=printf '%%%%s' "$%s"`, constants.EnvDatabaseSSLPassword),
 		)
+		postgresCmd.Env = append(postgresCmd.Env, fmt.Sprintf("%s=%s", constants.EnvDatabaseSSLPassword, sslpassword))
 	}
-
-	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", app_specific.InstallDir))
 
 	//  Check if the /etc/ssl directory exist in os
 	dirExist, _ := os.Stat(constants.SslConfDir)
@@ -510,7 +513,7 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) (*exec.C
 	// this in env variable
 	// Tested in amazonlinux, debian:buster, ubuntu, mac
 	if dirExist != nil && !envVariableExist {
-		postgresCmd.Env = append(os.Environ(), fmt.Sprintf("OPENSSL_CONF=%s", constants.SslConfDir))
+		postgresCmd.Env = append(postgresCmd.Env, fmt.Sprintf("OPENSSL_CONF=%s", constants.SslConfDir))
 	}
 
 	// set group pgid attributes on the command to ensure the process is not shutdown when its parent terminates
@@ -552,10 +555,21 @@ func setServicePassword(ctx context.Context, password string) error {
 	defer connection.Close(ctx)
 	statements := []string{
 		"LOCK TABLE pg_user IN SHARE ROW EXCLUSIVE MODE;",
-		fmt.Sprintf(`ALTER USER steampipe WITH PASSWORD '%s';`, password),
+		// ALTER USER cannot take a bind parameter, so the password is quoted as a literal
+		fmt.Sprintf(`ALTER USER steampipe WITH PASSWORD %s;`, quoteLiteral(password)),
 	}
 	_, err = ExecuteSqlInTransaction(ctx, connection, statements...)
 	return err
+}
+
+// quoteLiteral quotes s as a SQL string literal. It is correct whether or not
+// standard_conforming_strings is on.
+func quoteLiteral(s string) string {
+	s = strings.ReplaceAll(s, `'`, `''`)
+	if strings.Contains(s, `\`) {
+		return `E'` + strings.ReplaceAll(s, `\`, `\\`) + `'`
+	}
+	return `'` + s + `'`
 }
 
 func setupLogCollector(postgresCmd *exec.Cmd) (chan string, func(), error) {
