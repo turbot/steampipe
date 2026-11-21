@@ -1,0 +1,35 @@
+# Asks the area's approvers in Slack once the release PR's record is in. It runs on the default branch, in the
+# repo's `slack` environment, from one of two starts: when the record workflow, `Release PR`, finishes (workflow_run), or by name
+# (workflow_dispatch, input `pr`). A CLI's release PR is opened with the job's token, and GitHub creates no workflow_run for an
+# event that token causes, so the record starts this workflow itself when it writes SHIP (`ask-workflow: ask.yml` in release-pr.yml).
+# Nothing follows the ask.
+name: Ask
+
+on:
+  workflow_run:
+    workflows: ["Release PR"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: The release PR's number
+        required: true
+
+permissions: {}
+
+jobs:
+  ask:
+    # A record run that did not succeed asks nothing; a later record run asks. A run by name asks for the PR it names.
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+    uses: turbot/shipyard-workflows/.github/workflows/ask.yml@v0
+    with:
+      # The release PR the run is for: the one the record run names (empty when it names none, which looks at every open release PR),
+      # or the one a run by name is given.
+      pr: ${{ github.event.workflow_run.pull_requests[0].number || inputs.pr }}
+    secrets:
+      SHIPYARD_SLACK_BOT_TOKEN: ${{ secrets.SHIPYARD_SLACK_BOT_TOKEN }}

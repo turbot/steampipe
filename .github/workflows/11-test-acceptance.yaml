@@ -1,6 +1,8 @@
 name: "11 - Test: Acceptance"
 on:
   pull_request:
+  # The release PR's record runs this by name on its commit, since develop requires its Build check.
+  workflow_dispatch:
 
 permissions:
   contents: read

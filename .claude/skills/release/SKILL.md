@@ -1,28 +1,24 @@
 ---
 name: release
-description: Cut a steampipe CLI patch release from a v{maj}.{min}.x release branch - release turbot/steampipe-postgres-fdw first when it changed (version and changelog, tag, draft release, image publish) and bump FdwVersion, then steampipe's own changelog and release issue, the release workflow, verification and release notes, the merge-back, main and steampipe.io PRs, and the hand-over to the Pipes release.
+description: Release steampipe through the shared release workflows - the FDW first when it changed, the prep file, the cut and the release PR, the approval, watching the ship (tag, Homebrew, steampipe.io page, distro test, merge-back), a re-ship, a beta, and the hand-over to the Pipes release.
 ---
 
 # Release steampipe
 
-Release branches are `v{maj}.{min}.x` (e.g. `v2.4.x`). A release is a tag cut from the branch head by the
-`01 - Steampipe: Release` workflow. Never tag through the GitHub Releases UI: it creates the tag but
-does not build binaries, publish, or update Homebrew.
+steampipe releases through Turbot's shared release workflows (turbot/shipyard-workflows, called at `v0`). Nobody types a
+version, pushes a tag, edits `CHANGELOG.md` or opens a Homebrew or steampipe.io PR by hand. Every PR into `develop` that
+ships carries a `Changelog:` line, and those lines are the release's changelog.
 
-Placeholders: `{x.y.z}` is the new version (e.g. `2.4.8`), `{prev}` the previous tag (e.g. `v2.4.7`,
-from `gh release list --repo turbot/steampipe --limit 1 --exclude-pre-releases`), `{x}-{y}-{z}` and `{xyz}` the same version
-dash-separated (`2-4-8`) and with no separators (`248`). `{f.x.y.z}` is the FDW version being released
-(e.g. `2.2.8`) and `v{fmaj}.{fmin}.x` its release branch (e.g. `v2.2.x`).
-
-Every PR you open below is opened under your own `gh` auth and needs a teammate's approval before it
-merges. Exceptions: the `turbot/homebrew-tap` PR, which the workflow opens and merges itself, and PRs
-into steampipe.io `main` or the FDW release branch, which require no review.
+The Release carries the darwin `.zip` and linux `.tar.gz` archives, the linux `.deb` and `.rpm` packages and
+`checksums.txt`, with the same names as every release before (`steampipe_<os>_<arch>.<ext>`): the Homebrew tap,
+`scripts/install.sh` and the setup action fetch them by name.
 
 ## 1. FDW first, only if the FDW changed
 
 Skip to section 2 if `turbot/steampipe-postgres-fdw` has nothing new since the `FdwVersion` in
 `pkg/constants/db.go`: `gh api repos/turbot/steampipe-postgres-fdw/compare/v<FdwVersion>...v{fmaj}.{fmin}.x -q .ahead_by`.
-No workflow tags an FDW release; the tag is pushed by hand.
+`{f.x.y.z}` is the FDW version being released (e.g. `2.2.8`) and `v{fmaj}.{fmin}.x` its release branch (e.g. `v2.2.x`).
+The FDW repo is not on the shared release workflows yet: its tag is still pushed by hand, there.
 
 1. PR into the FDW release branch `v{fmaj}.{fmin}.x`, committed as `v{f.x.y.z}`: set
    `fdwVersion = "{f.x.y.z}"` in `version/version.go` and add a `## v{f.x.y.z} [YYYY-MM-DD]` entry to
@@ -42,83 +38,70 @@ No workflow tags an FDW release; the tag is pushed by hand.
 5. Verify: `docker manifest inspect ghcr.io/turbot/steampipe/fdw:{f.x.y.z}` returns a manifest.
 6. FDW PRs: `v{fmaj}.{fmin}.x` into `develop`, titled `Merge branch 'v{fmaj}.{fmin}.x' into develop`, and
    into `main`, titled `Release steampipe-postgres-fdw v{f.x.y.z}` (the FDW repo asks for both each release).
-7. On a branch off `v{maj}.{min}.x`, set `FdwVersion = "{f.x.y.z}"` in `pkg/constants/db.go` and open a PR
-   into `v{maj}.{min}.x`. It can be the same PR as the section 2 changelog entry; it must merge before
-   section 3, and only once step 5 passes.
+7. Set `FdwVersion = "{f.x.y.z}"` in `pkg/constants/db.go` by a PR into steampipe's `develop`, with a `Changelog:`
+   line, only once step 5 passes. It must merge before the prep in section 2 reads `develop`.
 
-## 2. Confirm what is being released
+## 2. Start and prep
 
-```bash
-gh api 'repos/turbot/steampipe/compare/{prev}...v{maj}.{min}.x' \
-  -q '.commits[] | "\(.sha[0:8]) \(.commit.message | split("\n")[0])"'
-gh api 'repos/turbot/steampipe/contents/pkg/constants/db.go?ref=v{maj}.{min}.x' -q .content | base64 -d | grep FdwVersion
+`release-start.yml` files a prep job (an issue labelled `agent:release`) on Tuesdays at 09:00 UTC when a shipped change
+waits, or when run by hand on `develop`. Dependency bumps alone start nothing, unless one fixes an advisory.
+
+Write the prep file with the skill the prep job names, for the commit it names. Then a person runs
+`prep.yml` with the file's content, and `release.yml` on `develop` with `commit` (the full id) and `prep-run` (the prep run's
+id). The cut makes `release/<version>` with the CHANGELOG section and opens the release PR into `main`.
+
+## 3. The release PR
+
+`release-pr.yml` tests the candidate (`go test ./...`), builds a snapshot, installs it and writes the record. It also runs
+`10 - Test: Linting` and `11 - Test: Acceptance` on the PR's commit, the checks `develop` requires. With a SHIP record, the
+record marks the PR ready for review and starts `ask.yml`, which asks in #steampipe within a minute. `main` accepts the
+merge only when the record's `shipyard/release` status passes. One approver of `turbot/pipelings-release-approvers` who
+drove none of its changes approves it. Merge with a merge commit.
+
+## 4. Watch the ship
+
+`ship.yml` runs on the merge:
+
+```
+ship (build at the merge) ──► tag (tag, GitHub Release with the archives and packages, merge-back PR into develop)
+                                ├──► homebrew (turbot/homebrew-tap: steampipe.rb and steampipe@<version>.rb)
+                                ├──► page (steampipe.io: content/changelog/steampipe-cli-v<x-y-z>.md)
+                                └──► distros (12 - Test: Linux Distros (Post-release))
 ```
 
-- Every intended fix is in the list. For a security fix, credit the commit that actually changed the
-  dependency, not an adjacent PR.
-- `CHANGELOG.md` on `v{maj}.{min}.x` has an entry for `v{x.y.z}` in the style of earlier entries, dated
-  today, committed with the message `v{x.y.z}` (via a PR into the release branch).
-- Open the release issue from `.github/ISSUE_TEMPLATE/release_issue.md`: title `Steampipe v{x.y.z}`,
-  label `release`. Its checklist names older workflows; follow this skill's order and tick the items
-  that still apply.
-
-## 3. Dispatch the release workflow
-
 ```bash
-gh workflow run 01-steampipe-release.yaml --repo turbot/steampipe --ref v{maj}.{min}.x \
-  -f environment='Final (RC and final release)' -f version={x.y.z} -f confirmDevelop=false
-sleep 15; gh run list --repo turbot/steampipe --workflow 01-steampipe-release.yaml --limit 3 --json databaseId,createdAt,headBranch
-gh run watch --repo turbot/steampipe <run-id>
-```
-
-Take the run whose `createdAt` is after your dispatch; if none is, list again. `version` has no `v` prefix;
-the workflow adds it. The `--ref` is the branch that gets tagged.
-`Development (alpha)` / `Development (beta)` are for pre-release test builds only.
-
-The `Release CLI` job creates the tag and GitHub release; later jobs open and merge the homebrew-tap PR
-and dispatch `12 - Test: Linux Distros (Post-release)`.
-
-## 4. Verify and publish the release notes
-
-```bash
+gh run list --repo turbot/steampipe --workflow ship.yml --limit 1
 gh release view v{x.y.z} --repo turbot/steampipe
-gh pr list --repo turbot/homebrew-tap --state merged --limit 5
-gh run list --repo turbot/steampipe --workflow 12-test-post-release-linux-distros.yaml --limit 1
+brew update && brew install turbot/tap/steampipe && steampipe --version
 ```
 
-The release has its binaries, the homebrew-tap PR for `{x.y.z}` is merged, and the post-release test run
-passed. The release is published with an empty body (goreleaser's changelog is disabled): edit it and
-paste in the `CHANGELOG.md` entry for `v{x.y.z}`.
+It is done when:
 
-## 5. PRs
+- Homebrew installs the new version and `steampipe --version` says it;
+- `scripts/install.sh` installs it in a clean Linux container;
+- the `.deb` and `.rpm` files are on the Release;
+- the page is live at `https://steampipe.io/changelog/steampipe-cli-v{x}-{y}-{z}`.
 
-1. `v{maj}.{min}.x` into `develop`, titled `Merge branch 'v{maj}.{min}.x' into develop`. If the branches
-   conflict (usually `go.mod`/`go.sum`), open it from a branch cut off `develop` that merges
-   `origin/v{maj}.{min}.x` with the conflicts resolved (keep the higher version of each dependency), then `go mod tidy`.
-2. `v{maj}.{min}.x` into `main`, titled `Release Steampipe v{x.y.z}`, label `release`. Never merge `main` into
-   the release branch: if they conflict, open it from a branch cut off `v{maj}.{min}.x` that merges
-   `origin/main`, taking the release branch's side of any conflict. Body:
-   ```
-   ## Release Issue
-   [Steampipe v{x.y.z}](<release issue URL>)
+A failed `homebrew` or `page` job is finished by running it again; it writes nothing twice. The site deploys on each push
+to its `main`; if the page job passed and the page is still not live, run the site's `Deploy steampipe.io` workflow from
+`main`.
 
-   ## Checklist
-   - [ ] Confirmed that version has been correctly upgraded.
-   ```
-3. `turbot/steampipe.io`: branch `sp-{xyz}` off `main`, add
-   `content/changelog/<YYYY>/<YYYYMMDD>-steampipe-cli-v{x}-{y}-{z}.md`:
-   ```
-   ---
-   title: Steampipe CLI v{x.y.z} - <short summary>
-   publishedAt: "<YYYY-MM-DD>T10:00:00"
-   permalink: steampipe-cli-v{x}-{y}-{z}
-   tags: cli
-   ---
-   ```
-   Body matches the `CHANGELOG.md` entry. PR title `Steampipe CLI v{x.y.z}`, base `main`.
-   Once merged, run the `Deploy steampipe.io` workflow from `main` and check the page loads.
+**A release merged but not shipped** (the ship job itself is broken): `main` takes only release PRs, so run `release.yml`
+on `develop` with `reship` (the version), `commit` (the tip of `main`) and `fixes` (the merge commits of the fix on
+`develop`). A fix that changes `.github/workflows/` cannot go in `fixes`: the cut says how to pick it by hand.
+
+## 5. A beta or release candidate
+
+A member of `turbot/pipelings-release-approvers` starts one on `main`, naming a commit of `develop`:
+
+```bash
+gh workflow run prerelease.yml --repo turbot/steampipe --ref main -f commit=<full sha> -f version={x.y.z} -f pre=beta
+```
+
+The release App makes the tag (`v{x.y.z}-beta.1`, then `-beta.2`) and a GitHub Release marked as a prerelease, with the
+same files a release has. Nothing else changes: no commit, CHANGELOG section, PR, Homebrew formula or page.
 
 ## 6. Hand over
 
-Give the new version (`steampipeCliVersion`) to whoever runs the Turbot Pipes release, tick the release
-issue's checklist, and close it.
+Tell whoever runs the Turbot Pipes release that the new version is live, with its tag (`v{x.y.z}`). Pipes pins the CLI by
+that tag (`steampipeCliVersion`), and the new version ships in the next Pipes release.

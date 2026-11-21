@@ -1,0 +1,46 @@
+{
+  "product": "Steampipe",
+  "notShipped": [
+    ".ai/",
+    ".claude/",
+    ".github/",
+    "design/",
+    "tests/",
+    "**/*_test.go",
+    "**/testdata/",
+    ".acceptance.goreleaser.yml",
+    ".golangci.yml",
+    ".gitattributes",
+    ".gitignore",
+    ".gitmodules",
+    "CLAUDE.md",
+    "CONTRIBUTING.md",
+    "README.md",
+    "scripts/build-embedded-pg.sh",
+    "scripts/linux_container_info.sh",
+    "scripts/prepare_*.sh",
+    "scripts/smoke_test.sh",
+    "scripts/test_cred_rotate.sh"
+  ],
+  "start": {
+    "branches": [{ "name": "develop", "cadence": "weekly" }],
+    "tagPrefix": "v",
+    "approvers": ["turbot/pipelings-release-approvers"]
+  },
+  "notes": {
+    "internalTerms": ["turbot-ops", "clitesting", "SPIPETOOLS"]
+  },
+  "ask": { "channel": "#steampipe" },
+  "announce": {
+    "page": {
+      "repo": "turbot/steampipe.io",
+      "path": "content/changelog/steampipe-cli-v{dashed}.md",
+      "frontMatter": {
+        "title": "{title}",
+        "publishedAt": "{date}",
+        "permalink": "steampipe-cli-v{dashed}",
+        "tags": "cli"
+      }
+    }
+  }
+}

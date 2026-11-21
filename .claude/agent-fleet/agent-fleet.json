@@ -4,6 +4,7 @@
   "platforms": ["darwin", "linux"],
   "tools": ["go", "jq", "jd"],
   "secrets": {},
+  "releasePr": { "workflow": "release.yml", "base": "main" },
   "chores": {
     "security-audit": {
       "when": "mon week 3",

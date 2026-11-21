@@ -1,0 +1,26 @@
+# The weekly release start (Tuesday 09:00 UTC), or a start by hand from develop. It files a prep job on this repo only when a shipped
+# change waits since the newest release tag, and none while a release PR or a prep job is open.
+name: Release start
+
+on:
+  schedule:
+    - cron: "0 9 * * 2"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  start:
+    name: start
+    if: ${{ github.event.schedule == '0 9 * * 2' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop') }}
+    permissions:
+      contents: read        # check out this repository with the workflow's own token
+      pull-requests: read   # list the open pull requests and read a release:now one
+      checks: read          # read the full check on a commit: its check runs
+      statuses: read        # ... and its commit statuses
+      issues: write         # file the prep job here
+      id-token: write       # the called workflow learns which commit of itself is running
+    uses: turbot/shipyard-workflows/.github/workflows/release-start.yml@v0
+    with:
+      repo: turbot/steampipe
+      cadence: weekly

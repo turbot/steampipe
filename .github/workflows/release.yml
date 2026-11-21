@@ -1,0 +1,59 @@
+# Cuts a Steampipe release and opens its PR: the cut, then the PR. The fleet's release-PR hook takes over from the `open` job
+# once it is turned on for this repo; until then the `open` job opens the PR.
+# Run by hand on develop, naming the commit the prep job read and its prep file.
+# A re-ship (a merged release that is not live because its ship job broke) gives `reship` and `fixes` and no prep file.
+# A patch (fixes already merged into develop, shipped from main without the rest of develop) gives `patch`, `fixes`, a prep file made from facts with those fixes, and `commit` the tip of main.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: The full commit id the prep job read
+        required: true
+      prep-run:
+        description: The run id of the prep job (its artifact `prep` holds prep.json)
+        required: false
+      prep-file:
+        description: Or a path in this repo to a prep file, read on this branch
+        required: false
+      reship:
+        description: A re-ship, for a release that merged and is not live because its ship job broke - the version, X.Y.Z, with no prep-run or prep-file (commit is the tip of main, where the version merged)
+        required: false
+      patch:
+        description: A patch, to ship fixes already merged into this branch from the tip of main without the rest of develop - true, with fixes, a prep file made from facts with those fixes (level patch) and commit the tip of main. Leave it off for any other release.
+        type: boolean
+        required: false
+        default: false
+      fixes:
+        description: Only with reship or patch - the fix commits on this branch, full 40-character ids separated by spaces
+        required: false
+
+permissions: {}
+
+jobs:
+  cut:
+    if: github.ref == 'refs/heads/develop'
+    permissions:
+      contents: write
+      pull-requests: read
+      actions: read
+      id-token: write
+    uses: turbot/shipyard-workflows/.github/workflows/cut.yml@v0
+    with:
+      commit: ${{ inputs.commit }}
+      prep-run: ${{ inputs.prep-run }}
+      prep-file: ${{ inputs.prep-file }}
+      reship: ${{ inputs.reship }}
+      patch: ${{ inputs.patch }}
+      fixes: ${{ inputs.fixes }}
+  open:
+    needs: cut
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: write
+      id-token: write
+    uses: turbot/shipyard-workflows/.github/workflows/open-release-pr.yml@v0
+    with:
+      record-workflow: release-pr.yml

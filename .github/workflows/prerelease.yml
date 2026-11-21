@@ -1,0 +1,115 @@
+# A prerelease of the next version (v2.6.0-beta.1) at a commit of develop: the release App makes the tag and a GitHub Release
+# marked as a prerelease, with the build's files on it. Nothing else changes: no commit, CHANGELOG section, PR, page or post.
+# Only a member of the approver team starts one, by hand, on main (the `release` environment allows main only):
+#   gh workflow run prerelease.yml --ref main -f commit=<full sha> -f version=2.6.0 -f pre=beta
+# The approver team is read with the release App's token, so the App needs organization Members: read.
+name: Prerelease
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: The full commit id to make the prerelease of
+        required: true
+      branch:
+        description: The work branch that holds it
+        default: develop
+      version:
+        description: The version still to come (X.Y.Z)
+        required: true
+      pre:
+        description: alpha, beta or rc
+        type: choice
+        options: [alpha, beta, rc]
+        default: beta
+
+permissions: {}
+
+jobs:
+  start:
+    permissions:
+      contents: read
+      id-token: write       # so the workflow can run shipyard at its own commit
+    uses: turbot/shipyard-workflows/.github/workflows/prerelease.yml@v0
+    with:
+      step: start
+      commit: ${{ inputs.commit }}
+      branch: ${{ inputs.branch }}
+      version: ${{ inputs.version }}
+      pre: ${{ inputs.pre }}
+      approvers: turbot/pipelings-release-approvers
+    secrets:
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}   # for the token that reads the team
+
+  # The build of the commit with the version the start named, as the ship job builds a release: goreleaser with the tag set
+  # and nothing published. It holds no release key. It uploads every file checksums.txt lists, and checksums.txt, flat.
+  build:
+    needs: start
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.commit }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Install GoReleaser
+        uses: goreleaser/goreleaser-action@5daf1e915a5f0af01ddbcd89a43b8061ff4f1a89 # v7.2.2
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          install-only: true
+
+      - name: Build the prerelease
+        env:
+          GORELEASER_CURRENT_TAG: ${{ needs.start.outputs.tag }}
+        run: goreleaser release --clean --skip=publish,announce,validate --config .goreleaser.yml
+
+      - name: Collect the files checksums.txt lists
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/prerelease-files"
+          mkdir -p "$out"
+          while read -r _ name; do
+            [[ "$name" =~ ^[A-Za-z0-9._+@=~-]{1,255}$ ]] || { echo "::error::dist/checksums.txt names a file a Release cannot carry"; exit 1; }
+            cp "dist/$name" "$out/"
+          done < dist/checksums.txt
+          cp dist/checksums.txt "$out/"
+          (cd "$out" && sha256sum --check --strict checksums.txt)
+
+      - name: Upload the files
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: prerelease-assets
+          path: ${{ runner.temp }}/prerelease-files/*
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    needs: [start, build]
+    permissions:
+      contents: read
+      pull-requests: read   # the PRs' Changelog lines, for the Release's body
+      id-token: write
+    uses: turbot/shipyard-workflows/.github/workflows/prerelease.yml@v0
+    with:
+      step: publish
+      commit: ${{ inputs.commit }}
+      branch: ${{ inputs.branch }}
+      version: ${{ inputs.version }}
+      pre: ${{ inputs.pre }}
+      approvers: turbot/pipelings-release-approvers
+      tag: ${{ needs.start.outputs.tag }}
+      product: Steampipe
+      assets: prerelease-assets
+    secrets:
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
