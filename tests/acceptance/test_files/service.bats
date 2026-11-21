@@ -124,6 +124,33 @@ load ../helpers/steampipe_processes
   run steampipe service stop
 }
 
+@test "start service with a password that contains quotes and backslashes, verify the service starts and the password is stored as given" {
+  password="it's a \\'quoted\\' pass"
+
+  run steampipe service start --database-password "$password"
+  assert_success
+
+  state_file_pass=$(jq -r .password $STEAMPIPE_INSTALL_DIR/internal/steampipe.json)
+  assert_equal "$state_file_pass" "$password"
+
+  run steampipe service stop
+  assert_success
+}
+
+@test "start service with a password that tries to inject SQL, verify the injected SQL does not run" {
+  # as SQL, this password would end the ALTER USER statement and make the
+  # database superuser write a file
+  marker="$BATS_TEST_TMPDIR/injected"
+  run steampipe service start --database-password "x'; copy (select 1) to '$marker'; --"
+  assert_success
+
+  run test -e "$marker"
+  assert_failure
+
+  run steampipe service stop
+  assert_success
+}
+
 @test "start service after removing .passwd file, verify new .passwd file gets created and also passwords stored in .passwd and steampipe.json are same" {
   # Remove the .passwd file
   rm -f $STEAMPIPE_INSTALL_DIR/internal/.passwd

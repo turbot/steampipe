@@ -9,7 +9,7 @@ replace (
 )
 
 require (
-	github.com/Masterminds/semver/v3 v3.4.0
+	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/alecthomas/chroma v0.10.0
 	github.com/bgentry/speakeasy v0.2.0 // indirect
 	github.com/briandowns/spinner v1.23.2
@@ -35,7 +35,7 @@ require (
 	github.com/shiena/ansicolor v0.0.0-20230509054315-a9deabde6e02
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/spf13/cobra v1.10.2
-	github.com/spf13/pflag v1.0.9
+	github.com/spf13/pflag v1.1.0
 	github.com/spf13/viper v1.20.1
 	github.com/thediveo/enumflag/v2 v2.2.1
 	github.com/turbot/go-kit v1.3.1
@@ -86,7 +86,7 @@ require (
 	github.com/danwakefield/fnmatch v0.0.0-20160403171240-cbb64ac3d964 // indirect
 	github.com/dgraph-io/ristretto v0.2.0 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
-	github.com/dustin/go-humanize v1.0.1
+	github.com/dustin/go-humanize v1.1.0
 	github.com/eko/gocache/lib/v4 v4.2.0 // indirect
 	github.com/eko/gocache/store/bigcache/v4 v4.2.2 // indirect
 	github.com/eko/gocache/store/ristretto/v4 v4.2.2 // indirect

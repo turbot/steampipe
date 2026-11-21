@@ -17,6 +17,11 @@ func currentMajor() string {
 }
 
 func unfinishedMarker() string {
+	return filepaths.GetSetupUnfinishedMarkerLocation()
+}
+
+// legacyUnfinishedMarker is where Steampipe 2.5.1 wrote the marker
+func legacyUnfinishedMarker() string {
 	return filepath.Join(filepaths.DatabaseInstanceDir(), "setup-unfinished")
 }
 
@@ -190,6 +195,38 @@ func TestFindDifferentPgInstallation_SkipsInstallWhoseSetupDidNotFinish(t *testi
 	}
 	if found {
 		t.Errorf("an installation whose setup did not finish must not be carried over, found %s", location)
+	}
+}
+
+func TestFindDifferentPgInstallation_SkipsInstallWhoseMarkerIsInInternalFolder(t *testing.T) {
+	dbDir := setCleanupInstallDir(t)
+	older := filepath.Join(dbDir, "13.0.0")
+	writeFakeInstall(t, older)
+	if err := os.WriteFile(filepaths.SetupUnfinishedMarkerLocationForVersion("13.0.0"), nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	found, location, err := findDifferentPgInstallation(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if found {
+		t.Errorf("an installation whose setup did not finish must not be carried over, found %s", location)
+	}
+
+	// the marker names its version: another version's marker says nothing about this installation
+	if err := os.Remove(filepaths.SetupUnfinishedMarkerLocationForVersion("13.0.0")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepaths.SetupUnfinishedMarkerLocationForVersion("13.0.1"), nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	found, _, err = findDifferentPgInstallation(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !found {
+		t.Error("a marker of another version must not hide this installation")
 	}
 }
 

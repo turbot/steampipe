@@ -1,0 +1,28 @@
+# Announces a release once its tag is made: the "Live in" comment on each issue the release closes, and
+# the close of the prep job it shipped. It posts no #releases line: a product with a changelog page has none, so there is no
+# `slack-token`. The release App's tag starts it; run it again by hand with the tag.
+name: Announce
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The release tag to announce again, such as v1.5.0
+        required: true
+
+permissions: {}
+
+jobs:
+  announce:
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+    uses: turbot/shipyard-workflows/.github/workflows/announce.yml@v0
+    with:
+      tag: ${{ inputs.tag || github.ref_name }}
+      # A CLI's release PR is opened with the job's own token, as the ship caller's `automation-logins` says.
+      automation-logins: github-actions[bot]

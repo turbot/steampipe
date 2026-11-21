@@ -14,8 +14,9 @@ import (
 // installed version and hold no database.
 //
 // A folder is removed only when it is a real folder named as a version older than constants.DatabaseVersion, and
-// holds nothing but a "postgres" folder, a "data" folder that is absent or an empty real folder, and the file that
-// marks a setup that did not finish. Anything else is left alone, including every folder that may hold a database.
+// holds nothing but a "postgres" folder, a "data" folder that is absent or an empty real folder, and the file
+// Steampipe 2.5.1 wrote there to mark a setup that did not finish. Anything else is left alone, including every
+// folder that may hold a database.
 func removeOldInstallsWithoutDatabase() {
 	target, err := semver.NewVersion(constants.DatabaseVersion)
 	if err != nil {
@@ -41,6 +42,12 @@ func removeOldInstallsWithoutDatabase() {
 		}
 		if err := os.RemoveAll(location); err != nil {
 			log.Printf("[WARN] Could not remove old installation at %s: %s", location, err)
+			continue
+		}
+		// the marker of a setup that did not finish refers to the folder just removed
+		marker := filepaths.SetupUnfinishedMarkerLocationForVersion(de.Name())
+		if err := removeFileIfPresent(marker); err != nil {
+			log.Printf("[WARN] Could not remove %s: %s", marker, err)
 		}
 	}
 }
