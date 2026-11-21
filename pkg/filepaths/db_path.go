@@ -121,6 +121,18 @@ func GetSetupUnfinishedMarkerLocation() string {
 	return filepath.Join(DatabaseInstanceDir(), SetupUnfinishedMarkerName)
 }
 
+// SetupUnfinishedMarkerLocationForVersion is the marker of the data folder of one database version. It creates
+// nothing.
+func SetupUnfinishedMarkerLocationForVersion(version string) string {
+	return filepath.Join(EnsureInternalDir(), SetupUnfinishedMarkerName+"-"+version)
+}
+
+// LegacySetupUnfinishedMarkerLocation is where Steampipe 2.5.1 kept the marker: beside the database programs.
+// It creates nothing.
+func LegacySetupUnfinishedMarkerLocation(versionDir string) string {
+	return filepath.Join(versionDir, SetupUnfinishedMarkerName)
+}
+
 const SetupUnfinishedMarkerName = "setup-unfinished"
 
 func GetPgVersionLocation() string {
