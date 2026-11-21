@@ -113,7 +113,13 @@ func (r *RunningDBInstanceInfo) Save() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepaths.RunningInfoFilePath(), content, 0600)
+	path := filepaths.RunningInfoFilePath()
+	// os.WriteFile only sets the mode of a new file - first narrow a file that
+	// an older version created as 0644, before the password is written to it
+	if err := os.Chmod(path, 0600); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return os.WriteFile(path, content, 0600)
 }
 
 func (r *RunningDBInstanceInfo) String() string {

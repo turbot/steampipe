@@ -272,3 +272,20 @@ func TestCreateCmdKeepsSSLPassphraseOutOfCommand(t *testing.T) {
 		t.Errorf("the shell ran a command from the passphrase")
 	}
 }
+
+// The service password is written into ALTER USER as a string literal, so a quote or a
+// backslash in it must stay part of the password, whether or not standard_conforming_strings is on.
+func TestQuoteLiteral(t *testing.T) {
+	tests := map[string]string{
+		"plain":                          `'plain'`,
+		"it's":                           `'it''s'`,
+		`back\slash`:                     `E'back\\slash'`,
+		`x'; copy (select 1) to 'f'; --`: `'x''; copy (select 1) to ''f''; --'`,
+		`it's a \'quoted\' pass`:         `E'it''s a \\''quoted\\'' pass'`,
+	}
+	for in, want := range tests {
+		if got := quoteLiteral(in); got != want {
+			t.Errorf("quoteLiteral(%q) = %s, want %s", in, got, want)
+		}
+	}
+}
