@@ -107,9 +107,10 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 	}
 	startTime := time.Now()
 	// get a context with a timeout for the query to execute within
-	// we don't use the cancelFn from this timeout context, since usage will lead to 'pgx'
-	// prematurely closing the database connection that this query executed in
-	ctxExecute := c.getExecuteContext(ctx)
+	// NOTE: cancelExecute must NOT be called until the rows have been closed (and, on error, the session released),
+	// otherwise 'pgx' prematurely closes the database connection that this query executed in.
+	// So it is called in the read-rows goroutine, or on the error path, after the rows are closed
+	ctxExecute, cancelExecute := c.getExecuteContext(ctx)
 
 	var tx *sql.Tx
 
@@ -126,6 +127,8 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 			if onComplete != nil {
 				onComplete()
 			}
+			// the query is over - release the timeout context and its timer
+			cancelExecute()
 		}
 	}()
 
@@ -145,6 +148,10 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 
 	// read the rows in a go routine
 	go func() {
+		// release the timeout context and its timer once the rows are closed and the session released
+		// (this is deferred first so it runs last)
+		defer cancelExecute()
+
 		// define a callback which fetches the timing information
 		// this will be invoked after reading rows is complete but BEFORE closing the rows object (which closes the connection)
 		timingCallback := func() {
@@ -163,17 +170,19 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 	return result, nil
 }
 
-func (c *DbClient) getExecuteContext(ctx context.Context) context.Context {
+// getExecuteContext returns the context to execute a query in, and the func which releases it.
+// The caller must call the cancel func once the query has finished with its rows - and not before,
+// as cancelling early makes 'pgx' close the connection the query is running on.
+// The cancel func is never nil.
+func (c *DbClient) getExecuteContext(ctx context.Context) (context.Context, context.CancelFunc) {
 	queryTimeout := time.Duration(viper.GetInt(pconstants.ArgDatabaseQueryTimeout)) * time.Second
 	// if timeout is zero, do not set a timeout
 	if queryTimeout == 0 {
-		return ctx
+		return ctx, func() {}
 	}
 	// create a context with a deadline
 	shouldBeDoneBy := time.Now().Add(queryTimeout)
-	newCtx, _ := context.WithDeadline(ctx, shouldBeDoneBy) //nolint:gosec,govet // G118/lostcancel: cancel is intentionally discarded - pgx prematurely cancels the PG connection if this cancel func is invoked in a defer
-
-	return newCtx
+	return context.WithDeadline(ctx, shouldBeDoneBy)
 }
 
 func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, session *db_common.DatabaseSession, resultChannel queryresult.TimingResultStream) {
