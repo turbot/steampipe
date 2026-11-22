@@ -240,8 +240,10 @@ func TestGetState_OtherPostgresIsNotRunning(t *testing.T) {
 	}
 }
 
-// A live process whose command line cannot be read or matched to the database
-// is not known to be something else, so its state files are kept.
+// State is kept when the live process cannot be read, and when a space in the
+// install path splits the postgres binary out of argv[0]. Both still report
+// the service as running: the first because it is not known to be something
+// else, the second because it is the steampipe database.
 func TestGetState_UnconfirmedLiveDatabaseKeepsState(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("the fake database is a re-exec of this test binary")

@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"slices"
 	"strconv"
 	"strings"
 
 	psutils "github.com/shirou/gopsutil/process"
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/pipe-fittings/v2/app_specific"
 	"github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/v2/pkg/filepaths"
@@ -78,12 +76,9 @@ func pidIsLiveSteampipeDatabase(pid int) (bool, error) {
 		// alive but unreadable: cannot say it is not the database
 		return true, nil
 	}
-	// the install path can be split at spaces (macOS), but the application_name
-	// argument is not, so it still identifies the steampipe database
-	if slices.Contains(cmdline, fmt.Sprintf("application_name=%s", app_specific.AppName)) {
-		return true, nil
-	}
-	return false, nil
+	// the scan skips a process it could not read. A later read uses the same
+	// matcher, including a postgres binary whose path was split at a space.
+	return isSteampipePostgresProcess(ctx, cmdline), nil
 }
 
 // errorIfUnknownService returns an error if it can find a `postmaster.pid` in the `INSTALL_DIR`
