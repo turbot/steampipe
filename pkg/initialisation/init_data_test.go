@@ -15,7 +15,7 @@ import (
 // when getPipesMetadata fails after telemetry is initialized
 func TestInitData_ResourceLeakOnPipesMetadataError(t *testing.T) {
 	// Setup: Configure a scenario that will cause getPipesMetadata to fail
-	// (database name without token)
+	// (a workspace database in none of the accepted forms, so the form error fails it before the token is checked)
 	originalWorkspaceDB := viper.GetString(pconstants.ArgWorkspaceDatabase)
 	originalToken := viper.GetString(pconstants.ArgPipesToken)
 	defer func() {
@@ -24,7 +24,7 @@ func TestInitData_ResourceLeakOnPipesMetadataError(t *testing.T) {
 	}()
 
 	viper.Set(pconstants.ArgWorkspaceDatabase, "some-database-name")
-	viper.Set(pconstants.ArgPipesToken, "") // Missing token will cause error
+	viper.Set(pconstants.ArgPipesToken, "") // not reached: the form error fails first
 
 	ctx := context.Background()
 	initData := NewInitData()
@@ -125,7 +125,7 @@ func TestInitData_NilExporter(t *testing.T) {
 
 // TestInitData_PartialInitialization tests the state after partial initialization
 func TestInitData_PartialInitialization(t *testing.T) {
-	// Setup to fail at getPipesMetadata stage
+	// Setup to fail at getPipesMetadata stage: "test-db" is in none of the accepted forms, so the form error fails it
 	originalWorkspaceDB := viper.GetString(pconstants.ArgWorkspaceDatabase)
 	originalToken := viper.GetString(pconstants.ArgPipesToken)
 	defer func() {
@@ -134,7 +134,7 @@ func TestInitData_PartialInitialization(t *testing.T) {
 	}()
 
 	viper.Set(pconstants.ArgWorkspaceDatabase, "test-db")
-	viper.Set(pconstants.ArgPipesToken, "") // Will fail
+	viper.Set(pconstants.ArgPipesToken, "") // not reached: the form error fails first
 
 	ctx := context.Background()
 	initData := NewInitData()
