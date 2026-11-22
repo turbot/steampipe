@@ -266,11 +266,13 @@ quals from %s.%s order by duration_ms desc`, constants.InternalSchema, constants
 	return scans, err
 }
 
+// startQueryFunc starts a query and returns its rows
+type startQueryFunc func(ctx context.Context, query string, args ...any) (pgx.Rows, error)
+
 // run query in a goroutine, so we can check for cancellation
 // in case the client becomes unresponsive and does not respect context cancellation
 func (c *DbClient) startQuery(ctx context.Context, conn *pgx.Conn, query string, args ...any) (rows pgx.Rows, err error) {
-	doneChan := make(chan bool)
-	go func() {
+	return runQuery(ctx, func() (pgx.Rows, error) {
 		// Request text format for timestamptz so PostgreSQL returns the value
 		// formatted in the session timezone, matching psql behavior.
 		// By default pgx uses binary format which loses session timezone info.
@@ -279,7 +281,17 @@ func (c *DbClient) startQuery(ctx context.Context, conn *pgx.Conn, query string,
 			pgtype.TimestamptzOID: pgx.TextFormatCode,
 		})
 		queryArgs = append(queryArgs, args...)
-		rows, err = conn.Query(ctx, query, queryArgs...) //nolint:sqlclosecheck // rows is a named return; on error the caller (startQueryWithRetries) does not close it today - a fix was reverted from this PR, see #5054
+		return conn.Query(ctx, query, queryArgs...) //nolint:sqlclosecheck // rows is returned to the caller, which closes it
+	})
+}
+
+// runQuery calls query in a goroutine, so we can check for cancellation.
+func runQuery(ctx context.Context, query func() (pgx.Rows, error)) (pgx.Rows, error) {
+	doneChan := make(chan bool)
+	var rows pgx.Rows
+	var err error
+	go func() {
+		rows, err = query()
 		close(doneChan)
 	}()
 
@@ -288,7 +300,7 @@ func (c *DbClient) startQuery(ctx context.Context, conn *pgx.Conn, query string,
 	case <-ctx.Done():
 		err = ctx.Err()
 	}
-	return
+	return rows, err
 }
 
 func (c *DbClient) readRows(ctx context.Context, rows pgx.Rows, result *queryresult.Result, timingCallback func()) {
