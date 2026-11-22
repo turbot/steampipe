@@ -5,12 +5,17 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
 	psutils "github.com/shirou/gopsutil/process"
+	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
+	"github.com/turbot/steampipe/v2/pkg/constants"
 )
 
 const fakePostgresArg = "application_name=steampipe"
@@ -250,5 +255,78 @@ func TestFindSteampipePostgresInstancesMatchesInstallPathSplitAtSpace(t *testing
 	}
 	if !got[split.Pid] || !got[windowsSplit.Pid] || got[otherPostgres.Pid] || len(instances) != 2 {
 		t.Fatalf("instances = %v, want the split-path databases %d and %d only", instances, split.Pid, windowsSplit.Pid)
+	}
+}
+
+// Postgres runs ssl_passphrase_command through /bin/sh and puts its own command
+// line in front of every local user (ps, /proc). So the passphrase must not be
+// in the command line, and the command must print it back exactly, without the
+// shell acting on any of its characters.
+func TestCreateCmdKeepsSSLPassphraseOutOfCommand(t *testing.T) {
+	originalInstallDir := app_specific.InstallDir
+	t.Cleanup(func() { app_specific.InstallDir = originalInstallDir })
+	// a short install directory: t.TempDir can make the socket path too long
+	workDir := shortTempDir(t)
+	app_specific.InstallDir = filepath.Join(workDir, "steampipe")
+
+	passphrase := `it's a "pass" $(touch pwned) ` + "`touch pwned` ; touch pwned \\n %p %%"
+	viper.Set(pconstants.ArgDatabaseSSLPassword, passphrase)
+	t.Cleanup(func() { viper.Set(pconstants.ArgDatabaseSSLPassword, "") })
+
+	// make createCmd also take the branch that sets OPENSSL_CONF
+	t.Setenv("OPENSSL_CONF", "")
+	os.Unsetenv("OPENSSL_CONF")
+
+	cmd, err := createCmd(context.Background(), 9193, []string{"localhost"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var passphraseCommand string
+	for _, arg := range cmd.Args {
+		if strings.Contains(arg, "pwned") {
+			t.Errorf("expected the passphrase to be kept out of the postgres command line, got argument %q", arg)
+		}
+		if value, ok := strings.CutPrefix(arg, "ssl_passphrase_command="); ok {
+			passphraseCommand = value
+		}
+	}
+	if passphraseCommand == "" {
+		t.Fatalf("expected an ssl_passphrase_command argument, got %v", cmd.Args)
+	}
+	if !slices.Contains(cmd.Env, constants.EnvInstallDir+"="+app_specific.InstallDir) {
+		t.Errorf("expected the postgres environment to keep %s", constants.EnvInstallDir)
+	}
+
+	// run the command the way postgres does: replace %% with %, then run it with /bin/sh
+	shell := exec.Command("/bin/sh", "-c", strings.ReplaceAll(passphraseCommand, "%%", "%")) //nolint:gosec // G204: runs the passphrase command that createCmd built, as postgres would
+	shell.Env = cmd.Env
+	shell.Dir = workDir
+	output, err := shell.Output()
+	if err != nil {
+		t.Fatalf("passphrase command %q failed: %v", passphraseCommand, err)
+	}
+	if got := strings.TrimSuffix(string(output), "\n"); got != passphrase {
+		t.Errorf("expected the passphrase command to print %q, got %q", passphrase, got)
+	}
+	if _, err := os.Stat(filepath.Join(workDir, "pwned")); err == nil {
+		t.Errorf("the shell ran a command from the passphrase")
+	}
+}
+
+// The service password is written into ALTER USER as a string literal, so a quote or a
+// backslash in it must stay part of the password, whether or not standard_conforming_strings is on.
+func TestQuoteLiteral(t *testing.T) {
+	tests := map[string]string{
+		"plain":                          `'plain'`,
+		"it's":                           `'it''s'`,
+		`back\slash`:                     `E'back\\slash'`,
+		`x'; copy (select 1) to 'f'; --`: `'x''; copy (select 1) to ''f''; --'`,
+		`it's a \'quoted\' pass`:         `E'it''s a \\''quoted\\'' pass'`,
+	}
+	for in, want := range tests {
+		if got := quoteLiteral(in); got != want {
+			t.Errorf("quoteLiteral(%q) = %s, want %s", in, got, want)
+		}
 	}
 }

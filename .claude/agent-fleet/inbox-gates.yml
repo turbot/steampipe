@@ -1,9 +1,13 @@
-# What a change to steampipe must run and show before an agent's PR counts as done.
+# What a change to steampipe must run and show before an agent's PR counts as done: the checks CI
+# runs on a PR (lint, unit tests, the build and the acceptance suite).
 #
 # Left out on purpose:
 # - go vet: fails on develop on deliberate code that golangci-lint already suppresses.
-# - The rest of the acceptance suite: it takes long enough to stay in CI, and some files stop
-#   every steampipe service on the machine or need a Pipes token (see never_run).
+# - Three acceptance files CI runs, service, force_stop and ssl: they call
+#   `steampipe service stop --force`, which stops every steampipe service on the machine, so on a
+#   worker they would stop other runs' services and the owner's own (see never_run). CI runs them.
+# - cloud: it reaches Pipes workspaces with a real token. With no token it skips every test, so it
+#   proves nothing on a worker. CI runs it.
 
 ci_is_proof: false
 
@@ -35,6 +39,15 @@ never_run:
   # A real login writes credentials to the machine
   - steampipe login
 
+# The acceptance files start services on steampipe's fixed ports, 9193 (the default, with no
+# environment variable to move it) and 9293 (pg_hba). With 9193 taken every file fails at setup,
+# and with 9293 taken pg_hba fails, so the need is unmet, not red, while something listens on
+# either (the owner's own service) or another acceptance runner is running on the machine (it
+# frees the port between files).
+needs:
+  steampipe-ports:
+    probe: "bash -c '! (echo > /dev/tcp/127.0.0.1/9193) 2>/dev/null && ! (echo > /dev/tcp/127.0.0.1/9293) 2>/dev/null && ! pgrep -f \"tests/acceptance/run-local[.]sh\" >/dev/null'"
+
 checks:
   build: {run: "go build ./...", cost: 1}
   unit: {run: "go test ./...", cost: 1}
@@ -43,18 +56,22 @@ checks:
   lint:
     run: 'd=$(mktemp -d) && GOBIN="$d" go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 && GOOS=linux "$d/golangci-lint" run --timeout=10m'
     cost: 2
-  # Builds this checkout into a temporary directory, installs the chaos plugins from the public
-  # registry into a temporary install directory, and removes both when it ends.
-  acceptance-query: {run: "tests/acceptance/run-local.sh chaos_and_query", cost: 3}
+  # Every acceptance file CI runs, in CI's order, but the four left out above. Builds this
+  # checkout into a temporary directory; each file gets its own temporary install directory with
+  # the chaos plugins from the public registry, and both are removed when it ends.
+  acceptance:
+    needs: [steampipe-ports]
+    run: "tests/acceptance/run-local.sh migration brew installation plugin connection_config settings pg_hba blank_aggregators search_path chaos_and_query date_time_types dynamic_schema dynamic_aggregators cache performance config_precedence schema_cloning exit_codes"
+    cost: 21
 
 kinds:
   go:
     paths: ["**/*.go", "go.mod", "go.sum", "cmd/**", "pkg/**", ".golangci.yml"]
-    checks: [build, unit, lint, acceptance-query]
+    checks: [build, unit, lint, acceptance]
     show: [test]
   acceptance:
     paths: ["tests/**"]
-    checks: [acceptance-query]
+    checks: [acceptance]
     show: [test]
   workflows:
     paths: [".github/**", ".goreleaser.yml", ".acceptance.goreleaser.yml", "Makefile", "scripts/**", ".gitattributes", ".gitignore", ".gitmodules"]

@@ -1,6 +1,8 @@
 name: "11 - Test: Acceptance"
 on:
   pull_request:
+  # The release PR's record runs this by name on its commit, since develop requires its Build check.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -18,12 +20,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: steampipe
 
       - name: Checkout Pipe Fittings Components repository
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: turbot/pipe-fittings
           path: pipe-fittings
@@ -118,7 +120,7 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
 
@@ -210,7 +212,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Clean up Linux Build
-        uses: geekyeggo/delete-artifact@f275313e70c08f6120db482d7a6b98377786765b # v5.1.0
+        uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118 # v6.0.0
         with:
           name: build-artifact-linux
           failOnError: true

@@ -1,0 +1,21 @@
+# Hands a prep file to the cut: the release workflow reads the artifact `prep` of this run.
+name: Prep
+
+on:
+  workflow_dispatch:
+    inputs:
+      prep:
+        description: >-
+          The prep file's content, the JSON the prep run wrote (prep.json), not a path. A run takes up to 65,535 characters of
+          inputs.
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  prep:
+    name: prep
+    uses: turbot/shipyard-workflows/.github/workflows/prep.yml@v0
+    with:
+      prep: ${{ inputs.prep }}

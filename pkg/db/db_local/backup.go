@@ -549,7 +549,8 @@ func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 		location := filepath.Join(dbBaseDirectory, de.Name())
 		hasBinary := files.FileExists(filepath.Join(location, "postgres", "bin", "postgres"))
 		hasDatabase := files.FileExists(filepath.Join(location, "data", "PG_VERSION")) &&
-			!files.FileExists(filepath.Join(location, filepaths.SetupUnfinishedMarkerName))
+			!files.FileExists(filepaths.LegacySetupUnfinishedMarkerLocation(location)) &&
+			!files.FileExists(filepaths.SetupUnfinishedMarkerLocationForVersion(de.Name()))
 		if hasBinary && hasDatabase && (newest == nil || version.GreaterThan(newest)) {
 			newest = version
 		}

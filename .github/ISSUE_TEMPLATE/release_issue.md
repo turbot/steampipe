@@ -13,22 +13,17 @@ labels: release
 
 ### Pre-release checks
 
-- [ ] All acceptance tests pass in `steampipe` release PR
+- [ ] The release PR's page shows its checks passed and what changes
 - [ ] Update check is working
-- [ ] Steampipe version is correct
-- [ ] Steampipe Changelog updated and reviewed
 
 ### Release Steampipe
 
-- [ ] Merge the release PR
-- [ ] Trigger the `Steampipe CLI Release` workflow. This will create the release build.
-- [ ] Trigger the `Publish and Update Brew` workflow. This will update the brew formula.
+- [ ] A pipelings release approver approves the release PR and merges it. The merge builds, tags, publishes the GitHub Release with its notes, archives and Linux packages, updates Homebrew, writes the changelog page on steampipe.io, starts the Linux distro test and merges `main` back into `develop`.
 
 ### Post-release checks
 
-- [ ] Update Changelog in the Release page (copy and paste from CHANGELOG.md)
 - [ ] Test Linux install script
 - [ ] Test Homebrew install
-- [ ] Release branch merged to `develop`
-- [ ] Raise Changelog update to `steampipe.io`, get it reviewed.
-- [ ] Merge Changelog update to `steampipe.io`.
+- [ ] Check the `.deb` and `.rpm` files are on the Release
+- [ ] Check the changelog page is live on steampipe.io
+- [ ] Tell the Turbot Pipes release the new tag: Pipes pins the CLI by it
