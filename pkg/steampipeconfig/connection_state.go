@@ -1,8 +1,7 @@
 package steampipeconfig
 
 import (
-	"sort"
-	"strings"
+	"slices"
 	"time"
 
 	typehelpers "github.com/turbot/go-kit/types"
@@ -84,11 +83,8 @@ func (d *ConnectionState) Equals(other *ConnectionState) bool {
 		return false
 	}
 
-	names := d.Connections
-	sort.Strings(names)
-	otherNames := other.Connections
-	sort.Strings(otherNames)
-	if strings.Join(names, ",") != strings.Join(otherNames, "'") {
+	// compare sorted copies - sorting the slices in place would reorder the callers' state
+	if !slices.Equal(sortedCopy(d.Connections), sortedCopy(other.Connections)) {
 		return false
 	}
 
@@ -98,6 +94,13 @@ func (d *ConnectionState) Equals(other *ConnectionState) bool {
 	// do not look at connection mod time as the mod time for the desired state is not relevant
 
 	return true
+}
+
+// sortedCopy returns a sorted copy of the given names, leaving the original order untouched
+func sortedCopy(names []string) []string {
+	sorted := slices.Clone(names)
+	slices.Sort(sorted)
+	return sorted
 }
 
 // allow for sub ms rounding errors when converting from PG
