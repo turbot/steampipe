@@ -141,3 +141,48 @@ func TestCarryOverPgHbaRules_NoOlderInstall(t *testing.T) {
 		t.Errorf("a new install has no rules to carry over, got %v", names)
 	}
 }
+
+func TestRunInstall_StopsBeforeTheDataFolderIsSetUpWhenTheRulesCannotBeRead(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root reads a folder whatever its mode")
+	}
+	installDir := app_specific.InstallDir
+	t.Cleanup(func() { app_specific.InstallDir = installDir })
+	app_specific.InstallDir = filepath.Join(shortTempDir(t), ".steampipe")
+	older := filepath.Join(filepaths.EnsureDatabaseDir(), "12.1.0")
+	writeFile(t, filepath.Join(older, "postgres", "bin", "postgres"), "")
+	writeFile(t, filepath.Join(older, "data", "PG_VERSION"), "12\n")
+	writeFile(t, filepath.Join(older, "data", "pg_hba.conf.d", "10-mine.conf"), "host all bob all reject\n")
+	hbaDir := filepath.Join(older, "data", "pg_hba.conf.d")
+	if err := os.Chmod(hbaDir, 0); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(hbaDir, 0700) })
+
+	err := runInstall(context.Background(), nil)
+	var carry *pgHbaCarryOverError
+	if !errors.As(err, &carry) {
+		t.Fatalf("an unreadable rule folder must stop the install with its own message, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "then run Steampipe again") || strings.Contains(err.Error(), "move or delete") {
+		t.Errorf("before the new data folder exists the only step is to fix the folder:\n%s", err)
+	}
+	// nothing was set up, so the next run is not refused by a half-made data folder
+	if _, statErr := os.Stat(filepaths.GetPgVersionLocation()); !errors.Is(statErr, os.ErrNotExist) {
+		t.Errorf("the new data folder must not hold a database: %v", statErr)
+	}
+	if names := readRuleFileNames(t, filepaths.GetDataLocation()); len(names) != 0 {
+		t.Errorf("nothing is copied before the check passes, got %v", names)
+	}
+}
+
+func TestCopyPgHbaRules_AWriteFailureTellsTheUserToMoveTheNewFolder(t *testing.T) {
+	oldDir, newDir := t.TempDir(), t.TempDir()
+	steampipeFileWith(t, oldDir, map[string]string{"10-mine.conf": "host all bob all reject\n"})
+	writeFile(t, filepath.Join(newDir, "pg_hba.conf.d"), "")
+
+	err := copyPgHbaRules(oldDir, newDir)
+	if err == nil || !strings.Contains(err.Error(), "move or delete "+newDir) {
+		t.Errorf("after initdb the new folder holds a database, so the message must say to move it:\n%v", err)
+	}
+}

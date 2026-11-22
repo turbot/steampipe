@@ -543,8 +543,9 @@ install, and delete the database.
 }
 
 // upgradeNote says, about the data folder of an older install with another Postgres major version,
-// that the upgrade dumps its data into a new folder and leaves its pg_hba.conf and pg_hba.conf.d
-// behind. It is empty for any other folder: an upgrade within a major version moves the whole folder.
+// that the upgrade dumps its data into a new folder, copies the rule files in its pg_hba.conf.d when Steampipe
+// wrote its pg_hba.conf, and leaves pg_hba.conf behind. It is empty for any other folder: an upgrade within a
+// major version moves the whole folder.
 func upgradeNote(dataDir string) string {
 	installDir := filepath.Dir(dataDir)
 	newDataDir := filepath.Join(filepaths.EnsureDatabaseDir(), constants.DatabaseVersion, "data")
@@ -553,8 +554,9 @@ func upgradeNote(dataDir string) string {
 		return ""
 	}
 	return fmt.Sprintf(`
-This is the data folder of an older Postgres major version, which Steampipe is upgrading to %s.
-Neither %s nor %s is carried over: after the upgrade, make the same change there.
+This is the data folder of an older Postgres major version, which Steampipe is upgrading to %[1]s.
+The rule files in %[3]s are copied to the new folder when Steampipe wrote %[2]s, and not when you manage %[2]s yourself.
+%[2]s itself is never carried over: a change you made to it is not in the new one.
 `, newDataDir, pgHbaFileName, pgHbaDirName)
 }
 
