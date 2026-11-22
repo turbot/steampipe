@@ -521,3 +521,93 @@ func TestAbortInstallAfterBackupError_OtherErrorsCarryOn(t *testing.T) {
 		t.Errorf("an error with no upgrade advice does not stop the install: %v", err)
 	}
 }
+
+// startOldServer starts the fake old server of an installation through startDatabaseInLocation and returns
+// what it was started with. It never calls removeHbaFile: a Steampipe killed part way does not either.
+func startOldServer(t *testing.T, oldLocation string) (running *pgRunningInfo, args, hbaFileContent string) {
+	t.Helper()
+	recordDir := shortTempDir(t)
+	t.Setenv(fakePostgresRecordDir, recordDir)
+	running, err := startDatabaseInLocation(context.Background(), oldLocation)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = running.stop(context.Background()) })
+	argsBytes, err := os.ReadFile(filepath.Join(recordDir, "args"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	hbaBytes, _ := os.ReadFile(filepath.Join(recordDir, "hba"))
+	return running, string(argsBytes), string(hbaBytes)
+}
+
+// the kill in #5148: the old data directory must already be as the older version left it while the upgrade's
+// server runs, so a Steampipe that never gets to clean up leaves nothing behind
+func TestStartDatabaseInLocation_KilledUpgradeLeavesTheOldPgHbaAsItWas(t *testing.T) {
+	oldLocation, hbaPath := fakeOldInstall(t, "13.0.0", false)
+	oldDataDir := filepath.Join(oldLocation, "data")
+	past := time.Now().Add(-time.Hour).Truncate(time.Second)
+	if err := os.Chtimes(hbaPath, past, past); err != nil {
+		t.Fatal(err)
+	}
+
+	_, args, hba := startOldServer(t, oldLocation)
+
+	assertOldPgHbaRestored(t, hbaPath)
+	if info, err := os.Stat(hbaPath); err != nil || !info.ModTime().Equal(past) {
+		t.Errorf("the old pg_hba.conf must not be written at all, stat: %v, %v", info, err)
+	}
+	if _, err := os.Stat(filepath.Join(oldDataDir, pgHbaDirName)); !os.IsNotExist(err) {
+		t.Errorf("%s must not be made in the old data directory, stat err: %v", pgHbaDirName, err)
+	}
+	if !strings.Contains(args, "hba_file=") {
+		t.Fatalf("the server must be given Steampipe's rules through hba_file, got args:\n%s", args)
+	}
+	if !strings.HasPrefix(hba, constants.PgHbaHeader) || !strings.HasSuffix(hba, constants.PgHbaSteampipeRules) {
+		t.Errorf("the rules the server read are not Steampipe's:\n%s", hba)
+	}
+}
+
+func TestStartDatabaseInLocation_RulesFileHoldsThePgHbaConfDRules(t *testing.T) {
+	oldLocation, hbaPath := fakeOldInstall(t, "13.0.0", false)
+	writeFile(t, filepath.Join(oldLocation, "data", pgHbaDirName, "10-mine.conf"), "host all bob all md5\n")
+
+	_, _, hba := startOldServer(t, oldLocation)
+
+	if !strings.Contains(hba, "host all bob all md5") {
+		t.Errorf("the user's rules in %s must be in the rules the server read:\n%s", pgHbaDirName, hba)
+	}
+	assertOldPgHbaRestored(t, hbaPath)
+}
+
+func TestStartDatabaseInLocation_NoPgHbaConfIsNotCreated(t *testing.T) {
+	oldLocation, hbaPath := fakeOldInstall(t, "13.0.0", false)
+	if err := os.Remove(hbaPath); err != nil {
+		t.Fatal(err)
+	}
+
+	_, args, _ := startOldServer(t, oldLocation)
+
+	// a missing pg_hba.conf looks like "not installed" to Steampipe 2.4 and earlier
+	if _, err := os.Stat(hbaPath); !os.IsNotExist(err) {
+		t.Errorf("a pg_hba.conf that did not exist must not be made, stat err: %v", err)
+	}
+	if !strings.Contains(args, "hba_file=") {
+		t.Errorf("the server must be given Steampipe's rules through hba_file, got args:\n%s", args)
+	}
+}
+
+func TestStartDatabaseInLocation_UsersOwnPgHbaConfIsUsedWhereItIs(t *testing.T) {
+	oldLocation, hbaPath := fakeOldInstall(t, "13.0.0", false)
+	userHba := "local all all trust\nhost all bob all md5\n"
+	writeFile(t, hbaPath, userHba)
+
+	_, args, _ := startOldServer(t, oldLocation)
+
+	if strings.Contains(args, "hba_file=") {
+		t.Errorf("the user's own file must be read where it is, got args:\n%s", args)
+	}
+	if got := readHba(t, filepath.Join(oldLocation, "data")); got != userHba {
+		t.Errorf("the user's file changed:\n%s", got)
+	}
+}
