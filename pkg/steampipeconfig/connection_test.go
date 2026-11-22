@@ -1,6 +1,7 @@
 package steampipeconfig
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -301,5 +302,83 @@ func TestConnectionStateSetError(t *testing.T) {
 
 	if state.Error() != "test error" {
 		t.Errorf("Expected error to be 'test error', got %s", state.Error())
+	}
+}
+
+func TestConnectionStateEqualsAggregatorChildren(t *testing.T) {
+	aggregator := func(children ...string) *ConnectionState {
+		aggType := "aggregator"
+		return &ConnectionState{
+			ConnectionName: "agg",
+			Plugin:         "test_plugin",
+			Type:           &aggType,
+			State:          "ready",
+			Connections:    children,
+		}
+	}
+	testCases := []struct {
+		name     string
+		left     *ConnectionState
+		right    *ConnectionState
+		expected bool
+	}{
+		{"two children, same order", aggregator("aws_a", "aws_b"), aggregator("aws_a", "aws_b"), true},
+		{"two children, different order", aggregator("aws_b", "aws_a"), aggregator("aws_a", "aws_b"), true},
+		{"three children, same", aggregator("c", "a", "b"), aggregator("b", "c", "a"), true},
+		{"different child", aggregator("aws_a", "aws_b"), aggregator("aws_a", "aws_c"), false},
+		{"extra child", aggregator("aws_a", "aws_b"), aggregator("aws_a", "aws_b", "aws_c"), false},
+		{"one child, same", aggregator("aws_a"), aggregator("aws_a"), true},
+		{"one child, different", aggregator("aws_a"), aggregator("aws_b"), false},
+		{"no children, nil and empty", aggregator(), &ConnectionState{ConnectionName: "agg", Plugin: "test_plugin", State: "ready", Type: aggregator().Type, Connections: []string{}}, true},
+		{"none versus one", aggregator(), aggregator("aws_a"), false},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.left.Equals(tc.right); got != tc.expected {
+				t.Errorf("Equals = %v, want %v", got, tc.expected)
+			}
+			if got := tc.right.Equals(tc.left); got != tc.expected {
+				t.Errorf("reversed Equals = %v, want %v", got, tc.expected)
+			}
+		})
+	}
+}
+
+// Equals must not reorder the Connections of either state
+func TestConnectionStateEqualsKeepsChildOrder(t *testing.T) {
+	left := &ConnectionState{Plugin: "p", Connections: []string{"c", "a", "b"}}
+	right := &ConnectionState{Plugin: "p", Connections: []string{"b", "c", "a"}}
+	if !left.Equals(right) {
+		t.Fatal("expected states with the same children to be equal")
+	}
+	if got := left.Connections; !slices.Equal(got, []string{"c", "a", "b"}) {
+		t.Errorf("left Connections reordered: %v", got)
+	}
+	if got := right.Connections; !slices.Equal(got, []string{"b", "c", "a"}) {
+		t.Errorf("right Connections reordered: %v", got)
+	}
+}
+
+// an unchanged aggregator with two or more children must not need an update
+func TestConnectionRequiresUpdateUnchangedAggregator(t *testing.T) {
+	aggType := "aggregator"
+	modTime := time.Now()
+	newState := func(children ...string) *ConnectionState {
+		return &ConnectionState{
+			ConnectionName: "agg",
+			Plugin:         "test_plugin",
+			Type:           &aggType,
+			State:          constants.ConnectionStateReady,
+			PluginModTime:  modTime,
+			Connections:    children,
+		}
+	}
+	current := ConnectionStateMap{"agg": newState("aws_a", "aws_b")}
+
+	if res := connectionRequiresUpdate(nil, "agg", current, newState("aws_b", "aws_a")); res.requiresUpdate {
+		t.Error("unchanged aggregator with two children should not require an update")
+	}
+	if res := connectionRequiresUpdate(nil, "agg", current, newState("aws_a", "aws_c")); !res.requiresUpdate {
+		t.Error("aggregator with a changed child should require an update")
 	}
 }
