@@ -19,9 +19,9 @@ builds:
 archives:
   - files:
       - none*
-    format: zip
+    formats: ['zip']
     id: homebrew
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: linux
-        format: tar.gz
+        formats: ['tar.gz']

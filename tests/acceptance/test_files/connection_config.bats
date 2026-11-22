@@ -197,6 +197,22 @@ load ../helpers/steampipe_processes
     assert_success
 }
 
+@test "a malformed .spc file does not stop steampipe from starting" {
+  # a valid connection file, and a file with an unclosed block
+  printf 'connection "chaos_valid" {\n  plugin = "chaos"\n}\n' > $STEAMPIPE_INSTALL_DIR/config/chaos_valid.spc
+  printf 'connection "x" {\n' > $STEAMPIPE_INSTALL_DIR/config/malformed.spc
+
+  run steampipe query "select 1 as one" --output csv --install-dir $STEAMPIPE_INSTALL_DIR
+  rm -f $STEAMPIPE_INSTALL_DIR/config/malformed.spc
+  rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_valid.spc
+  steampipe service stop --install-dir $STEAMPIPE_INSTALL_DIR
+
+  assert_success
+  # the bad file is named, the query still runs
+  assert_output --partial 'malformed.spc'
+  assert_output --partial 'one'
+}
+
 # This test checks this pipes bug - https://github.com/turbot/steampipe/issues/4353
 # With service running, if a new connection is added but is not in search_path, it should be available and ready
 # previously, the connection was in error state

@@ -387,7 +387,7 @@ func installDatabase(ctx context.Context, oldDbName *string) error {
 	err := initNewDatabase(ctx, oldDbName)
 	// a data folder that already held a database was not touched, so it is as finished as it was
 	if err == nil || errors.Is(err, errDataFolderHoldsDatabase) {
-		if removeErr := os.Remove(marker); removeErr != nil && !os.IsNotExist(removeErr) {
+		if removeErr := removeFileIfPresent(marker); removeErr != nil {
 			if err == nil {
 				return fmt.Errorf("setup finished, but the file %s could not be removed: %w. Delete it, then run Steampipe again", marker, removeErr)
 			}
@@ -397,17 +397,41 @@ func installDatabase(ctx context.Context, oldDbName *string) error {
 	return err
 }
 
+// removeFileIfPresent removes a file, and counts one that is not there as removed, whatever error code the
+// filesystem gives for removing it: a read-only folder answers a removal with "read-only file system", not
+// "does not exist".
+func removeFileIfPresent(path string) error {
+	if _, err := os.Lstat(path); os.IsNotExist(err) {
+		return nil
+	}
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return nil
+}
+
+// unfinishedSetupMarkers lists where a marker of an unfinished setup of the current version's data folder may be:
+// the internal folder, and the folder beside the programs, where Steampipe 2.5.1 wrote it.
+func unfinishedSetupMarkers() []string {
+	return []string{
+		filepaths.GetSetupUnfinishedMarkerLocation(),
+		filepaths.LegacySetupUnfinishedMarkerLocation(filepaths.DatabaseInstanceDir()),
+	}
+}
+
 // checkDataFolderUsable stops a start on a data folder that holds a database that cannot be used as it is, and
 // leaves that folder as it found it. With no database in the data folder it only removes the file a stopped setup
 // left behind, and it creates the data folder if it is missing.
 func checkDataFolderUsable() error {
 	dataLocation := filepaths.GetDataLocation()
-	marker := filepaths.GetSetupUnfinishedMarkerLocation()
+	markers := unfinishedSetupMarkers()
 	raw, err := os.ReadFile(filepaths.GetPgVersionLocation())
 	if os.IsNotExist(err) {
 		// no database there: a marker left by a stopped setup, or by a folder moved away, refers to nothing
-		if removeErr := os.Remove(marker); removeErr != nil && !os.IsNotExist(removeErr) {
-			return fmt.Errorf("could not remove the file %s left by an earlier setup: %w", marker, removeErr)
+		for _, marker := range markers {
+			if removeErr := removeFileIfPresent(marker); removeErr != nil {
+				return fmt.Errorf("could not remove the file %s left by an earlier setup: %w", marker, removeErr)
+			}
 		}
 		return nil
 	}
@@ -421,8 +445,10 @@ func checkDataFolderUsable() error {
 		return fmt.Errorf("The data folder %s holds a database from Postgres %s, but this version of Steampipe needs Postgres %s.\n\nSteampipe has not changed it. Move %s somewhere else, then run Steampipe again", dataLocation, found, expected, dataLocation)
 	}
 
-	if filehelpers.FileExists(marker) {
-		return fmt.Errorf("Setting up the data folder %s did not finish, so Steampipe will not use it. If another Steampipe is still setting it up, wait for it to finish.\n\nOtherwise move or delete %s, then run Steampipe again to set up a new one. If you put a finished data folder there instead, delete the file %s as well", dataLocation, dataLocation, marker)
+	for _, marker := range markers {
+		if filehelpers.FileExists(marker) {
+			return fmt.Errorf("Setting up the data folder %s did not finish, so Steampipe will not use it. If another Steampipe is still setting it up, wait for it to finish.\n\nOtherwise move or delete %s, then run Steampipe again to set up a new one. If you put a finished data folder there instead, delete the file %s as well", dataLocation, dataLocation, marker)
+		}
 	}
 	return nil
 }

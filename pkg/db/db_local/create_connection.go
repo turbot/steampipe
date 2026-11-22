@@ -2,12 +2,14 @@ package db_local
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
@@ -60,6 +62,7 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 		}
 		psqlInfoMap = rootConnectionParams(info.Port)
 		psqlInfoMap["dbname"] = opts.DatabaseName
+		log.Println("[TRACE] SQLInfoMap >>>", psqlInfoMap)
 	} else {
 		psqlInfoMap = map[string]string{
 			"host":   putils.GetFirstListenAddress(info.ResolvedListenAddresses),
@@ -67,15 +70,15 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 			"user":   opts.Username,
 			"dbname": opts.DatabaseName,
 		}
+		// log before the SSL params are added - they can include the SSL passphrase
+		log.Println("[TRACE] SQLInfoMap >>>", psqlInfoMap)
 		psqlInfoMap = putils.MergeMaps(psqlInfoMap, dsnSSLParams())
 	}
-	log.Println("[TRACE] SQLInfoMap >>>", psqlInfoMap)
 
 	psqlInfo := []string{}
 	for k, v := range psqlInfoMap {
 		psqlInfo = append(psqlInfo, fmt.Sprintf("%s=%s", k, quoteConnStringValue(v)))
 	}
-	log.Println("[TRACE] PSQLInfo >>>", psqlInfo)
 
 	return strings.Join(psqlInfo, " "), nil
 }
@@ -88,9 +91,20 @@ func quoteConnStringValue(v string) string {
 	return `'` + v + `'`
 }
 
+// hideConnStringInParseError leaves the local connection string out of an error from parsing it. The string
+// holds the SSL passphrase, and pgx hides a password in that error only up to its first quote. The rest of the
+// error still says what could not be parsed.
+func hideConnStringInParseError(err error) error {
+	var parseErr *pgconn.ParseConfigError
+	if errors.As(err, &parseErr) {
+		parseErr.ConnString = "connection string hidden"
+	}
+	return err
+}
+
 type CreateDbOptions struct {
 	DatabaseName, Username string
-	// Password is set on the parsed connection, so that it stays out of the logged connection string
+	// Password is set on the parsed connection, so that it stays out of the connection string
 	Password string
 }
 
@@ -114,7 +128,7 @@ func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.C
 
 	connConfig, err := pgx.ParseConfig(psqlInfo)
 	if err != nil {
-		return nil, err
+		return nil, hideConnStringInParseError(err)
 	}
 
 	if isRootConnection(opts) {
@@ -162,7 +176,7 @@ func CreateConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnect
 
 	poolConfig, err := pgxpool.ParseConfig(psqlInfo)
 	if err != nil {
-		return nil, err
+		return nil, hideConnStringInParseError(err)
 	}
 
 	if isRootConnection(opts) {
