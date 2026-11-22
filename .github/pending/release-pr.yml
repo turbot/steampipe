@@ -1,0 +1,62 @@
+# Tests and builds a Steampipe release PR, then writes the record on it. It starts from the PR's own events, or by name from the
+# job that opened the PR (workflow_dispatch, input `pr`): a PR made with the job's token starts no workflow of its own.
+name: Release PR
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+  pull_request_review:
+    types: [submitted, dismissed]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: The release PR's number
+        required: true
+
+permissions: {}
+
+jobs:
+  results:
+    if: >-
+      ${{ github.event_name != 'pull_request_review'
+      && (github.event_name == 'workflow_dispatch'
+      || (startsWith(github.head_ref, 'release/') && github.event.pull_request.head.repo.full_name == github.repository)) }}
+    permissions:
+      contents: read
+      id-token: write
+    uses: turbot/shipyard-workflows/.github/workflows/go-cli-results.yml@v0
+    with:
+      ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      binary: steampipe
+      goreleaser-config: .goreleaser.yml
+  record:
+    needs: results
+    if: >-
+      ${{ !cancelled()
+      && (github.event_name == 'workflow_dispatch'
+      || (github.event.pull_request.base.ref == 'main'
+      && startsWith(github.event.pull_request.head.ref, 'release/')
+      && github.event.pull_request.head.repo.full_name == github.repository))
+      && (github.event_name == 'pull_request_review' || needs.results.result == 'success') }}
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: read
+      checks: read
+      statuses: write
+      actions: write
+      id-token: write
+    uses: turbot/shipyard-workflows/.github/workflows/record.yml@v0
+    with:
+      pr: ${{ github.event.pull_request.number || inputs.pr }}
+      results-run: ${{ github.run_id }}
+      review: ${{ github.event_name == 'pull_request_review' }}
+      ignore-checks: record / record
+      # The workflow behind develop's required `ci` check (ci.yml, which runs Test Linting (10) and Build (11)) can run by hand.
+      # The changelog line status (shipyard-pr.yml) is posted only on PRs into develop.
+      required-check-workflows: ci.yml
+      # The acceptance workflow takes about 9 minutes, close to the 10-minute default.
+      check-wait-minutes: '25'
+      # The release PR is opened with the job's token, so no workflow_run starts the ask: the record starts it once it says SHIP.
+      ask-workflow: ask.yml
