@@ -1,5 +1,5 @@
 name: "CI"
-# The one place a pull request's checks run. `ci` is the check develop requires: it needs every
+# Runs the lint and acceptance workflows on a pull request. `ci` is the check develop requires: it needs every
 # other job here, so a repo that adds, renames or splits a test job never changes the rule.
 # The release PR's record runs this by name (release-pr.yml), so it accepts workflow_dispatch.
 on:
