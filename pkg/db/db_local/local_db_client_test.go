@@ -16,7 +16,7 @@ func TestLocalDbClientEmbedsDbClientByPointer(t *testing.T) {
 	field, ok := reflect.TypeOf(LocalDbClient{}).FieldByName("DbClient")
 	require.True(t, ok, "LocalDbClient must embed DbClient")
 	assert.True(t, field.Anonymous, "DbClient must be embedded")
-	assert.Equal(t, reflect.Ptr, field.Type.Kind(), "DbClient must be embedded by pointer, so its atomics are never copied")
+	assert.Equal(t, reflect.Pointer, field.Type.Kind(), "DbClient must be embedded by pointer, so its atomics are never copied")
 }
 
 func TestLocalDbClientSharesTheWrappedDbClient(t *testing.T) {
