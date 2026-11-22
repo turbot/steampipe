@@ -53,9 +53,9 @@ jobs:
       results-run: ${{ github.run_id }}
       review: ${{ github.event_name == 'pull_request_review' }}
       ignore-checks: record / record
-      # The workflows behind develop's required checks that can run by hand: Test Linting (10) and Build (11).
+      # The workflow behind develop's required `ci` check (ci.yml, which runs Test Linting (10) and Build (11)) can run by hand.
       # The changelog line status (shipyard-pr.yml) is posted only on PRs into develop.
-      required-check-workflows: 10-test-lint.yaml,11-test-acceptance.yaml
+      required-check-workflows: ci.yml
       # The acceptance workflow takes about 9 minutes, close to the 10-minute default.
       check-wait-minutes: '25'
       # The release PR is opened with the job's token, so no workflow_run starts the ask: the record starts it once it says SHIP.
