@@ -1,7 +1,9 @@
 package steampipeconfig
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"strings"
@@ -271,6 +273,10 @@ func (c *SteampipeConfig) initializePlugins() {
 			// plugin is installed - set the instance and the plugin path
 			connection.PluginInstance = &plugin.Instance
 			connection.PluginPath = &pluginPath
+		} else if err := pluginBinaryAccessError(pluginImageRef, plugin.Alias); err != nil {
+			// the plugin is there but cannot be read - say so rather than reporting it as not installed
+			connection.Error = err
+			log.Printf("[WARN] connection '%s' requires plugin '%s' - %s", connection.Name, plugin.Alias, err.Error())
 		} else {
 			// set the plugin error
 			connection.Error = fmt.Errorf(constants.ConnectionErrorPluginNotInstalled)
@@ -280,6 +286,20 @@ func (c *SteampipeConfig) initializePlugins() {
 
 	}
 
+}
+
+// pluginUnreadableError is the error for a plugin whose binary cannot be accessed for a reason other than being absent
+func pluginUnreadableError(alias string, err error) error {
+	return fmt.Errorf("plugin '%s' cannot be read: %w", alias, err)
+}
+
+// pluginBinaryAccessError returns an error if the plugin's binary cannot be accessed for a reason other than
+// not existing (for example a permissions error), and nil if it is readable or simply not there
+func pluginBinaryAccessError(imageRef, alias string) error {
+	if _, err := os.Stat(filepaths.PluginBinaryPath(imageRef, alias)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return pluginUnreadableError(alias, err)
+	}
+	return nil
 }
 
 // pluginBlockSkipped returns whether the plugin block the connection refers to was skipped when loading,
@@ -346,8 +366,13 @@ func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconf
 		// tactical - check if the plugin binary exists
 		pluginBinaryPath := filepaths.PluginBinaryPath(imageRef, connection.PluginAlias)
 		if _, err := os.Stat(pluginBinaryPath); err != nil {
+			// only a missing binary means "not installed" - any other error (permissions, symlink loop, disk error)
+			// means the plugin may be there but cannot be read, and the user needs to be told that
+			if !errors.Is(err, fs.ErrNotExist) {
+				return nil, pluginUnreadableError(connection.PluginAlias, err)
+			}
 			log.Printf("[INFO] plugin '%s' is not installed", imageRef)
-			return nil, nil //nolint:nilerr // any os.Stat error here means the binary can't be used, so it is treated as "not installed" rather than propagated
+			return nil, nil
 		}
 
 		// so the plugin binary exists but it does not exist in the versions.json
