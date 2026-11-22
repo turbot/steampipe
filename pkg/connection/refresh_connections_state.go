@@ -632,7 +632,7 @@ func (s *refreshConnectionState) executeUpdateForConnections(ctx context.Context
 		}
 		s.exemplarSchemaMapMut.Unlock()
 
-		// the only error this will return is the failure to update the state table
+		// the only errors this will return are a failure to update the state table or to commit the transaction
 		// - all other errors are written to the state table
 		if err := s.executeUpdateQuery(ctx, sql, connectionName); err != nil {
 			errChan <- &connectionError{connectionName, err}
@@ -794,7 +794,7 @@ func (s *refreshConnectionState) updateCommentsForConnection(ctx context.Context
 	//}
 	//state.exemplarSchemaMapMut.Unlock()
 
-	// the only error this will return is the failure to update the state table
+	// the only errors this will return are a failure to update the state table or to commit the transaction
 	// - all other errors are written to the state table
 	if err := s.executeCommentQuery(ctx, sql, connectionName); err != nil {
 		errChan <- &connectionError{connectionName, err}
@@ -910,7 +910,7 @@ func (s *refreshConnectionState) executeDeleteQueries(ctx context.Context, delet
 }
 
 // delete the schema and update remove the connection from the state table
-// NOTE: this only returns an error if we fail to update the state table
+// NOTE: this only returns an error if we fail to update the state table or to commit the transaction
 func (s *refreshConnectionState) executeDeleteQuery(ctx context.Context, connectionName string) (err error) {
 	// create a transaction
 	tx, err := s.begin(ctx)
