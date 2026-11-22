@@ -1,3 +1,4 @@
+//nolint:sqlclosecheck // the tests hand stand-in rows to the code under test, which is what closes them
 package db_client
 
 import (

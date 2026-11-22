@@ -64,8 +64,8 @@ type DbClient struct {
 	onConnectionCallback DbConnectionCallback
 
 	// startQueryFn starts a query on the connection of a session.
-	// It is nil outside tests, which use it to stand in for the database
-	// (startQueryWithRetries then uses startQuery on the session's connection)
+	// It is nil outside tests, which use it to stand in for the database:
+	// when nil, startQueryWithRetries calls startQuery on the session's connection
 	startQueryFn startQueryFunc
 }
 

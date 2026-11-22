@@ -281,7 +281,7 @@ func (c *DbClient) startQuery(ctx context.Context, conn *pgx.Conn, query string,
 			pgtype.TimestamptzOID: pgx.TextFormatCode,
 		})
 		queryArgs = append(queryArgs, args...)
-		return conn.Query(ctx, query, queryArgs...) //nolint:sqlclosecheck // rows is returned to the caller, which closes it
+		return conn.Query(ctx, query, queryArgs...)
 	})
 }
 
