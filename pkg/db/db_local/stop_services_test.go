@@ -130,7 +130,7 @@ func startOlderVersionService(t *testing.T, invoker constants.Invoker) (exited <
 	}()
 	t.Cleanup(func() { _ = service.Process.Kill() })
 	port, logins := listenForStartup(t)
-	info := newRunningDBInstanceInfo(service, []string{"127.0.0.1"}, port, "steampipe", "service-password", invoker)
+	info := newRunningDBInstanceInfo(&exec.Cmd{Process: &os.Process{Pid: service.Process.Pid}}, []string{"127.0.0.1"}, port, "steampipe", "service-password", invoker)
 	if err := info.Save(); err != nil {
 		t.Fatal(err)
 	}
