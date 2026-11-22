@@ -257,14 +257,15 @@ func killRunningDbInstance(ctx context.Context) error {
 	}
 
 	for _, p := range processes {
-		cmdLine, err := p.CmdlineWithContext(ctx)
-		if err != nil {
+		cmdLine, err := readProcessCmdline(ctx, p)
+		if err != nil || len(cmdLine) == 0 {
 			continue
 		}
 
-		// check if the name of the process is prefixed with the $STEAMPIPE_INSTALL_DIR
-		// that means this is a steampipe service from this installation directory
-		if strings.HasPrefix(cmdLine, app_specific.InstallDir) {
+		// check that the postgres of this process is in the $STEAMPIPE_INSTALL_DIR, by whole path elements
+		// (an install in /a/sp-10 is not one in /a/sp-1): that means this is a steampipe service from this
+		// installation directory
+		if processBelongsToInstall(ctx, p, cmdLine, app_specific.InstallDir) {
 			log.Println("[TRACE] Terminating running postgres process")
 			if err := p.Kill(); err != nil {
 				error_helpers.ShowWarning(fmt.Sprintf("Failed to kill orphan postgres process PID %d", p.Pid))

@@ -680,8 +680,21 @@ func killInstanceIfAny(ctx context.Context) bool {
 // killInstanceInDataDirIfAny stops the steampipe postgres processes that run on the given data directory, and
 // no others: a service from another install directory is left alone. It reports whether it stopped any.
 func killInstanceInDataDirIfAny(ctx context.Context, dataDir string) bool {
-	// not yet filtered by data directory
-	return killInstanceIfAny(ctx)
+	processes, err := FindAllSteampipePostgresInstances(ctx)
+	if err != nil {
+		return false
+	}
+	var own []*psutils.Process
+	for _, p := range processes {
+		cmdLine, err := readProcessCmdline(ctx, p)
+		if err != nil {
+			continue
+		}
+		if processUsesDataDir(ctx, p, cmdLine, dataDir) {
+			own = append(own, p)
+		}
+	}
+	return stopPostgresProcesses(ctx, own)
 }
 
 func stopPostgresProcesses(ctx context.Context, processes []*psutils.Process) bool {
