@@ -9,8 +9,8 @@ import (
 	"github.com/turbot/steampipe/v2/pkg/constants"
 )
 
-// MaxDbConnections returns the size of the connection pool, as set by --max-parallel or
-// STEAMPIPE_MAX_PARALLEL (default: constants.DefaultMaxConnections).
+// MaxDbConnections returns the size of the connection pool, as set by STEAMPIPE_MAX_PARALLEL or
+// the max_parallel setting (default: constants.DefaultMaxConnections).
 // The pool counts its connections in an int32, so a larger value is an error that names the setting and the maximum.
 func MaxDbConnections() (int32, error) {
 	maxParallel := constants.DefaultMaxConnections
@@ -20,8 +20,8 @@ func MaxDbConnections() (int32, error) {
 	// compare as int64 so the check also compiles where int is 32 bits
 	v := int64(maxParallel)
 	if v > math.MaxInt32 || v < math.MinInt32 {
-		return 0, sperr.New("invalid value %d for the %s setting (--%s, %s or max_parallel): the maximum allowed value is %d",
-			maxParallel, pconstants.ArgMaxParallel, pconstants.ArgMaxParallel, constants.EnvMaxParallel, int64(math.MaxInt32))
+		return 0, sperr.New("invalid value %d for the %s setting (%s or max_parallel): the maximum allowed value is %d",
+			maxParallel, pconstants.ArgMaxParallel, constants.EnvMaxParallel, int64(math.MaxInt32))
 	}
 	return int32(v), nil
 }

@@ -44,7 +44,7 @@ func TestMaxDbConnections(t *testing.T) {
 				if err == nil {
 					t.Fatalf("expected an error, got %d", got)
 				}
-				for _, want := range []string{"--max-parallel", "STEAMPIPE_MAX_PARALLEL", "max_parallel", "2147483647"} {
+				for _, want := range []string{"max-parallel", "STEAMPIPE_MAX_PARALLEL", "max_parallel", "2147483647"} {
 					if !strings.Contains(err.Error(), want) {
 						t.Errorf("error %q does not mention %q", err.Error(), want)
 					}
