@@ -72,8 +72,11 @@ func pidIsLiveSteampipeDatabase(pid int) (bool, error) {
 		return true, nil
 	}
 	cmdline, err := readProcessCmdline(ctx, process)
-	if err != nil || len(cmdline) == 0 {
-		// alive but unreadable: cannot say it is not the database
+	// alive but unreadable, or still empty: cannot say it is not the database.
+	// The read error is not returned. Doing so would drop the state of a live
+	// service whose command line this process cannot read.
+	unreadable := err != nil || len(cmdline) == 0
+	if unreadable {
 		return true, nil
 	}
 	// the scan skips a process it could not read. A later read uses the same
