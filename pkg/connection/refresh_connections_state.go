@@ -45,7 +45,7 @@ type refreshConnectionState struct {
 	connectionOrder []string
 
 	connectionUpdates          *steampipeconfig.ConnectionUpdates
-	tableUpdater               *connectionStateTableUpdater
+	tableUpdater               connectionStateUpdater
 	res                        *steampipeconfig.RefreshConnectionResult
 	forceUpdateConnectionNames []string
 	// properties for schema/comment cloning
@@ -57,6 +57,9 @@ type refreshConnectionState struct {
 	// if a plugin has an entry in this map, all connections schemas can be cloned from the exemplar schema
 	exemplarCommentsMap map[string]string
 	pluginManager       pluginManager
+	// beginTx starts the transaction a connection's state is saved in - if nil, one is started on the pool
+	// (set only by tests)
+	beginTx func(ctx context.Context) (pgx.Tx, error)
 }
 
 func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager, forceUpdateConnectionNames []string) (*refreshConnectionState, error) {
@@ -378,7 +381,8 @@ func (s *refreshConnectionState) executeConnectionQueries(ctx context.Context) {
 }
 
 // execute all update queries
-// NOTE: this only sets res.Error if there is a failure to set update the connection state table
+// NOTE: this only sets res.Error if there is a failure to save a connection's state: to update the connection state table,
+// or to commit the connection's update or comments
 // - all other connection based failures are recorded in the connection state table
 func (s *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	log.Println("[DEBUG] refreshConnectionState.executeUpdateQueries start")
@@ -648,7 +652,7 @@ func (s *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql, co
 	defer log.Println("[DEBUG] refreshConnectionState.executeUpdateQuery end")
 
 	// create a transaction
-	tx, err := s.pool.Begin(ctx)
+	tx, err := s.begin(ctx)
 	if err != nil {
 		return sperr.WrapWithMessage(err, "failed to create transaction to perform update query")
 	}
@@ -665,13 +669,10 @@ func (s *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql, co
 		s.res.AddFailedConnection(connectionName, err.Error())
 
 		// update the state table
-		//(the transaction will be aborted - create a connection for the update)
-		if conn, poolErr := s.pool.Acquire(ctx); poolErr == nil {
-			defer conn.Release()
-			if statusErr := s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionName, err); statusErr != nil {
-				// NOTE: do not return the error - unless we failed to update the connection state table
-				return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
-			}
+		//(the transaction will be aborted - the update uses a connection of its own)
+		if statusErr := s.tableUpdater.recordConnectionError(ctx, connectionName, err); statusErr != nil {
+			// NOTE: do not return the error - unless we failed to update the connection state table
+			return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
 		}
 		return nil
 	}
@@ -682,6 +683,14 @@ func (s *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql, co
 		return sperr.WrapWithMessage(err, "failed to update connection state table")
 	}
 	return nil
+}
+
+// begin starts the transaction a connection's state is saved in
+func (s *refreshConnectionState) begin(ctx context.Context) (pgx.Tx, error) {
+	if s.beginTx != nil {
+		return s.beginTx(ctx)
+	}
+	return s.pool.Begin(ctx)
 }
 
 // finishTransaction ends a connection's transaction.
@@ -800,7 +809,7 @@ func (s *refreshConnectionState) updateCommentsForConnection(ctx context.Context
 
 func (s *refreshConnectionState) executeCommentQuery(ctx context.Context, sql, connectionName string) (err error) {
 	// create a transaction
-	tx, err := s.pool.Begin(ctx)
+	tx, err := s.begin(ctx)
 	if err != nil {
 		return sperr.WrapWithMessage(err, "failed to create transaction to perform update query")
 	}
@@ -814,13 +823,10 @@ func (s *refreshConnectionState) executeCommentQuery(ctx context.Context, sql, c
 	if err != nil {
 		abort = true
 		// update the state table
-		//(the transaction will be aborted - create a connection for the update)
-		if conn, poolErr := s.pool.Acquire(ctx); poolErr == nil {
-			defer conn.Release()
-			if statusErr := s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionName, err); statusErr != nil {
-				// NOTE: do not return the error - unless we failed to update the connection state table
-				return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
-			}
+		//(the transaction will be aborted - the update uses a connection of its own)
+		if statusErr := s.tableUpdater.recordConnectionError(ctx, connectionName, err); statusErr != nil {
+			// NOTE: do not return the error - unless we failed to update the connection state table
+			return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
 		}
 
 		return nil
@@ -907,7 +913,7 @@ func (s *refreshConnectionState) executeDeleteQueries(ctx context.Context, delet
 // NOTE: this only returns an error if we fail to update the state table
 func (s *refreshConnectionState) executeDeleteQuery(ctx context.Context, connectionName string) (err error) {
 	// create a transaction
-	tx, err := s.pool.Begin(ctx)
+	tx, err := s.begin(ctx)
 	if err != nil {
 		return sperr.WrapWithMessage(err, "failed to create transaction to perform delete query")
 	}
@@ -923,13 +929,10 @@ func (s *refreshConnectionState) executeDeleteQuery(ctx context.Context, connect
 	if err != nil {
 		abort = true
 		// update the state table
-		//(the transaction will be aborted - create a connection for the update)
-		if conn, poolErr := s.pool.Acquire(ctx); poolErr == nil {
-			defer conn.Release()
-			if statusErr := s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionName, err); statusErr != nil {
-				// NOTE: do not return the error - unless we failed to update the connection state table
-				return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
-			}
+		//(the transaction will be aborted - the update uses a connection of its own)
+		if statusErr := s.tableUpdater.recordConnectionError(ctx, connectionName, err); statusErr != nil {
+			// NOTE: do not return the error - unless we failed to update the connection state table
+			return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
 		}
 
 		return nil

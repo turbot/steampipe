@@ -5,21 +5,29 @@ import (
 	"context"
 	"errors"
 	"log"
-	"os"
 	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // fakeTx records how a transaction was ended. Only Commit and Rollback are implemented.
 type fakeTx struct {
 	pgx.Tx
+	execErr     error
 	commitErr   error
 	rollbackErr error
 	commits     int
 	rollbacks   int
 }
+
+func (f *fakeTx) Exec(context.Context, string, ...any) (pgconn.CommandTag, error) {
+	return pgconn.CommandTag{}, f.execErr
+}
+
+// Conn returns nil: the fake state updater below never uses it
+func (f *fakeTx) Conn() *pgx.Conn { return nil }
 
 func (f *fakeTx) Commit(context.Context) error {
 	f.commits++
@@ -35,8 +43,9 @@ func (f *fakeTx) Rollback(context.Context) error {
 func captureLog(t *testing.T) (*bytes.Buffer, func()) {
 	t.Helper()
 	var buf bytes.Buffer
+	previous := log.Writer()
 	log.SetOutput(&buf)
-	return &buf, func() { log.SetOutput(os.Stderr) }
+	return &buf, func() { log.SetOutput(previous) }
 }
 
 func TestFinishTransaction_CommitSucceeds(t *testing.T) {
