@@ -7,7 +7,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/turbot/pipe-fittings/v2/error_helpers"
-	"github.com/turbot/pipe-fittings/v2/ociinstaller"
 	"github.com/turbot/pipe-fittings/v2/plugin"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v6/grpc"
 	"github.com/turbot/steampipe-plugin-sdk/v6/grpc/proto"
@@ -142,13 +141,15 @@ func (m *PluginManager) handleUserLimiterChanges(_ context.Context, plugins conn
 	return nil
 }
 
-func (m *PluginManager) setRateLimitersForPlugin(pluginShortName string) error {
-	// get running plugin for this plugin
-	imageRef := ociinstaller.NewImageRef(pluginShortName).DisplayImageRef()
-
-	runningPlugin, ok := m.runningPluginMap[imageRef]
+// setRateLimitersForPlugin sends the user rate limiters to a running plugin.
+// pluginInstance is the plugin instance name: user limiters (m.userLimiters) and m.runningPluginMap are both keyed
+// by it. It is the plugin image ref only for a plugin without a custom instance name, so it must not be treated as
+// a plugin name or image ref and resolved.
+// NOTE: caller must hold m.mut lock
+func (m *PluginManager) setRateLimitersForPlugin(pluginInstance string) error {
+	runningPlugin, ok := m.runningPluginMap[pluginInstance]
 	if !ok {
-		log.Printf("[INFO] handleUserLimiterChanges: plugin %s is not currently running - ignoring", pluginShortName)
+		log.Printf("[INFO] handleUserLimiterChanges: plugin %s is not currently running - ignoring", pluginInstance)
 		return nil
 	}
 	// if the plugin is still starting it may have no client or reattach config yet.
@@ -156,22 +157,22 @@ func (m *PluginManager) setRateLimitersForPlugin(pluginShortName string) error {
 	// startPlugin sends the limiters again once it has started
 	if runningPlugin.isStarting() {
 		runningPlugin.limitersChangedWhileStarting = true
-		log.Printf("[DEBUG] handleUserLimiterChanges: plugin %s is still starting - rate limiters will be sent when it has started", pluginShortName)
+		log.Printf("[DEBUG] handleUserLimiterChanges: plugin %s is still starting - rate limiters will be sent when it has started", pluginInstance)
 		return nil
 	}
 	if !runningPlugin.reattach.SupportedOperations.RateLimiters {
-		log.Printf("[INFO] handleUserLimiterChanges: plugin %s does not support setting rate limit - ignoring", pluginShortName)
+		log.Printf("[INFO] handleUserLimiterChanges: plugin %s does not support setting rate limit - ignoring", pluginInstance)
 		return nil
 	}
 
-	pluginClient, err := sdkgrpc.NewPluginClient(runningPlugin.client, imageRef)
+	pluginClient, err := sdkgrpc.NewPluginClient(runningPlugin.client, runningPlugin.imageRef)
 	if err != nil {
-		return sperr.WrapWithMessage(err, "failed to create a plugin client when updating the rate limiter for plugin '%s'", imageRef)
+		return sperr.WrapWithMessage(err, "failed to create a plugin client when updating the rate limiter for plugin '%s'", pluginInstance)
 	}
 
 	// NOTE: caller (handleUserLimiterChanges via OnConnectionConfigChanged) already holds m.mut lock
-	if err := m.setRateLimitersInternal(pluginShortName, pluginClient); err != nil {
-		return sperr.WrapWithMessage(err, "failed to update rate limiters for plugin '%s'", imageRef)
+	if err := m.setRateLimitersInternal(pluginInstance, pluginClient); err != nil {
+		return sperr.WrapWithMessage(err, "failed to update rate limiters for plugin '%s'", pluginInstance)
 	}
 	return nil
 }
