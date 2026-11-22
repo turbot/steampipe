@@ -317,7 +317,8 @@ func prepareDb(ctx context.Context) error {
 
 	if needsInit() {
 		statushooks.SetStatus(ctx, "Cleanup any Steampipe processes…")
-		killInstanceIfAny(ctx)
+		// only this install directory's own leftovers: a service running from another install directory is not ours to stop
+		killInstanceInDataDirIfAny(ctx, filepaths.GetDataLocation())
 		if err := installDatabase(ctx, nil); err != nil {
 			return err
 		}
