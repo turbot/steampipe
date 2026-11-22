@@ -23,6 +23,21 @@ load ../helpers/steampipe_processes
   [ $status -eq 1 ]
 }
 
+@test "steampipe query with an oversized STEAMPIPE_MAX_PARALLEL fails with a clear error" {
+  # a value that does not fit in an int32 must stop the command before any query runs
+  STEAMPIPE_MAX_PARALLEL=3000000000 run steampipe query "select 1"
+  echo $output
+  [ $status -eq 254 ]
+  assert_output --partial "STEAMPIPE_MAX_PARALLEL"
+  assert_output --partial "2147483647"
+}
+
+@test "steampipe query with STEAMPIPE_MAX_PARALLEL=200 still runs" {
+  STEAMPIPE_MAX_PARALLEL=200 run steampipe query "select 1"
+  echo $output
+  [ $status -eq 0 ]
+}
+
 function teardown_file() {
   # list running processes
   ps -ef | grep steampipe
