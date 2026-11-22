@@ -107,9 +107,10 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 	}
 	startTime := time.Now()
 	// get a context with a timeout for the query to execute within
-	// NOTE: cancelExecute must NOT be called until the rows have been closed (and, on error, the session released),
-	// otherwise 'pgx' prematurely closes the database connection that this query executed in.
-	// So it is called in the read-rows goroutine, or on the error path, after the rows are closed
+	// NOTE: cancelExecute must NOT be called while the rows are being read, otherwise 'pgx' prematurely closes
+	// the database connection that this query executed in.
+	// So it is called in the read-rows goroutine once the rows are closed, or on an error return after
+	// the session has been released
 	ctxExecute, cancelExecute := c.getExecuteContext(ctx)
 
 	var tx *sql.Tx
