@@ -31,7 +31,7 @@ func installFakePlugin(t *testing.T, alias string) (imageRef, binaryPath string)
 	if err := os.MkdirAll(filepath.Dir(binaryPath), 0755); err != nil {
 		t.Fatalf("failed to create plugin dir: %v", err)
 	}
-	if err := os.WriteFile(binaryPath, []byte("fake"), 0700); err != nil {
+	if err := os.WriteFile(binaryPath, []byte("fake"), 0600); err != nil {
 		t.Fatalf("failed to write plugin binary: %v", err)
 	}
 	return imageRef, binaryPath
