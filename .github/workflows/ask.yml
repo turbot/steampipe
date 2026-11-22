@@ -28,8 +28,10 @@ jobs:
       id-token: write
     uses: turbot/shipyard-workflows/.github/workflows/ask.yml@v0
     with:
-      # The release PR the run is for: the one the record run names (empty when it names none, which looks at every open release PR),
-      # or the one a run by name is given.
-      pr: ${{ github.event.workflow_run.pull_requests[0].number || inputs.pr }}
+      # The release PR the run is for: the one a run by name is given, or the one a record run started by a pull request names. A record
+      # run started by hand names none, or a wrong one, so its head branch finds the PR: a release branch asks about its open PR, and
+      # any other branch looks at every open release PR.
+      pr: ${{ github.event_name == 'workflow_dispatch' && inputs.pr || github.event.workflow_run.event != 'workflow_dispatch' && github.event.workflow_run.pull_requests[0].number || '' }}
+      head-branch: ${{ github.event.workflow_run.head_branch }}
     secrets:
       SHIPYARD_SLACK_BOT_TOKEN: ${{ secrets.SHIPYARD_SLACK_BOT_TOKEN }}
