@@ -1,5 +1,5 @@
 # .github/workflows/shipyard-pr.yml — identical in every repo. Do not edit.
-# https://github.com/turbot/shipyard
+# https://github.com/turbot/shipyard-workflows
 name: Shipyard PR
 run-name: Shipyard PR ${{ github.event_name }}
 on:
