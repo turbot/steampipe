@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/hashicorp/go-version"
@@ -293,10 +294,16 @@ func pluginUnreadableError(alias string, err error) error {
 	return fmt.Errorf("plugin '%s' cannot be read: %w", alias, err)
 }
 
-// pluginBinaryAccessError returns an error if the plugin's binary cannot be accessed for a reason other than
-// not existing (for example a permissions error), and nil if it is readable or simply not there
+// pluginBinaryAccessError returns an error if the plugin's folder or binary cannot be accessed for a reason other
+// than not existing (for example a permissions error), and nil if it is readable or simply not there.
+// The folder is listed as well as the binary stat'ed, as GetPluginPath lists it, and a folder can be searched
+// (so the binary can be stat'ed) without being listable
 func pluginBinaryAccessError(imageRef, alias string) error {
-	if _, err := os.Stat(filepaths.PluginBinaryPath(imageRef, alias)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+	binaryPath := filepaths.PluginBinaryPath(imageRef, alias)
+	if _, err := os.ReadDir(filepath.Dir(binaryPath)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return pluginUnreadableError(alias, err)
+	}
+	if _, err := os.Stat(binaryPath); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return pluginUnreadableError(alias, err)
 	}
 	return nil

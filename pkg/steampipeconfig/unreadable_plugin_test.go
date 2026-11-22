@@ -122,16 +122,24 @@ func TestInitializePlugins_UnreadableInstalledPluginFolderIsAnError(t *testing.T
 	if runtime.GOOS == "windows" {
 		t.Skip("permissions are not enforced the same way on windows")
 	}
+	for name, mode := range map[string]os.FileMode{"no_access": 0, "searchable_not_listable": 0311} {
+		t.Run(name, func(t *testing.T) { testUnreadableInstalledPluginFolder(t, mode) })
+	}
+}
+
+func testUnreadableInstalledPluginFolder(t *testing.T, mode os.FileMode) {
 	setInstallDir(t)
 	chaosRef, chaosBinary := installFakePlugin(t, "chaos")
 	goodRef, _ := installFakePlugin(t, "chaosdynamic")
 
+	// mode 0 stops the binary being stat'ed, mode 0311 stops the folder being listed while the binary can
+	// still be stat'ed - the second is the case where the folder is searchable but not listable
 	pluginDir := filepath.Dir(chaosBinary)
-	if err := os.Chmod(pluginDir, 0); err != nil {
+	if err := os.Chmod(pluginDir, mode); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = os.Chmod(pluginDir, 0755) })
-	if _, err := os.Stat(chaosBinary); err == nil {
+	if _, err := os.ReadDir(pluginDir); err == nil {
 		t.Skip("permissions are not enforced for this user (running as root?)")
 	}
 
