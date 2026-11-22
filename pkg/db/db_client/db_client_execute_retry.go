@@ -49,6 +49,11 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 		}
 
 		log.Println("[TRACE] queryError:", queryError)
+		// the rows of a failed query must still be closed, or pgx keeps the connection busy.
+		// rows is nil if the context was cancelled before the query returned (see runQuery)
+		if rows != nil {
+			rows.Close()
+		}
 		// so there is an error - is it "relation not found"?
 		missingSchema, _, relationNotFound := db_common.GetMissingSchemaFromIsRelationNotFoundError(queryError)
 		if !relationNotFound {

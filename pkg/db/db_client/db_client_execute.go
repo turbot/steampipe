@@ -286,21 +286,33 @@ func (c *DbClient) startQuery(ctx context.Context, conn *pgx.Conn, query string,
 }
 
 // runQuery calls query in a goroutine, so we can check for cancellation.
+//
+// If ctx is done before query returns, runQuery returns ctx's error and nil rows. Callers
+// must therefore check rows for nil before closing them. The rows that query returns later
+// are closed here, as nobody else holds them: pgx keeps the connection busy until they are.
 func runQuery(ctx context.Context, query func() (pgx.Rows, error)) (pgx.Rows, error) {
-	doneChan := make(chan bool)
-	var rows pgx.Rows
-	var err error
+	type queryResult struct {
+		rows pgx.Rows
+		err  error
+	}
+	// buffered, so the goroutine never blocks if we have stopped listening
+	resultChan := make(chan queryResult, 1)
 	go func() {
-		rows, err = query()
-		close(doneChan)
+		rows, err := query()
+		resultChan <- queryResult{rows, err}
 	}()
 
 	select {
-	case <-doneChan:
+	case res := <-resultChan:
+		return res.rows, res.err
 	case <-ctx.Done():
-		err = ctx.Err()
+		go func() {
+			if res := <-resultChan; res.rows != nil {
+				res.rows.Close()
+			}
+		}()
+		return nil, ctx.Err()
 	}
-	return rows, err
 }
 
 func (c *DbClient) readRows(ctx context.Context, rows pgx.Rows, result *queryresult.Result, timingCallback func()) {
