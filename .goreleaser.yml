@@ -27,16 +27,16 @@ builds:
 archives:
   - files:
     - none*
-    format: zip
+    formats: ['zip']
     id: homebrew
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
     - goos: linux
-      format: tar.gz
+      formats: ['tar.gz']
 
 nfpms:
   - id: "steampipe"
-    builds: ['steampipe']
+    ids: ['steampipe']
     formats:
       - deb
       - rpm
@@ -51,7 +51,7 @@ nfpms:
 # it is necessary to specify the name_template of the snapshot, or else the snapshot gets created with
 # two dash(-) which results in a 500 error while downloading
 snapshot:
-  name_template: '{{ .Version }}'
+  version_template: '{{ .Version }}'
 
 # snapcrafts:
 #   - id: "steampipe"
