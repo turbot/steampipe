@@ -1,9 +1,14 @@
 package interactive
 
 import (
+	"bytes"
+	"errors"
+	"io"
+	"log"
 	"strings"
 	"testing"
 
+	"github.com/alecthomas/chroma"
 	"github.com/alecthomas/chroma/formatters"
 	"github.com/alecthomas/chroma/lexers"
 	"github.com/alecthomas/chroma/styles"
@@ -236,4 +241,86 @@ func TestHighlighterMemoryLeak(t *testing.T) {
 	}
 
 	// If we get here without OOM, the test passes
+}
+
+type failingFormatter struct{ err error }
+
+// Format writes partial output, then fails
+func (f failingFormatter) Format(w io.Writer, _ *chroma.Style, _ chroma.Iterator) error {
+	_, _ = w.Write([]byte("partial"))
+	return f.err
+}
+
+type failingLexer struct {
+	chroma.Lexer
+	err error
+}
+
+func (l failingLexer) Tokenise(*chroma.TokeniseOptions, string) (chroma.Iterator, error) {
+	return nil, l.err
+}
+
+// captureLog redirects the standard logger for the test and returns what was written
+func captureLog(t *testing.T) *bytes.Buffer {
+	t.Helper()
+	var buf bytes.Buffer
+	orig := log.Writer()
+	log.SetOutput(&buf)
+	t.Cleanup(func() { log.SetOutput(orig) })
+	return &buf
+}
+
+// TestHighlighterFormatterFailure: a formatter error returns no partial output (so the
+// prompt falls back to the typed text) and is logged with its reason
+func TestHighlighterFormatterFailure(t *testing.T) {
+	logs := captureLog(t)
+	h := newHighlighter(lexers.Get("sql"), failingFormatter{err: errors.New("formatter boom")}, styles.Native)
+
+	result, err := h.Highlight(prompt.Document{Text: "SELECT 1"})
+
+	if err == nil || !strings.Contains(err.Error(), "formatter boom") {
+		t.Fatalf("expected the formatter error, got %v", err)
+	}
+	if len(result) != 0 {
+		t.Errorf("expected no output on failure, got %q", result)
+	}
+	if !strings.Contains(logs.String(), "[WARN]") || !strings.Contains(logs.String(), "formatter boom") {
+		t.Errorf("expected the failure to be logged with its reason, got %q", logs.String())
+	}
+}
+
+// TestHighlighterLexerFailure: a lexer error returns no output and is logged with its reason
+func TestHighlighterLexerFailure(t *testing.T) {
+	logs := captureLog(t)
+	h := newHighlighter(failingLexer{err: errors.New("lexer boom")}, formatters.Get("terminal256"), styles.Native)
+
+	result, err := h.Highlight(prompt.Document{Text: "SELECT 1"})
+
+	if err == nil || !strings.Contains(err.Error(), "lexer boom") {
+		t.Fatalf("expected the lexer error, got %v", err)
+	}
+	if len(result) != 0 {
+		t.Errorf("expected no output on failure, got %q", result)
+	}
+	if !strings.Contains(logs.String(), "lexer boom") {
+		t.Errorf("expected the failure to be logged with its reason, got %q", logs.String())
+	}
+}
+
+// TestHighlighterSuccessLogsNothing: working highlighting is unchanged and silent
+func TestHighlighterSuccessLogsNothing(t *testing.T) {
+	logs := captureLog(t)
+	h := newHighlighter(lexers.Get("sql"), formatters.Get("terminal256"), styles.Native)
+
+	result, err := h.Highlight(prompt.Document{Text: "SELECT 1"})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(string(result), "SELECT") || !strings.Contains(string(result), "\x1b[") {
+		t.Errorf("expected coloured output, got %q", result)
+	}
+	if logs.Len() != 0 {
+		t.Errorf("expected no log output, got %q", logs.String())
+	}
 }
