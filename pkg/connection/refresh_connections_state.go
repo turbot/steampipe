@@ -137,6 +137,10 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 		return
 	}
 
+	// create object to update the connection state table and notify of state changes
+	// (this must be set before any use of the table updater, including setFailedConnectionsToError)
+	s.tableUpdater = newConnectionStateTableUpdater(s.connectionUpdates, s.pool)
+
 	// if any connections in the final state are in error, that may mean we failed to start them
 	// - update the connection state table
 	if err := s.setFailedConnectionsToError(ctx); err != nil {
@@ -171,9 +175,6 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 
 	// warn about missing plugins
 	s.addMissingPluginWarnings()
-
-	// create object to update the connection state table and notify of state changes
-	s.tableUpdater = newConnectionStateTableUpdater(s.connectionUpdates, s.pool)
 
 	// NOTE: delete any DYNAMIC plugin connections which will be updated
 	// to avoid them being accessed before they are updated
