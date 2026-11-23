@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/fatih/color"
+	"github.com/olekukonko/tablewriter/pkg/twwidth"
 	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/v2/plugin"
 	"github.com/turbot/pipe-fittings/v2/versionfile"
@@ -25,6 +26,10 @@ func TestAvailableVersionCacheAsTable(t *testing.T) {
 	noColor := color.NoColor
 	color.NoColor = false
 	t.Cleanup(func() { color.NoColor = noColor })
+	// the expected strings are for a terminal that counts → as one column; an East Asian locale counts it as two
+	eastAsian := twwidth.IsEastAsian()
+	twwidth.SetEastAsian(false)
+	t.Cleanup(func() { twwidth.SetEastAsian(eastAsian) })
 	mainVersion := viper.GetString("main.version")
 	viper.Set("main.version", "2.5.2")
 	t.Cleanup(func() { viper.Set("main.version", mainVersion) })
