@@ -594,11 +594,11 @@ func TestPgHbaMessages_NeverSayToDeleteTheFile(t *testing.T) {
 	}
 }
 
-func TestPgHbaMessages_OnAnOlderMajorInstallSayTheRulesAreNotCarriedOver(t *testing.T) {
+func TestPgHbaMessages_OnAnOlderMajorInstallSayWhatIsCarriedOver(t *testing.T) {
 	installDir := app_specific.InstallDir
 	t.Cleanup(func() { app_specific.InstallDir = installDir })
 	app_specific.InstallDir = filepath.Join(t.TempDir(), ".steampipe")
-	const notCarried = "Neither pg_hba.conf nor pg_hba.conf.d is carried over"
+	const notCarried = "pg_hba.conf itself is never carried over: a change you made to it is not in the new one"
 	olderMajor := filepath.Join(filepaths.EnsureDatabaseDir(), "12.1.0", "data")
 	sameMajor := filepath.Join(filepaths.EnsureDatabaseDir(), "14.1.0", "data")
 	current := filepath.Join(filepaths.EnsureDatabaseDir(), constants.DatabaseVersion, "data")
@@ -609,6 +609,9 @@ func TestPgHbaMessages_OnAnOlderMajorInstallSayTheRulesAreNotCarriedOver(t *test
 	msg := rootRefusedError(olderMajor).Error()
 	if !strings.Contains(msg, current) || !strings.Contains(msg, notCarried) {
 		t.Errorf("a dump and restore from another major version must say the rules are not carried to %s:\n%s", current, msg)
+	}
+	if !strings.Contains(msg, "rule files in pg_hba.conf.d are copied") {
+		t.Errorf("a dump and restore from another major version must say the rule files are copied:\n%s", msg)
 	}
 	if strings.Contains(rootRefusedError(sameMajor).Error(), notCarried) {
 		t.Errorf("an upgrade within a major version moves the whole data folder, so the rules are carried over")

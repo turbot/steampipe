@@ -18,6 +18,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v6/sperr"
 	"github.com/turbot/steampipe/v2/pkg/cmdconfig"
 	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/db/db_common"
 	"github.com/turbot/steampipe/v2/pkg/error_helpers"
 	"github.com/turbot/steampipe/v2/pkg/query"
 	"github.com/turbot/steampipe/v2/pkg/query/queryexecute"
@@ -113,6 +114,12 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// validate args
 	err := validateQueryArgs(ctx, args, cfg)
 	error_helpers.FailOnError(err)
+
+	// fail before the database service starts if STEAMPIPE_MAX_PARALLEL / max_parallel is unusable
+	if _, err := db_common.MaxDbConnections(); err != nil {
+		exitCode = constants.ExitCodeInsufficientOrWrongInputs
+		error_helpers.FailOnError(err)
+	}
 
 	// if diagnostic mode is set, print out config and return
 	if _, ok := os.LookupEnv(constants.EnvConfigDump); ok {

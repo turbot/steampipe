@@ -2,7 +2,7 @@
 # runs on a PR (lint, unit tests, the build and the acceptance suite).
 #
 # Left out on purpose:
-# - go vet: fails on develop on deliberate code that golangci-lint already suppresses.
+# - go vet: clean on develop since #5141, but not a separate check here; CI's golangci-lint runs govet.
 # - Three acceptance files CI runs, service, force_stop and ssl: they call
 #   `steampipe service stop --force`, which stops every steampipe service on the machine, so on a
 #   worker they would stop other runs' services and the owner's own (see never_run). CI runs them.

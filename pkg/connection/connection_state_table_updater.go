@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 	"github.com/turbot/steampipe/v2/pkg/db/db_common"
@@ -12,6 +12,24 @@ import (
 	"github.com/turbot/steampipe/v2/pkg/introspection"
 	"github.com/turbot/steampipe/v2/pkg/steampipeconfig"
 )
+
+// stateExecer is what the connection state updates need to run SQL: a *pgx.Conn, or a transaction
+type stateExecer interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+}
+
+// connectionStateUpdater writes the state of connections to the connection state table
+type connectionStateUpdater interface {
+	start(ctx context.Context) error
+	onConnectionReady(ctx context.Context, db stateExecer, name string) error
+	onConnectionCommentsLoaded(ctx context.Context, db stateExecer, name string) error
+	onConnectionDeleted(ctx context.Context, db stateExecer, name string) error
+	onConnectionError(ctx context.Context, db stateExecer, connectionName string, err error) error
+	// recordConnectionError records the error in the state table on a connection of its own
+	// (for use when the caller's transaction has been aborted)
+	// it does nothing if no connection can be acquired
+	recordConnectionError(ctx context.Context, connectionName string, err error) error
+}
 
 type connectionStateTableUpdater struct {
 	updates *steampipeconfig.ConnectionUpdates
@@ -77,35 +95,35 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 	return nil
 }
 
-func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, conn *pgx.Conn, name string) error {
+func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, db stateExecer, name string) error {
 	log.Println("[DEBUG] connectionStateTableUpdater.onConnectionReady start")
 	defer log.Println("[DEBUG] connectionStateTableUpdater.onConnectionReady end")
 
 	connection := u.updates.FinalConnectionState[name]
 	queries := introspection.GetSetConnectionStateSql(connection.ConnectionName, constants.ConnectionStateReady)
 	for _, q := range queries {
-		if _, err := conn.Exec(ctx, q.Query, q.Args...); err != nil {
+		if _, err := db.Exec(ctx, q.Query, q.Args...); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (u *connectionStateTableUpdater) onConnectionCommentsLoaded(ctx context.Context, conn *pgx.Conn, name string) error {
+func (u *connectionStateTableUpdater) onConnectionCommentsLoaded(ctx context.Context, db stateExecer, name string) error {
 	log.Println("[DEBUG] connectionStateTableUpdater.onConnectionCommentsLoaded start")
 	defer log.Println("[DEBUG] connectionStateTableUpdater.onConnectionCommentsLoaded end")
 
 	connection := u.updates.FinalConnectionState[name]
 	queries := introspection.GetSetConnectionStateCommentLoadedSql(connection.ConnectionName, true)
 	for _, q := range queries {
-		if _, err := conn.Exec(ctx, q.Query, q.Args...); err != nil {
+		if _, err := db.Exec(ctx, q.Query, q.Args...); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (u *connectionStateTableUpdater) onConnectionDeleted(ctx context.Context, conn *pgx.Conn, name string) error {
+func (u *connectionStateTableUpdater) onConnectionDeleted(ctx context.Context, db stateExecer, name string) error {
 	log.Println("[DEBUG] connectionStateTableUpdater.onConnectionDeleted start")
 	defer log.Println("[DEBUG] connectionStateTableUpdater.onConnectionDeleted end")
 
@@ -115,23 +133,32 @@ func (u *connectionStateTableUpdater) onConnectionDeleted(ctx context.Context, c
 	}
 	queries := introspection.GetDeleteConnectionStateSql(name)
 	for _, q := range queries {
-		if _, err := conn.Exec(ctx, q.Query, q.Args...); err != nil {
+		if _, err := db.Exec(ctx, q.Query, q.Args...); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (u *connectionStateTableUpdater) onConnectionError(ctx context.Context, conn *pgx.Conn, connectionName string, err error) error {
+func (u *connectionStateTableUpdater) onConnectionError(ctx context.Context, db stateExecer, connectionName string, err error) error {
 	log.Println("[DEBUG] connectionStateTableUpdater.onConnectionError start")
 	defer log.Println("[DEBUG] connectionStateTableUpdater.onConnectionError end")
 
 	queries := introspection.GetConnectionStateErrorSql(connectionName, err)
 	for _, q := range queries {
-		if _, err := conn.Exec(ctx, q.Query, q.Args...); err != nil {
+		if _, err := db.Exec(ctx, q.Query, q.Args...); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func (u *connectionStateTableUpdater) recordConnectionError(ctx context.Context, connectionName string, err error) error {
+	conn, poolErr := u.pool.Acquire(ctx)
+	if poolErr != nil {
+		return nil
+	}
+	defer conn.Release()
+	return u.onConnectionError(ctx, conn.Conn(), connectionName, err)
 }

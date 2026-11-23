@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -44,7 +45,7 @@ type refreshConnectionState struct {
 	connectionOrder []string
 
 	connectionUpdates          *steampipeconfig.ConnectionUpdates
-	tableUpdater               *connectionStateTableUpdater
+	tableUpdater               connectionStateUpdater
 	res                        *steampipeconfig.RefreshConnectionResult
 	forceUpdateConnectionNames []string
 	// properties for schema/comment cloning
@@ -56,6 +57,9 @@ type refreshConnectionState struct {
 	// if a plugin has an entry in this map, all connections schemas can be cloned from the exemplar schema
 	exemplarCommentsMap map[string]string
 	pluginManager       pluginManager
+	// beginTx starts the transaction a connection's state is saved in - if nil, one is started on the pool
+	// (set only by tests)
+	beginTx func(ctx context.Context) (pgx.Tx, error)
 }
 
 func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager, forceUpdateConnectionNames []string) (*refreshConnectionState, error) {
@@ -133,6 +137,10 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 		return
 	}
 
+	// create object to update the connection state table and notify of state changes
+	// (this must be set before any use of the table updater, including setFailedConnectionsToError)
+	s.tableUpdater = newConnectionStateTableUpdater(s.connectionUpdates, s.pool)
+
 	// if any connections in the final state are in error, that may mean we failed to start them
 	// - update the connection state table
 	if err := s.setFailedConnectionsToError(ctx); err != nil {
@@ -167,9 +175,6 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 
 	// warn about missing plugins
 	s.addMissingPluginWarnings()
-
-	// create object to update the connection state table and notify of state changes
-	s.tableUpdater = newConnectionStateTableUpdater(s.connectionUpdates, s.pool)
 
 	// NOTE: delete any DYNAMIC plugin connections which will be updated
 	// to avoid them being accessed before they are updated
@@ -377,7 +382,8 @@ func (s *refreshConnectionState) executeConnectionQueries(ctx context.Context) {
 }
 
 // execute all update queries
-// NOTE: this only sets res.Error if there is a failure to set update the connection state table
+// NOTE: this only sets res.Error if there is a failure to save a connection's state: to update the connection state table,
+// or to commit the connection's update or comments
 // - all other connection based failures are recorded in the connection state table
 func (s *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	log.Println("[DEBUG] refreshConnectionState.executeUpdateQueries start")
@@ -433,12 +439,13 @@ func (s *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	log.Printf("[INFO] set comments for initial updates")
 	// now set comments for initial updates and dynamic connections
 	// note errors will be empty to get here
-	s.UpdateCommentsInParallel(ctx, maps.Values(initialUpdates), connectionPlugins)
+	// (a failure to save a connection's comments is an error for that connection - add it to errors)
+	errors = append(errors, s.UpdateCommentsInParallel(ctx, maps.Values(initialUpdates), connectionPlugins)...)
 
 	log.Printf("[INFO] set comments for dynamic updates")
 	// convert dynamicUpdates to an array of connection states
 	var dynamicUpdateArray = updateSetMapToArray(dynamicUpdates)
-	s.UpdateCommentsInParallel(ctx, dynamicUpdateArray, connectionPlugins)
+	errors = append(errors, s.UpdateCommentsInParallel(ctx, dynamicUpdateArray, connectionPlugins)...)
 
 	log.Printf("[INFO] updated all exemplar schemas - sending notification")
 	// now that we have updated all exemplar schemars, send postgres notification
@@ -464,9 +471,9 @@ func (s *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 		utils.Pluralize("updates", len(connectionUpdates.MissingComments)),
 	)
 	// set comments for remaining updates
-	s.UpdateCommentsInParallel(ctx, maps.Values(remainingUpdates), connectionPlugins)
+	errors = append(errors, s.UpdateCommentsInParallel(ctx, maps.Values(remainingUpdates), connectionPlugins)...)
 	// set comments for any other connection without comment set
-	s.UpdateCommentsInParallel(ctx, maps.Values(s.connectionUpdates.MissingComments), connectionPlugins)
+	errors = append(errors, s.UpdateCommentsInParallel(ctx, maps.Values(s.connectionUpdates.MissingComments), connectionPlugins)...)
 
 	if len(errors) > 0 {
 		s.res.Error = error_helpers.CombineErrors(errors...)
@@ -535,7 +542,10 @@ func (s *refreshConnectionState) executeUpdateSetsInParallel(ctx context.Context
 
 	sem := semaphore.NewWeighted(maxParallel)
 
+	// wait for the collector to have read every error before returning them
+	collected := make(chan struct{})
 	go func() {
+		defer close(collected)
 		for connectionError := range errChan {
 			errors = append(errors, connectionError.err)
 			conn, poolErr := s.pool.Acquire(ctx)
@@ -586,6 +596,7 @@ func (s *refreshConnectionState) executeUpdateSetsInParallel(ctx context.Context
 
 	wg.Wait()
 	close(errChan)
+	<-collected
 
 	return errors
 }
@@ -622,7 +633,7 @@ func (s *refreshConnectionState) executeUpdateForConnections(ctx context.Context
 		}
 		s.exemplarSchemaMapMut.Unlock()
 
-		// the only error this will return is the failure to update the state table
+		// the only errors this will return are a failure to update the state table or to commit the transaction
 		// - all other errors are written to the state table
 		if err := s.executeUpdateQuery(ctx, sql, connectionName); err != nil {
 			errChan <- &connectionError{connectionName, err}
@@ -642,32 +653,27 @@ func (s *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql, co
 	defer log.Println("[DEBUG] refreshConnectionState.executeUpdateQuery end")
 
 	// create a transaction
-	tx, err := s.pool.Begin(ctx)
+	tx, err := s.begin(ctx)
 	if err != nil {
 		return sperr.WrapWithMessage(err, "failed to create transaction to perform update query")
 	}
-	defer func() {
-		if err != nil {
-			_ = tx.Rollback(ctx)
-		} else {
-			_ = tx.Commit(ctx)
-		}
-	}()
+	// abort is set when the transaction has failed and that failure has been recorded in the state table,
+	// so the transaction is rolled back rather than committed
+	abort := false
+	defer func() { finishTransaction(ctx, tx, connectionName, abort, &err) }()
 
 	// execute update sql
 	_, err = tx.Exec(ctx, sql)
 	if err != nil {
+		abort = true
 		// update failed connections in result
 		s.res.AddFailedConnection(connectionName, err.Error())
 
 		// update the state table
-		//(the transaction will be aborted - create a connection for the update)
-		if conn, poolErr := s.pool.Acquire(ctx); poolErr == nil {
-			defer conn.Release()
-			if statusErr := s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionName, err); statusErr != nil {
-				// NOTE: do not return the error - unless we failed to update the connection state table
-				return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
-			}
+		//(the transaction will be aborted - the update uses a connection of its own)
+		if statusErr := s.tableUpdater.recordConnectionError(ctx, connectionName, err); statusErr != nil {
+			// NOTE: do not return the error - unless we failed to update the connection state table
+			return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
 		}
 		return nil
 	}
@@ -678,6 +684,30 @@ func (s *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql, co
 		return sperr.WrapWithMessage(err, "failed to update connection state table")
 	}
 	return nil
+}
+
+// begin starts the transaction a connection's state is saved in
+func (s *refreshConnectionState) begin(ctx context.Context) (pgx.Tx, error) {
+	if s.beginTx != nil {
+		return s.beginTx(ctx)
+	}
+	return s.pool.Begin(ctx)
+}
+
+// finishTransaction ends a connection's transaction.
+// It is rolled back if *errp is already set or abort is true, and committed otherwise.
+// A failed rollback is logged: the error already being returned is the one that matters.
+// A failed commit means nothing was saved, so it is returned (in *errp) with the connection's name.
+func finishTransaction(ctx context.Context, tx pgx.Tx, connectionName string, abort bool, errp *error) {
+	if *errp != nil || abort {
+		if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
+			log.Printf("[WARN] failed to roll back transaction for connection '%s': %s", connectionName, rollbackErr.Error())
+		}
+		return
+	}
+	if commitErr := tx.Commit(ctx); commitErr != nil {
+		*errp = sperr.WrapWithMessage(commitErr, "failed to commit update of connection '%s'", connectionName)
+	}
 }
 
 // set connection comments
@@ -694,7 +724,10 @@ func (s *refreshConnectionState) UpdateCommentsInParallel(ctx context.Context, u
 	var maxUpdateThreads = int64(s.pool.Config().MaxConns)
 	sem := semaphore.NewWeighted(maxUpdateThreads)
 
+	// wait for the collector to have read every error before returning them
+	collected := make(chan struct{})
 	go func() {
+		defer close(collected)
 		for connectionError := range errChan {
 			errors = append(errors, connectionError.err)
 		}
@@ -722,6 +755,7 @@ func (s *refreshConnectionState) UpdateCommentsInParallel(ctx context.Context, u
 
 	wg.Wait()
 	close(errChan)
+	<-collected
 
 	return errors
 }
@@ -761,7 +795,7 @@ func (s *refreshConnectionState) updateCommentsForConnection(ctx context.Context
 	//}
 	//state.exemplarSchemaMapMut.Unlock()
 
-	// the only error this will return is the failure to update the state table
+	// the only errors this will return are a failure to update the state table or to commit the transaction
 	// - all other errors are written to the state table
 	if err := s.executeCommentQuery(ctx, sql, connectionName); err != nil {
 		errChan <- &connectionError{connectionName, err}
@@ -774,31 +808,26 @@ func (s *refreshConnectionState) updateCommentsForConnection(ctx context.Context
 	//}
 }
 
-func (s *refreshConnectionState) executeCommentQuery(ctx context.Context, sql, connectionName string) error {
+func (s *refreshConnectionState) executeCommentQuery(ctx context.Context, sql, connectionName string) (err error) {
 	// create a transaction
-	tx, err := s.pool.Begin(ctx)
+	tx, err := s.begin(ctx)
 	if err != nil {
 		return sperr.WrapWithMessage(err, "failed to create transaction to perform update query")
 	}
-	defer func() {
-		if err != nil {
-			_ = tx.Rollback(ctx)
-		} else {
-			_ = tx.Commit(ctx)
-		}
-	}()
+	// abort is set when the transaction has failed and that failure has been dealt with,
+	// so the transaction is rolled back rather than committed
+	abort := false
+	defer func() { finishTransaction(ctx, tx, connectionName, abort, &err) }()
 
 	// execute update sql
 	_, err = tx.Exec(ctx, sql)
 	if err != nil {
+		abort = true
 		// update the state table
-		//(the transaction will be aborted - create a connection for the update)
-		if conn, poolErr := s.pool.Acquire(ctx); poolErr == nil {
-			defer conn.Release()
-			if statusErr := s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionName, err); statusErr != nil {
-				// NOTE: do not return the error - unless we failed to update the connection state table
-				return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
-			}
+		//(the transaction will be aborted - the update uses a connection of its own)
+		if statusErr := s.tableUpdater.recordConnectionError(ctx, connectionName, err); statusErr != nil {
+			// NOTE: do not return the error - unless we failed to update the connection state table
+			return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
 		}
 
 		return nil
@@ -808,6 +837,8 @@ func (s *refreshConnectionState) executeCommentQuery(ctx context.Context, sql, c
 	// ignore error
 	if err := s.tableUpdater.onConnectionCommentsLoaded(ctx, tx.Conn(), connectionName); err != nil {
 		log.Printf("[WARN] failed to set 'comments_set' for connection '%s': %s", connectionName, err.Error())
+		// the transaction is no longer usable - roll it back rather than reporting a commit failure
+		abort = true
 	}
 
 	return nil
@@ -880,34 +911,29 @@ func (s *refreshConnectionState) executeDeleteQueries(ctx context.Context, delet
 }
 
 // delete the schema and update remove the connection from the state table
-// NOTE: this only returns an error if we fail to update the state table
-func (s *refreshConnectionState) executeDeleteQuery(ctx context.Context, connectionName string) error {
+// NOTE: this only returns an error if we fail to update the state table or to commit the transaction
+func (s *refreshConnectionState) executeDeleteQuery(ctx context.Context, connectionName string) (err error) {
 	// create a transaction
-	tx, err := s.pool.Begin(ctx)
+	tx, err := s.begin(ctx)
 	if err != nil {
 		return sperr.WrapWithMessage(err, "failed to create transaction to perform delete query")
 	}
-	defer func() {
-		if err != nil {
-			_ = tx.Rollback(ctx)
-		} else {
-			err = tx.Commit(ctx)
-		}
-	}()
+	// abort is set when the transaction has failed and that failure has been recorded in the state table,
+	// so the transaction is rolled back rather than committed
+	abort := false
+	defer func() { finishTransaction(ctx, tx, connectionName, abort, &err) }()
 
 	sql := db_common.GetDeleteConnectionQuery(connectionName)
 
 	// execute delete sql
 	_, err = tx.Exec(ctx, sql)
 	if err != nil {
+		abort = true
 		// update the state table
-		//(the transaction will be aborted - create a connection for the update)
-		if conn, poolErr := s.pool.Acquire(ctx); poolErr == nil {
-			defer conn.Release()
-			if statusErr := s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionName, err); statusErr != nil {
-				// NOTE: do not return the error - unless we failed to update the connection state table
-				return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
-			}
+		//(the transaction will be aborted - the update uses a connection of its own)
+		if statusErr := s.tableUpdater.recordConnectionError(ctx, connectionName, err); statusErr != nil {
+			// NOTE: do not return the error - unless we failed to update the connection state table
+			return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
 		}
 
 		return nil

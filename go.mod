@@ -24,7 +24,7 @@ require (
 	github.com/hashicorp/go-version v1.8.0
 	github.com/hashicorp/hcl/v2 v2.24.0
 	github.com/jackc/pgx/v5 v5.10.0
-	github.com/jedib0t/go-pretty/v6 v6.6.9
+	github.com/jedib0t/go-pretty/v6 v6.9.2
 	github.com/karrick/gows v0.3.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
@@ -35,7 +35,7 @@ require (
 	github.com/shiena/ansicolor v0.0.0-20230509054315-a9deabde6e02
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/spf13/cobra v1.10.2
-	github.com/spf13/pflag v1.0.9
+	github.com/spf13/pflag v1.1.0
 	github.com/spf13/viper v1.20.1
 	github.com/thediveo/enumflag/v2 v2.2.1
 	github.com/turbot/go-kit v1.3.1
