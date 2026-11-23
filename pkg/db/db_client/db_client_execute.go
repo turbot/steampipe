@@ -276,11 +276,13 @@ quals from %s.%s order by duration_ms desc`, constants.InternalSchema, constants
 	return scans, err
 }
 
+// startQueryFunc starts a query and returns its rows
+type startQueryFunc func(ctx context.Context, query string, args ...any) (pgx.Rows, error)
+
 // run query in a goroutine, so we can check for cancellation
 // in case the client becomes unresponsive and does not respect context cancellation
 func (c *DbClient) startQuery(ctx context.Context, conn *pgx.Conn, query string, args ...any) (rows pgx.Rows, err error) {
-	doneChan := make(chan bool)
-	go func() {
+	return runQuery(ctx, func() (pgx.Rows, error) {
 		// Request text format for timestamptz so PostgreSQL returns the value
 		// formatted in the session timezone, matching psql behavior.
 		// By default pgx uses binary format which loses session timezone info.
@@ -289,16 +291,38 @@ func (c *DbClient) startQuery(ctx context.Context, conn *pgx.Conn, query string,
 			pgtype.TimestamptzOID: pgx.TextFormatCode,
 		})
 		queryArgs = append(queryArgs, args...)
-		rows, err = conn.Query(ctx, query, queryArgs...) //nolint:sqlclosecheck // rows is a named return; on error the caller (startQueryWithRetries) does not close it today - a fix was reverted from this PR, see #5054
-		close(doneChan)
+		return conn.Query(ctx, query, queryArgs...)
+	})
+}
+
+// runQuery calls query in a goroutine, so we can check for cancellation.
+//
+// If ctx is done before query returns, runQuery returns ctx's error and nil rows. Callers
+// must therefore check rows for nil before closing them. The rows that query returns later
+// are closed here, as nobody else holds them: pgx keeps the connection busy until they are.
+func runQuery(ctx context.Context, query func() (pgx.Rows, error)) (pgx.Rows, error) {
+	type queryResult struct {
+		rows pgx.Rows
+		err  error
+	}
+	// buffered, so the goroutine never blocks if we have stopped listening
+	resultChan := make(chan queryResult, 1)
+	go func() {
+		rows, err := query()
+		resultChan <- queryResult{rows, err}
 	}()
 
 	select {
-	case <-doneChan:
+	case res := <-resultChan:
+		return res.rows, res.err
 	case <-ctx.Done():
-		err = ctx.Err()
+		go func() {
+			if res := <-resultChan; res.rows != nil {
+				res.rows.Close()
+			}
+		}()
+		return nil, ctx.Err()
 	}
-	return
 }
 
 func (c *DbClient) readRows(ctx context.Context, rows pgx.Rows, result *queryresult.Result, timingCallback func()) {
