@@ -8,7 +8,6 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/fatih/color"
-	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/pipe-fittings/v2/plugin"
@@ -38,15 +37,17 @@ func (av *AvailableVersionCache) asTable(ctx context.Context) (*bytes.Buffer, er
 	// so that we can capture the output
 	var buffer bytes.Buffer // c
 
-	table := tablewriter.NewWriter(&buffer)
-	table.SetHeader([]string{})                // no headers please
-	table.SetAlignment(tablewriter.ALIGN_LEFT) // we align to the left
-	table.SetAutoWrapText(false)               // let's not wrap the text
-	table.SetBorder(true)                      // there needs to be a border to provide the dialog feel
-	table.AppendBulk(notificationTable)        // Add Bulk Data
+	// a border gives the dialog feel; no headers, and rows are left-aligned, keep their leading spaces (the plugin lines' indent)
+	// and, with no width limit set, never wrap
+	table := utils.NewASCIITable(&buffer)
+	if err := table.Bulk(notificationTable); err != nil {
+		return nil, err
+	}
 
 	// render the table into the buffer
-	table.Render()
+	if err := table.Render(); err != nil {
+		return nil, err
+	}
 	return &buffer, nil
 }
 
