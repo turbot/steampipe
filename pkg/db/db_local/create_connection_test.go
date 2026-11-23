@@ -130,8 +130,8 @@ func connectAndGetClientCertificate(t *testing.T, config *pgx.ConnConfig) []byte
 		MinVersion:   tls.VersionTLS12,
 	}
 
-	// mutate the parsed TLS config in place: replacing it would drop pgx's file-backed client certificate
-	config.TLSConfig.InsecureSkipVerify = true //nolint:gosec // G402: the throwaway server certificate is not what is tested
+	// mutate the parsed TLS config in place: replacing it would drop pgx's file-backed client certificate; the throwaway server certificate is not what is tested, so it is not verified
+	config.TLSConfig.InsecureSkipVerify = true
 	config.TLSConfig.VerifyPeerCertificate = nil
 	config.Fallbacks = nil
 
