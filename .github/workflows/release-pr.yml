@@ -1,5 +1,5 @@
-# Tests and builds a Steampipe release PR, then writes the record on it. It starts from the PR's own events, or by name from the
-# job that opened the PR (workflow_dispatch, input `pr`): a PR made with the job's token starts no workflow of its own.
+# Tests and builds a Steampipe release PR, then writes the record on it. It starts from the PR's own events (the fleet App opens
+# the PR, so they start workflows), or by name to run the record again (workflow_dispatch, input `pr`).
 name: Release PR
 
 on:
@@ -58,5 +58,3 @@ jobs:
       required-check-workflows: ci.yml
       # The acceptance workflow takes about 9 minutes, close to the 10-minute default.
       check-wait-minutes: '25'
-      # The release PR is opened with the job's token, so no workflow_run starts the ask: the record starts it once it says SHIP.
-      ask-workflow: ask.yml
