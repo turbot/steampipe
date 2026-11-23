@@ -1,3 +1,18 @@
+## [2.5.2] - 2026-11-21
+
+### Security
+
+- A database password that holds a quote, or an SSL key passphrase that holds quotes, backslashes or spaces, now works exactly as you typed it. Steampipe keeps the passphrase out of the database's command line and out of its own logs and error messages. (#5183)
+
+### Improvements
+
+- Each new release's GitHub page now has its release notes when it is published, and the same release updates Homebrew and the steampipe.io changelog page, with the same downloads and Linux packages as before. (#5178)
+
+### Bug fixes
+
+- A new Steampipe database can now be set up, and an existing one started, when the `db/<version>` folder is read-only, as in a container with the database programs in a read-only image and only `data/` mounted. This worked before 2.5.1. (#5180)
+- `steampipe query` and other commands now run when a `.spc` file in `~/.steampipe/config` is malformed: the bad file is reported by name and the valid files are still used. (#5182)
+
 ## v2.5.1 [2026-11-17]
 _Bug fixes_
 - Share the query cache size limit between plugins by connection count instead of giving the full `cache_max_size_mb` to every plugin, and make `STEAMPIPE_CACHE_MAX_SIZE_MB` take effect. ([#5093](https://github.com/turbot/steampipe/issues/5093))

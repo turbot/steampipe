@@ -44,8 +44,8 @@ type pgHbaStopError struct{ message string }
 
 func (e *pgHbaStopError) Error() string { return e.message }
 
-// preparePgHbaConf runs before every postgres start, in the data directory of the postgres that
-// starts. It writes Steampipe's pg_hba.conf when the file is Steampipe's, leaves the user's own
+// preparePgHbaConf runs before every postgres start but the old server of an upgrade (prepareUpgradePgHbaConf),
+// in the data directory of the postgres that starts. It writes Steampipe's pg_hba.conf when the file is Steampipe's, leaves the user's own
 // file as it is, and stops the start when someone edited the file that Steampipe wrote.
 func preparePgHbaConf(dataDir string) error {
 	owner, err := pgHbaOwnerOf(dataDir)
@@ -56,14 +56,59 @@ func preparePgHbaConf(dataDir string) error {
 	case pgHbaEdited:
 		return editedPgHbaError(dataDir)
 	case pgHbaUser:
-		if unused := pgHbaRuleFileNames(dataDir); len(unused) > 0 {
-			error_helpers.ShowWarning(fmt.Sprintf("%s is your own file, so Steampipe does not use the files in %s: %s",
-				filepath.Join(dataDir, pgHbaFileName), filepath.Join(dataDir, pgHbaDirName), strings.Join(unused, ", ")))
-		}
+		warnUnusedPgHbaRuleFiles(dataDir)
 		return nil
 	default:
 		return writeSteampipePgHba(dataDir)
 	}
+}
+
+// warnUnusedPgHbaRuleFiles warns that the user's own pg_hba.conf means the files in pg_hba.conf.d are not used.
+func warnUnusedPgHbaRuleFiles(dataDir string) {
+	if unused := pgHbaRuleFileNames(dataDir); len(unused) > 0 {
+		error_helpers.ShowWarning(fmt.Sprintf("%s is your own file, so Steampipe does not use the files in %s: %s",
+			filepath.Join(dataDir, pgHbaFileName), filepath.Join(dataDir, pgHbaDirName), strings.Join(unused, ", ")))
+	}
+}
+
+// prepareUpgradePgHbaConf is preparePgHbaConf for the old data directory that an upgrade starts to take a backup.
+// It never writes in that data directory: the version that wrote it connects over TCP as root, which Steampipe's
+// current rules do not allow, so a Steampipe killed part way would leave that version unable to connect.
+// When the file is Steampipe's, the rules go in a temporary file that the old postgres reads through its hba_file
+// setting, and the returned arguments say so. The user's own file is used where it is. cleanup removes the
+// temporary file and is always safe to call.
+func prepareUpgradePgHbaConf(dataDir string) (args []string, cleanup func(), err error) {
+	cleanup = func() {}
+	owner, err := pgHbaOwnerOf(dataDir)
+	if err != nil {
+		return nil, cleanup, err
+	}
+	switch owner {
+	case pgHbaEdited:
+		return nil, cleanup, editedPgHbaError(dataDir)
+	case pgHbaUser:
+		warnUnusedPgHbaRuleFiles(dataDir)
+		return nil, cleanup, nil
+	}
+	userRules, err := readPgHbaUserRules(filepath.Join(dataDir, pgHbaDirName))
+	if err != nil {
+		return nil, cleanup, err
+	}
+	file, err := os.CreateTemp("", "steampipe-pg_hba-*.conf")
+	if err != nil {
+		return nil, cleanup, err
+	}
+	cleanup = func() { _ = os.Remove(file.Name()) }
+	_, writeErr := file.WriteString(steampipePgHba(userRules))
+	if closeErr := file.Close(); writeErr == nil {
+		writeErr = closeErr
+	}
+	if writeErr != nil {
+		cleanup()
+		return nil, func() {}, writeErr
+	}
+	// the value is passed to postgres as it is, with no quoting
+	return []string{"-c", "hba_file=" + file.Name()}, cleanup, nil
 }
 
 // CheckPgHbaConf returns the error that would stop the next start because of pg_hba.conf: someone
@@ -543,8 +588,9 @@ install, and delete the database.
 }
 
 // upgradeNote says, about the data folder of an older install with another Postgres major version,
-// that the upgrade dumps its data into a new folder and leaves its pg_hba.conf and pg_hba.conf.d
-// behind. It is empty for any other folder: an upgrade within a major version moves the whole folder.
+// that the upgrade dumps its data into a new folder, copies the rule files in its pg_hba.conf.d when Steampipe
+// wrote its pg_hba.conf, and leaves pg_hba.conf behind. It is empty for any other folder: an upgrade within a
+// major version moves the whole folder.
 func upgradeNote(dataDir string) string {
 	installDir := filepath.Dir(dataDir)
 	newDataDir := filepath.Join(filepaths.EnsureDatabaseDir(), constants.DatabaseVersion, "data")
@@ -553,8 +599,9 @@ func upgradeNote(dataDir string) string {
 		return ""
 	}
 	return fmt.Sprintf(`
-This is the data folder of an older Postgres major version, which Steampipe is upgrading to %s.
-Neither %s nor %s is carried over: after the upgrade, make the same change there.
+This is the data folder of an older Postgres major version, which Steampipe is upgrading to %[1]s.
+The rule files in %[3]s are copied to the new folder when Steampipe wrote %[2]s, and not when you manage %[2]s yourself.
+%[2]s itself is never carried over: a change you made to it is not in the new one.
 `, newDataDir, pgHbaFileName, pgHbaDirName)
 }
 

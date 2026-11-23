@@ -1,0 +1,39 @@
+name: "CI"
+# Runs the lint and acceptance workflows on a pull request. `ci` is the check develop requires: it needs every
+# other job here, so a repo that adds, renames or splits a test job never changes the rule.
+# The release PR's record runs this by name (release-pr.yml), so it accepts workflow_dispatch.
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    uses: ./.github/workflows/10-test-lint.yaml
+
+  acceptance:
+    uses: ./.github/workflows/11-test-acceptance.yaml
+    # The acceptance workflow reads repository secrets at its top level.
+    secrets: inherit
+
+  ci:
+    name: ci
+    needs: [lint, acceptance]
+    # Always runs, so a failed or cancelled job needed above fails it instead of leaving it skipped.
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check every job this gates
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          # A job skipped on purpose (a path filter) is fine; anything but success or skipped fails.
+          bad=$(echo "$NEEDS" | jq -r 'to_entries[] | select(.value.result != "success" and .value.result != "skipped") | "\(.key): \(.value.result)"')
+          if [ -n "$bad" ]; then
+            echo "::error title=ci::A job this gates did not pass"
+            echo "$bad"
+            exit 1
+          fi
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'

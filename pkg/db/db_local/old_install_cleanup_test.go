@@ -74,12 +74,22 @@ func TestRemoveOldInstallsWithoutDatabase_RemovesFoldersHoldingNoDatabase(t *tes
 		t.Fatal(err)
 	}
 
+	// the same for a setup of the current Steampipe, whose marker is in the internal folder
+	internalMarkerOnly := filepath.Join(dbDir, "14.15.0")
+	writeProgramsOnlyInstall(t, internalMarkerOnly)
+	internalMarker := filepaths.SetupUnfinishedMarkerLocationForVersion("14.15.0")
+	if err := os.WriteFile(internalMarker, nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+
 	removeOldInstallsWithoutDatabase()
 
 	assertGone(t, programsOnly)
 	assertGone(t, emptyData)
 	assertGone(t, empty)
 	assertGone(t, markerOnly)
+	assertGone(t, internalMarkerOnly)
+	assertGone(t, internalMarker)
 }
 
 func TestRemoveOldInstallsWithoutDatabase_KeepsFolderWhoseMarkerIsNotAFile(t *testing.T) {

@@ -77,12 +77,44 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "adding an encrypted private key should work fine and service should start successfully" {
-  skip "TODO update test and enable later"
-  run openssl genrsa -aes256 -out $STEAMPIPE_INSTALL_DIR/db/14.24.0/data/server.key -passout pass:steampipe -traditional 2048 
-  
-  run openssl req -key $STEAMPIPE_INSTALL_DIR/db/14.24.0/data/server.key -passin pass:steampipe -new -x509 -out $STEAMPIPE_INSTALL_DIR/db/14.24.0/data/server.crt -subj "/CN=steampipe.io"
+  steampipe service start
+  steampipe service stop
 
-  steampipe service start --database-password steampipe
+  # a passphrase that the shell would act on, if postgres ran it as part of a command
+  marker="$BATS_TEST_TMPDIR/pwned"
+  export STEAMPIPE_DATABASE_SSL_PASSWORD="it's a \"pass\" \$(touch $marker) \\n"
+
+  # encrypt the existing server key, so it still matches the server certificate
+  key=$STEAMPIPE_INSTALL_DIR/db/14.24.0/data/server.key
+  cp $key $BATS_TEST_TMPDIR/server.key
+  # OpenSSL 3 needs -traditional to write the encrypted key format that pgx reads; LibreSSL writes that format
+  # already, and has no such option
+  traditional=""
+  if openssl rsa -help 2>&1 | grep -q -- -traditional; then
+    traditional="-traditional"
+  fi
+  run openssl rsa -in $BATS_TEST_TMPDIR/server.key -aes256 $traditional -passout env:STEAMPIPE_DATABASE_SSL_PASSWORD -out $key
+  assert_success
+
+  run steampipe service start
+  assert_success
+
+  run steampipe query "select 1 as ok" --output csv
+  assert_success
+  assert_output --partial "ok"
+
+  # the shell did not run any part of the passphrase
+  run test -e "$marker"
+  assert_failure
+
+  # the passphrase is not in the postgres command line, which every local user can read
+  pid=$(jq .pid $STEAMPIPE_INSTALL_DIR/internal/steampipe.json)
+  run ps -o command= -p $pid
+  assert_success
+  refute_output --partial "touch $marker"
+
+  steampipe service stop
+  cp $BATS_TEST_TMPDIR/server.key $key
 }
 
 function teardown() {

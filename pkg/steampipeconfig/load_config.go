@@ -251,7 +251,7 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 		return perror_helpers.DiagsToErrorsAndWarnings("Failed to load all config files", diags)
 	}
 
-	fileData, parseDiags := dropFilesWithErrors(fileData)
+	fileData, parseDiags := DropFilesWithErrors(fileData)
 	diags = append(diags, downgradeToWarnings(parseDiags)...)
 	if parseDiags.HasErrors() {
 		steampipeConfig.configFileDropped = true
@@ -379,9 +379,9 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 	return res
 }
 
-// dropFilesWithErrors parses each file on its own and drops those with errors,
+// DropFilesWithErrors parses each file on its own and drops those with errors,
 // returning the rest and the dropped files' diagnostics.
-func dropFilesWithErrors(fileData map[string][]byte) (map[string][]byte, hcl.Diagnostics) {
+func DropFilesWithErrors(fileData map[string][]byte) (map[string][]byte, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	res := make(map[string][]byte, len(fileData))
 	for _, path := range slices.Sorted(maps.Keys(fileData)) {
