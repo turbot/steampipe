@@ -10,17 +10,17 @@ import (
 )
 
 // errUnusableRemoteURL is returned for a remote connection string that cannot be used. It repeats nothing of the
-// string, and nothing of pgx's parse error, which can show a password given as a setting or part of one.
+// string, and nothing of pgx's parse error, which can show password text that pgx read as the host or another field.
 var errUnusableRemoteURL = errors.New("cannot use the workspace database URL: check its settings, and put the user name and password before the host, with any reserved character in them percent-encoded, such as @ (%40), / (%2F), ? (%3F) or # (%23). No @ may follow the host, even percent-encoded")
 
 // checkRemoteConnString refuses a remote connection string with user-info that pgx could read with password text in
 // its host, port, database name or settings, or whose parse error could show it. A URL with no @ at all, such as
 // postgres://user:4471/word, is byte for byte a valid host:port/database URL, and no rule can tell the two apart.
 //
-// A /, ? or # ends the authority, so a password that holds one pushes the separating @ after the authority. A
-// well-formed URL has its only @ inside the authority. So any @ after the authority, raw or percent-decoded, in the
-// path, a setting's name or value, or the fragment, is refused, and so is any #, which pgx reads as data. Settings
-// that do not parse are refused too: pgx drops them, and with them any @ they hold.
+// net/url ends the authority at a /, ? or #, so a password that holds one pushes the separating @ after net/url's
+// authority. A well-formed URL has its only @ before them. So any @ after net/url's authority, raw or
+// percent-decoded, in the path, a setting's name or value, or the fragment, is refused, and so is any #, which pgx
+// reads as data. Settings that net/url cannot split are refused too, with the fixed error in place of pgx's.
 //
 // pgx ends the user-info at the first @ before any /, and net/url at the last @. So a password that holds a raw @
 // puts its own text in pgx's host: a second @ before the first / is refused.

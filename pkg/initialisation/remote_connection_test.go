@@ -113,7 +113,7 @@ func misparseCases() []misparseCase {
 			"4471"+pair[0]+"ss"+pair[1]+"Tl8tail")
 	}
 	passwords = append(passwords, "Kq9@ss?a=Tl8tail", "Kq9@ss#a=Tl8tail")
-	// the rest of the password as settings that do not parse, which pgx drops along with the @ they hold
+	// the rest of the password as settings that net/url cannot split, which pgx fails on
 	passwords = append(passwords, "4471?a;b", "4471?a=%zz")
 	// the rest of the password as the value of a setting pgx knows
 	for _, key := range []string{"dbname", "database", "host", "user", "password", "sslrootcert"} {
@@ -177,8 +177,8 @@ func TestRemoteURLNeverMisparses(t *testing.T) {
 	}
 }
 
-// Any setting that fails to parse makes pgx put the whole URL, query and all, in its error. The URL is refused with
-// the fixed error instead, so a password given as a setting does not show.
+// A URL whose settings fail to parse gets the fixed error and its hint in place of pgx's error, and a password given
+// as a setting does not show (pgx 5.13 also masks it in its own error).
 func TestRemoteConnectionHidesParseErrors(t *testing.T) {
 	err, logged := remoteConnectionError(t, "postgres://steampipe@127.0.0.1:1/steampipe?password=Kq9secret&pool_max_conns=bad")
 	if strings.Contains(err.Error(), "Kq9secret") || strings.Contains(logged, "Kq9secret") {
