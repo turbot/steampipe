@@ -87,7 +87,7 @@ func (p *fakePlugin) cacheSizeMb(t *testing.T) int64 {
 
 // serveFakePlugin serves impl in this process and returns a started client for it,
 // the way startPluginProcess returns a started client for a plugin process
-func serveFakePlugin(t *testing.T, pluginName string, impl *fakePlugin) *goplugin.Client {
+func serveFakePlugin(t *testing.T, pluginName string, impl sdkshared.WrapperPluginServer) *goplugin.Client {
 	t.Helper()
 
 	ctx, cancel := context.WithCancel(context.Background())

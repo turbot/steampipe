@@ -3,15 +3,22 @@ package db_local
 import (
 	"bytes"
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
+	"io"
 	"log"
+	"math/big"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
@@ -39,8 +46,16 @@ func TestLocalConnectionStringKeepsSpecialCharacters(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to parse connection string: %v", err)
 	}
-	if config.TLSConfig == nil || len(config.TLSConfig.Certificates) != 1 {
-		t.Fatalf("expected the client certificate to be loaded, got TLS config %v", config.TLSConfig)
+	if config.TLSConfig == nil {
+		t.Fatalf("expected TLS to be configured, got none")
+	}
+
+	// pgx loads the client certificate (sslcert and sslkey) on each TLS certificate request, not at
+	// parse time, so connect to a TLS server that asks for one and check the certificate it is sent
+	sentCert := connectAndGetClientCertificate(t, config)
+	wantCert := readCertificateFile(t, filepaths.GetServerCertLocation())
+	if !bytes.Equal(sentCert, wantCert) {
+		t.Fatalf("expected the server certificate to be sent as the client certificate")
 	}
 }
 
@@ -91,6 +106,91 @@ func TestLocalConnectionErrorsHideSSLPassphrase(t *testing.T) {
 	if strings.Contains(logged.String(), "ERRSECRET") {
 		t.Errorf("the log shows part of the SSL passphrase:\n%s", logged.String())
 	}
+}
+
+// connectAndGetClientCertificate starts a TLS handshake with the connection config against an in-memory
+// server that requests a client certificate, and returns the DER bytes of the certificate it was sent.
+// The server presents a throwaway certificate and the config does not verify it: only the client
+// certificate is under test.
+func connectAndGetClientCertificate(t *testing.T, config *pgx.ConnConfig) []byte {
+	t.Helper()
+
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("failed to generate server key: %v", err)
+	}
+	template := &x509.Certificate{SerialNumber: big.NewInt(1), NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(time.Hour)}
+	der, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	if err != nil {
+		t.Fatalf("failed to create server certificate: %v", err)
+	}
+	serverTLS := &tls.Config{
+		Certificates: []tls.Certificate{{Certificate: [][]byte{der}, PrivateKey: key}},
+		ClientAuth:   tls.RequestClientCert,
+		MinVersion:   tls.VersionTLS12,
+	}
+
+	// mutate the parsed TLS config in place: replacing it would drop pgx's file-backed client certificate; the throwaway server certificate is not what is tested, so it is not verified
+	config.TLSConfig.InsecureSkipVerify = true
+	config.TLSConfig.VerifyPeerCertificate = nil
+	config.Fallbacks = nil
+
+	clientConn, serverConn := net.Pipe()
+	config.DialFunc = func(context.Context, string, string) (net.Conn, error) { return clientConn, nil }
+
+	peerCerts := make(chan []*x509.Certificate, 1)
+	go func() {
+		defer serverConn.Close()
+		// the client opens with an 8 byte SSLRequest, which the server accepts with 'S'
+		if _, err := io.ReadFull(serverConn, make([]byte, 8)); err != nil {
+			peerCerts <- nil
+			return
+		}
+		if _, err := serverConn.Write([]byte{'S'}); err != nil {
+			peerCerts <- nil
+			return
+		}
+		tlsConn := tls.Server(serverConn, serverTLS)
+		if err := tlsConn.Handshake(); err != nil {
+			peerCerts <- nil
+			return
+		}
+		peerCerts <- tlsConn.ConnectionState().PeerCertificates
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	// the connection fails after the handshake because the server speaks no postgres: that is expected
+	conn, err := pgx.ConnectConfig(ctx, config)
+	if err == nil {
+		_ = conn.Close(ctx)
+	}
+	_ = clientConn.Close()
+
+	select {
+	case certs := <-peerCerts:
+		if len(certs) == 0 {
+			t.Fatalf("the server received no client certificate (connect error: %v)", err)
+		}
+		return certs[0].Raw
+	case <-time.After(10 * time.Second):
+		t.Fatalf("timed out waiting for the TLS handshake (connect error: %v)", err)
+		return nil
+	}
+}
+
+// readCertificateFile returns the DER bytes of the first certificate in a PEM file
+func readCertificateFile(t *testing.T, path string) []byte {
+	t.Helper()
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read %s: %v", path, err)
+	}
+	block, _ := pem.Decode(content)
+	if block == nil {
+		t.Fatalf("%s is not PEM encoded", path)
+	}
+	return block.Bytes
 }
 
 // setUpLocalSSLService points the install dir at a new folder whose path holds a space, a quote and a

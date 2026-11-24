@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
-	"github.com/turbot/pipe-fittings/v2/ociinstaller"
 	"github.com/turbot/pipe-fittings/v2/plugin"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v6/grpc/proto"
 	"github.com/turbot/steampipe/v2/pkg/connection"
@@ -66,14 +65,37 @@ func TestSendUpdateConnectionConfigs_PluginStarting(t *testing.T) {
 }
 
 func TestSetRateLimitersForPlugin_PluginStarting(t *testing.T) {
-	// key the starting plugin the same way setRateLimitersForPlugin looks it up
-	p := ociinstaller.NewImageRef("aws").DisplayImageRef()
+	// user limiters are keyed by plugin instance name, and so is runningPluginMap
+	const p = "hub.steampipe.io/plugins/turbot/aws@latest"
 	pm := newStartingPluginManager(t, p)
 
 	var err error
-	require.NotPanics(t, func() { err = pm.setRateLimitersForPlugin("aws") })
+	require.NotPanics(t, func() { err = pm.setRateLimitersForPlugin(p) })
 	assert.NoError(t, err)
 	assert.True(t, pm.runningPluginMap[p].limitersChangedWhileStarting, "the limiter change must be sent once the plugin has started")
+}
+
+// a plugin running under a custom instance name (a plugin block with its own label) is keyed in runningPluginMap by
+// that name, which is also how its limiters arrive from handleUserLimiterChanges. The change must reach it, and only it
+func TestSetRateLimitersForPlugin_CustomNamedInstance(t *testing.T) {
+	const image = "hub.steampipe.io/plugins/turbot/aws@latest"
+	pm := newStartingPluginManager(t, "aws_prod")
+	pm.runningPluginMap["aws_prod"].imageRef = image
+	pm.runningPluginMap["aws_dev"] = &runningPlugin{pluginInstance: "aws_dev", imageRef: image, initialized: make(chan struct{}), failed: make(chan struct{})}
+
+	var err error
+	require.NotPanics(t, func() { err = pm.setRateLimitersForPlugin("aws_prod") })
+	assert.NoError(t, err)
+	assert.True(t, pm.runningPluginMap["aws_prod"].limitersChangedWhileStarting, "the custom named instance must get the limiter change")
+	assert.False(t, pm.runningPluginMap["aws_dev"].limitersChangedWhileStarting, "another instance of the same plugin has its own limiters and must not be touched")
+}
+
+// a limiter change for an instance which is not running is ignored without error
+func TestSetRateLimitersForPlugin_NotRunning(t *testing.T) {
+	pm := newStartingPluginManager(t, "aws_prod")
+
+	assert.NoError(t, pm.setRateLimitersForPlugin("aws_dev"))
+	assert.False(t, pm.runningPluginMap["aws_prod"].limitersChangedWhileStarting)
 }
 
 // the update requests built for a plugin which was started with startedWith, and whose connection config changed

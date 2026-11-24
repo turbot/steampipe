@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -666,22 +667,99 @@ func ensureTempTablePermissions(ctx context.Context, databaseName string, rootCl
 	return nil
 }
 
-// kill all postgres processes that were started as part of steampipe (if any)
+// kill all postgres processes that were started as part of steampipe (if any), whichever install directory
+// they belong to. Only `service stop --force` wants this: it stops every Steampipe service on the machine.
 func killInstanceIfAny(ctx context.Context) bool {
 	processes, err := FindAllSteampipePostgresInstances(ctx)
 	if err != nil {
 		return false
 	}
+	return stopPostgresProcesses(ctx, processes)
+}
+
+// killInstanceInDataDirIfAny stops the steampipe postgres processes that run on the given data directory, and
+// no others: a service from another install directory is left alone. It reports whether it stopped any.
+func killInstanceInDataDirIfAny(ctx context.Context, dataDir string) bool {
+	processes, err := FindAllSteampipePostgresInstances(ctx)
+	if err != nil {
+		return false
+	}
+	var own []*psutils.Process
+	for _, p := range processes {
+		cmdLine, err := readProcessCmdline(ctx, p)
+		if err != nil {
+			continue
+		}
+		if processUsesDataDir(ctx, p, cmdLine, dataDir) {
+			own = append(own, p)
+		}
+	}
+	return stopPostgresProcesses(ctx, own)
+}
+
+func stopPostgresProcesses(ctx context.Context, processes []*psutils.Process) bool {
 	wg := sync.WaitGroup{}
 	for _, process := range processes {
 		wg.Add(1)
 		go func(p *psutils.Process) {
+			defer wg.Done()
 			_ = doThreeStepPostgresExit(ctx, p)
-			wg.Done()
 		}(process)
 	}
 	wg.Wait()
 	return len(processes) > 0
+}
+
+// postgresDataDirArg returns the data directory a postgres command line was given: `-D dir`, `-Ddir`,
+// `--pgdata dir` or `--pgdata=dir`.
+func postgresDataDirArg(cmdline []string) (string, bool) {
+	for i, arg := range cmdline {
+		switch {
+		case arg == "-D" || arg == "--pgdata":
+			if i+1 < len(cmdline) {
+				return cmdline[i+1], true
+			}
+		case strings.HasPrefix(arg, "--pgdata="):
+			return strings.TrimPrefix(arg, "--pgdata="), true
+		case strings.HasPrefix(arg, "-D") && len(arg) > 2:
+			return strings.TrimPrefix(arg, "-D"), true
+		}
+	}
+	return "", false
+}
+
+// processUsesDataDir reports whether a postgres process runs on dataDir. An absolute data directory on its command
+// line is compared as it is. A relative one means nothing without the directory it was started from, but postgres
+// changes into its data directory when it starts, so the process's working directory is its data directory. A process
+// that cannot be placed never matches, so it is left running.
+func processUsesDataDir(ctx context.Context, p *psutils.Process, cmdline []string, dataDir string) bool {
+	arg, ok := postgresDataDirArg(cmdline)
+	if !ok || arg == "" || dataDir == "" {
+		return false
+	}
+	// the install directory may itself be relative (STEAMPIPE_INSTALL_DIR=sp), to this process's working directory
+	absDataDir, err := filepath.Abs(dataDir)
+	if err != nil {
+		return false
+	}
+	if filepath.IsAbs(arg) {
+		return samePath(arg, absDataDir)
+	}
+	cwd, err := readProcessCwd(ctx, p)
+	if err != nil || cwd == "" {
+		return false
+	}
+	return samePath(cwd, absDataDir)
+}
+
+// samePath compares two paths after cleaning them, and after resolving links if both resolve (macOS /tmp is a link).
+func samePath(a, b string) bool {
+	if filepath.Clean(a) == filepath.Clean(b) {
+		return true
+	}
+	resolvedA, errA := filepath.EvalSymlinks(a)
+	resolvedB, errB := filepath.EvalSymlinks(b)
+	return errA == nil && errB == nil && resolvedA == resolvedB
 }
 
 func FindAllSteampipePostgresInstances(ctx context.Context) ([]*psutils.Process, error) {
@@ -695,6 +773,12 @@ var listAllProcesses = psutils.ProcessesWithContext
 // command line is still empty when first read.
 var readProcessCmdline = func(ctx context.Context, p *psutils.Process) ([]string, error) {
 	return p.CmdlineSliceWithContext(ctx)
+}
+
+// readProcessCwd is a variable so tests can give a process the working directory real postgres would have. Where the
+// platform cannot report it (gopsutil does not on macOS) it returns an error, and the process cannot be placed.
+var readProcessCwd = func(ctx context.Context, p *psutils.Process) (string, error) {
+	return p.CwdWithContext(ctx)
 }
 
 const (
@@ -783,4 +867,40 @@ func cmdlineNamesPostgresBinary(cmdline []string) bool {
 		}
 	}
 	return false
+}
+
+// pathIsUnder reports whether path is dir or inside it, by whole path elements: /a/sp-10 is not under /a/sp-1.
+func pathIsUnder(path, dir string) bool {
+	absPath, errPath := filepath.Abs(path)
+	absDir, errDir := filepath.Abs(dir)
+	if errPath != nil || errDir != nil {
+		return false
+	}
+	under := func(p, d string) bool {
+		rel, err := filepath.Rel(d, p)
+		return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
+	}
+	if under(absPath, absDir) {
+		return true
+	}
+	resolvedPath, errPath := filepath.EvalSymlinks(absPath)
+	resolvedDir, errDir := filepath.EvalSymlinks(absDir)
+	return errPath == nil && errDir == nil && under(resolvedPath, resolvedDir)
+}
+
+// processBelongsToInstall reports whether a postgres process runs from installDir: its binary is in it, or, when the
+// binary was started by a relative path, its working directory is (postgres changes into its data directory, which is
+// in the install directory too). A process that cannot be placed does not belong to it.
+func processBelongsToInstall(ctx context.Context, p *psutils.Process, cmdline []string, installDir string) bool {
+	if len(cmdline) == 0 || installDir == "" {
+		return false
+	}
+	if filepath.IsAbs(cmdline[0]) {
+		return pathIsUnder(cmdline[0], installDir)
+	}
+	cwd, err := readProcessCwd(ctx, p)
+	if err != nil || cwd == "" {
+		return false
+	}
+	return pathIsUnder(cwd, installDir)
 }

@@ -603,9 +603,12 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 		return nil, err
 	}
 
-	// fetch the supported operations
-	supportedOperations, _ := pluginClient.GetSupportedOperations()
-	// ignore errors  - just create an empty support structure if needed
+	// fetch the supported operations. A plugin too old to have the call answers Unimplemented, which the client returns
+	// as no response and no error; any error is a real failure, such as a plugin that did not answer in time.
+	supportedOperations, err := pluginClient.GetSupportedOperations()
+	if err != nil {
+		return nil, fmt.Errorf("plugin %s did not report the operations it supports: %w", pluginName, err)
+	}
 	if supportedOperations == nil {
 		supportedOperations = &sdkproto.GetSupportedOperationsResponse{}
 	}

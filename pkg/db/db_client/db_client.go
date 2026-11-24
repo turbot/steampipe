@@ -62,6 +62,11 @@ type DbClient struct {
 	// disable timing - set whilst in process of querying the timing
 	disableTiming        atomic.Bool
 	onConnectionCallback DbConnectionCallback
+
+	// startQueryFn starts a query on the connection of a session.
+	// It is nil outside tests, which use it to stand in for the database:
+	// when nil, startQueryWithRetries calls startQuery on the session's connection
+	startQueryFn startQueryFunc
 }
 
 func NewDbClient(ctx context.Context, connectionString string, opts ...ClientOption) (_ *DbClient, err error) {
