@@ -39,7 +39,7 @@ require (
 	github.com/spf13/viper v1.20.1
 	github.com/thediveo/enumflag/v2 v2.2.1
 	github.com/turbot/go-kit v1.3.1
-	github.com/turbot/pipe-fittings/v2 v2.9.6-0.20261123214619-938339cec763
+	github.com/turbot/pipe-fittings/v2 v2.10.0
 	github.com/turbot/terraform-components v0.0.0-20250114051614-04b806a9cbed
 	github.com/zclconf/go-cty v1.20.0 // indirect
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f
@@ -93,7 +93,7 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.25.0 // indirect
-	github.com/goccy/go-yaml v1.16.0 // indirect
+	github.com/goccy/go-yaml v1.17.1 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
