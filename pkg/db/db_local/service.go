@@ -1,16 +1,19 @@
 package db_local
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 
+	psutils "github.com/shirou/gopsutil/process"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/v2/pkg/filepaths"
+	sputils "github.com/turbot/steampipe/v2/pkg/utils"
 )
 
 // GetState checks that the database instance is running and returns its details
@@ -29,9 +32,14 @@ func GetState() (*RunningDBInstanceInfo, error) {
 		return nil, errorIfUnknownService()
 	}
 
-	pidExists := utils.PidExists(info.Pid)
-	if !pidExists {
-		log.Printf("[TRACE] GetState - pid %v does not exist\n", info.Pid)
+	// pipe-fittings PidExists only asks whether the pid is in the process table.
+	// That is true for a zombie, and for a different process that reused the pid.
+	running, err := pidIsLiveSteampipeDatabase(info.Pid)
+	if err != nil {
+		return nil, err
+	}
+	if !running {
+		log.Printf("[TRACE] GetState - pid %v is not a running steampipe database\n", info.Pid)
 		// nothing to do here
 		os.Remove(filepaths.RunningInfoFilePath())
 		return nil, nil
@@ -40,8 +48,44 @@ func GetState() (*RunningDBInstanceInfo, error) {
 	return info, nil
 }
 
+// pidIsLiveSteampipeDatabase reports whether pid should be treated as a running
+// steampipe database. It is false only when the pid is known not to be one: the
+// process has exited (including a zombie still in the process table), or its
+// readable command line belongs to some other program that reused the pid.
+// A live process whose command line cannot be confirmed either way is treated
+// as running, so its state files are kept.
+func pidIsLiveSteampipeDatabase(pid int) (bool, error) {
+	process, err := sputils.FindProcess(pid)
+	if err != nil || process == nil {
+		return false, err
+	}
+	ctx := context.Background()
+	// reuse the service scan, including its retry for a command line that is still empty
+	listProcess := func(context.Context) ([]*psutils.Process, error) {
+		return []*psutils.Process{process}, nil
+	}
+	instances, err := findSteampipePostgresInstances(ctx, listProcess)
+	if err != nil {
+		return false, err
+	}
+	if len(instances) > 0 {
+		return true, nil
+	}
+	cmdline, err := readProcessCmdline(ctx, process)
+	// alive but unreadable, or still empty: cannot say it is not the database.
+	// The read error is not returned. Doing so would drop the state of a live
+	// service whose command line this process cannot read.
+	unreadable := err != nil || len(cmdline) == 0
+	if unreadable {
+		return true, nil
+	}
+	// the scan skips a process it could not read. A later read uses the same
+	// matcher, including a postgres binary whose path was split at a space.
+	return isSteampipePostgresProcess(ctx, cmdline), nil
+}
+
 // errorIfUnknownService returns an error if it can find a `postmaster.pid` in the `INSTALL_DIR`
-// and the PID recorded in the found `postmaster.pid` is running - nil otherwise.
+// and the PID recorded there is a running steampipe database - nil otherwise.
 //
 // This is because, this function is called when we cannot find the steampipe service state file.
 //
@@ -75,8 +119,12 @@ func errorIfUnknownService() error {
 		return err
 	}
 
-	// check if a process with that PID exists
-	exists := utils.PidExists(int(pid))
+	// the same check as the service state file: a zombie, or another process
+	// that reused this pid, is not an unknown running database
+	exists, err := pidIsLiveSteampipeDatabase(int(pid))
+	if err != nil {
+		return err
+	}
 	if exists {
 		// if it does, then somehow we don't know about it. Error out
 		return fmt.Errorf("service is running in an unknown state [PID: %d] - try killing it with %s", pid, constants.Bold("steampipe service stop --force"))

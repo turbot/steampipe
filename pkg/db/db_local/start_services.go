@@ -842,9 +842,29 @@ func isSteampipePostgresProcess(ctx context.Context, cmdline []string) bool {
 	if len(cmdline) < 1 {
 		return false
 	}
+	// argv[0] is normally the postgres binary. gopsutil splits a command line
+	// on spaces (macOS ps, and Windows), so a space in the install path leaves
+	// that binary in a later argument: "/Users/me/My" then "Stuff/bin/postgres".
+	// The binary name itself has no space. Another postgres without
+	// application_name=<app> is not this service.
+	if !cmdlineNamesPostgresBinary(cmdline) {
+		return false
+	}
+	return slices.Contains(cmdline, fmt.Sprintf("application_name=%s", app_specific.AppName))
+}
+
+func cmdlineNamesPostgresBinary(cmdline []string) bool {
 	if strings.Contains(cmdline[0], "postgres") {
-		// this is a postgres process - but is it a steampipe service?
-		return slices.Contains(cmdline, fmt.Sprintf("application_name=%s", app_specific.AppName))
+		return true
+	}
+	for _, arg := range cmdline[1:] {
+		base := arg
+		if i := strings.LastIndexAny(arg, `/\`); i >= 0 {
+			base = arg[i+1:]
+		}
+		if base == "postgres" || base == "postgres.exe" {
+			return true
+		}
 	}
 	return false
 }

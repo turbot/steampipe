@@ -217,6 +217,47 @@ func TestFindSteampipePostgresInstancesReturnsContextErrorWhenCancelled(t *testi
 	}
 }
 
+// gopsutil on macOS splits `ps -o command` on spaces, and on Windows it splits
+// the command line on spaces too. A space in the install path leaves the
+// postgres binary in a later argument. That process is still the steampipe
+// database. Another postgres, without application_name=steampipe, is not.
+func TestFindSteampipePostgresInstancesMatchesInstallPathSplitAtSpace(t *testing.T) {
+	previousAppName := app_specific.AppName
+	app_specific.AppName = "steampipe"
+	t.Cleanup(func() { app_specific.AppName = previousAppName })
+
+	split := &psutils.Process{Pid: 4242}
+	otherPostgres := &psutils.Process{Pid: 4243}
+	windowsSplit := &psutils.Process{Pid: 4244}
+
+	previousReader := readProcessCmdline
+	t.Cleanup(func() { readProcessCmdline = previousReader })
+	readProcessCmdline = func(_ context.Context, p *psutils.Process) ([]string, error) {
+		switch p.Pid {
+		case split.Pid:
+			return []string{"/Users/me/My", "Stuff/bin/postgres", "-D", "data", "application_name=steampipe"}, nil
+		case windowsSplit.Pid:
+			return []string{`C:\Program`, `Files\Steampipe\db\postgres\bin\postgres.exe`, "-D", "data", "application_name=steampipe"}, nil
+		default:
+			return []string{"/usr/lib/postgresql/16/bin/postgres", "-D", "data"}, nil
+		}
+	}
+
+	instances, err := findSteampipePostgresInstances(context.Background(), func(context.Context) ([]*psutils.Process, error) {
+		return []*psutils.Process{split, otherPostgres, windowsSplit}, nil
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	got := map[int32]bool{}
+	for _, instance := range instances {
+		got[instance.Pid] = true
+	}
+	if !got[split.Pid] || !got[windowsSplit.Pid] || got[otherPostgres.Pid] || len(instances) != 2 {
+		t.Fatalf("instances = %v, want the split-path databases %d and %d only", instances, split.Pid, windowsSplit.Pid)
+	}
+}
+
 // Postgres runs ssl_passphrase_command through /bin/sh and puts its own command
 // line in front of every local user (ps, /proc). So the passphrase must not be
 // in the command line, and the command must print it back exactly, without the

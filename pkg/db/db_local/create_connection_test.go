@@ -195,11 +195,16 @@ func readCertificateFile(t *testing.T, path string) []byte {
 
 // setUpLocalSSLService points the install dir at a new folder whose path holds a space, a quote and a
 // backslash, creates the certificates with the server key encrypted with keyPassphrase, and saves the
-// running info of a live process (this one), so that a local connection string can be built
+// running info of a live stand-in database process, so that a local connection string can be built
 func setUpLocalSSLService(t *testing.T, keyPassphrase string) {
 	t.Helper()
 	originalInstallDir := app_specific.InstallDir
-	t.Cleanup(func() { app_specific.InstallDir = originalInstallDir })
+	originalAppName := app_specific.AppName
+	t.Cleanup(func() {
+		app_specific.InstallDir = originalInstallDir
+		app_specific.AppName = originalAppName
+	})
+	app_specific.AppName = "steampipe"
 	app_specific.InstallDir = filepath.Join(t.TempDir(), `it's a \steampipe`)
 
 	if err := ensureCertificates(); err != nil {
@@ -207,7 +212,9 @@ func setUpLocalSSLService(t *testing.T, keyPassphrase string) {
 	}
 	encryptServerKey(t, keyPassphrase)
 
-	info := newRunningDBInstanceInfo(&exec.Cmd{Process: &os.Process{Pid: os.Getpid()}}, []string{"localhost"}, 9193, "steampipe", "password", constants.InvokerService)
+	// service state ignores a pid that is not a steampipe database, so the test binary itself will not do
+	pid := startFakeDatabase(t)
+	info := newRunningDBInstanceInfo(&exec.Cmd{Process: &os.Process{Pid: pid}}, []string{"localhost"}, 9193, "steampipe", "password", constants.InvokerService)
 	if err := info.Save(); err != nil {
 		t.Fatalf("failed to save running info: %v", err)
 	}

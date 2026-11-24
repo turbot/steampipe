@@ -5,13 +5,16 @@ import (
 	"crypto/tls"
 	"errors"
 	"net"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgproto3"
+	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 	"github.com/turbot/steampipe/v2/pkg/filepaths"
@@ -85,19 +88,40 @@ func listenForStartup(t *testing.T) (port int, logins <-chan startupLogin) {
 func startOlderVersionService(t *testing.T, invoker constants.Invoker) (exited <-chan struct{}, logins <-chan startupLogin) {
 	t.Helper()
 	if runtime.GOOS == "windows" {
-		t.Skip("the stand-in service is sleep")
+		t.Skip("the stand-in service is a re-exec of this test binary")
 	}
 	originalInstallDir := app_specific.InstallDir
-	t.Cleanup(func() { app_specific.InstallDir = originalInstallDir })
+	originalAppName := app_specific.AppName
+	t.Cleanup(func() {
+		app_specific.InstallDir = originalInstallDir
+		app_specific.AppName = originalAppName
+	})
 	app_specific.InstallDir = filepath.Join(shortTempDir(t), ".steampipe")
+	app_specific.AppName = "steampipe"
 	// a connection as the steampipe user uses SSL, as it does to a real service
 	if err := ensureCertificates(); err != nil {
 		t.Fatal(err)
 	}
 
-	service := exec.Command("sleep", "60")
+	// The stand-in has to be a steampipe database process, not an unrelated
+	// program: service state now ignores a pid that belongs to something else.
+	service := exec.Command(os.Args[0], "-test.run=^TestFakeSteampipePostgresProcess$", fakePostgresArg) //nolint:gosec // G204: os.Args[0] is this test binary, re-run with fixed arguments
+	service.Args[0] = "postgres"
 	if err := service.Start(); err != nil {
 		t.Fatal(err)
+	}
+	// On Linux the command line of a just-started child can read as empty.
+	postgres := &psutils.Process{Pid: int32(service.Process.Pid)} //nolint:gosec // G115: test child PID
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		cmdline, err := postgres.CmdlineSlice()
+		if err == nil && slices.Contains(cmdline, fakePostgresArg) {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("stand-in database never showed its command line, last read %q (err %v)", cmdline, err)
+		}
+		time.Sleep(time.Millisecond)
 	}
 	done := make(chan struct{})
 	go func() {
@@ -106,7 +130,7 @@ func startOlderVersionService(t *testing.T, invoker constants.Invoker) (exited <
 	}()
 	t.Cleanup(func() { _ = service.Process.Kill() })
 	port, logins := listenForStartup(t)
-	info := newRunningDBInstanceInfo(service, []string{"127.0.0.1"}, port, "steampipe", "service-password", invoker)
+	info := newRunningDBInstanceInfo(&exec.Cmd{Process: &os.Process{Pid: service.Process.Pid}}, []string{"127.0.0.1"}, port, "steampipe", "service-password", invoker)
 	if err := info.Save(); err != nil {
 		t.Fatal(err)
 	}
