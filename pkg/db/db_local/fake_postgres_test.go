@@ -22,7 +22,10 @@ const (
 	fakePostgresEnv           = "FAKE_POSTGRES_SERVER"
 	fakePostgresIgnoreSignals = "FAKE_POSTGRES_IGNORE_SIGNALS"
 	fakePostgresPidFile       = "FAKE_POSTGRES_PID_FILE"
-	fakeDatabaseName          = "steampipe"
+	// fakePostgresRecordDir is a folder where the server writes the arguments it was started with ("args",
+	// one per line) and, when it was given an hba_file, the content that file had at start ("hba")
+	fakePostgresRecordDir = "FAKE_POSTGRES_RECORD_DIR"
+	fakeDatabaseName      = "steampipe"
 )
 
 // writeFakePostgres replaces the postgres binary of the installation at location with one that runs this test
@@ -89,6 +92,9 @@ func TestFakePostgresServer(t *testing.T) {
 			port, _ = strconv.Atoi(args[i+1])
 		}
 	}
+	if dir := os.Getenv(fakePostgresRecordDir); dir != "" {
+		recordFakePostgresStart(t, dir, args)
+	}
 	if os.Getenv(fakePostgresIgnoreSignals) != "" {
 		signal.Ignore(syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 	}
@@ -107,6 +113,24 @@ func TestFakePostgresServer(t *testing.T) {
 			return
 		}
 		go serveFakePostgresConn(conn)
+	}
+}
+
+func recordFakePostgresStart(t *testing.T, dir string, args []string) {
+	t.Helper()
+	if err := os.WriteFile(filepath.Join(dir, "args"), []byte(strings.Join(args, "\n")), 0600); err != nil { //nolint:gosec // G703: a path the test passed in through the environment
+		t.Fatal(err)
+	}
+	for _, arg := range args {
+		if hbaFile, ok := strings.CutPrefix(arg, "hba_file="); ok {
+			content, err := os.ReadFile(hbaFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(dir, "hba"), content, 0600); err != nil { //nolint:gosec // G703: a path the test passed in through the environment
+				t.Fatal(err)
+			}
+		}
 	}
 }
 

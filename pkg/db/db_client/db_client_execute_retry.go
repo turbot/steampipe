@@ -26,14 +26,20 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 	backoffInterval := 250 * time.Millisecond
 	backoff := retry.NewConstant(backoffInterval)
 
-	conn := session.Connection.Conn()
+	start := c.startQueryFn
+	if start == nil {
+		conn := session.Connection.Conn()
+		start = func(ctx context.Context, query string, args ...any) (pgx.Rows, error) {
+			return c.startQuery(ctx, conn, query, args...)
+		}
+	}
 
 	var res pgx.Rows
 	count := 0
 	err := retry.Do(ctx, retry.WithMaxDuration(maxDuration, backoff), func(ctx context.Context) error {
 		count++
 		log.Println("[TRACE] starting", count)
-		rows, queryError := c.startQuery(ctx, conn, query, args...) //nolint:sqlclosecheck // rows is not closed on the error path below (reverted from a fix that closed it but leaked without it, then panicked on ctx-cancellation - rule 1: no practical regression test without mocking pgx.Conn.Query's cancellation timing), see #5054
+		rows, queryError := start(ctx, query, args...)
 		// if there is no error, just return
 		if queryError == nil {
 			log.Println("[TRACE] no queryError")
@@ -43,6 +49,11 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 		}
 
 		log.Println("[TRACE] queryError:", queryError)
+		// the rows of a failed query must still be closed, or pgx keeps the connection busy.
+		// rows is nil if the context was cancelled before the query returned (see runQuery)
+		if rows != nil {
+			rows.Close()
+		}
 		// so there is an error - is it "relation not found"?
 		missingSchema, _, relationNotFound := db_common.GetMissingSchemaFromIsRelationNotFoundError(queryError)
 		if !relationNotFound {

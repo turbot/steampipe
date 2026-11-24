@@ -1,7 +1,7 @@
 name: "11 - Test: Acceptance"
 on:
-  pull_request:
-  # The release PR's record runs this by name on its commit, since develop requires its Build check.
+  # Pull requests run this through ci.yml, so it runs once per PR.
+  workflow_call:
   workflow_dispatch:
 
 permissions:
@@ -11,7 +11,6 @@ env:
   STEAMPIPE_UPDATE_CHECK: false
   SPIPETOOLS_PG_CONN_STRING: ${{ secrets.SPIPETOOLS_PG_CONN_STRING }}
   SPIPETOOLS_TOKEN: ${{ secrets.SPIPETOOLS_TOKEN }}
-  GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
   STEAMPIPE_LOG: info
 
 jobs:
@@ -32,7 +31,7 @@ jobs:
           ref: v1.6.x
 
       - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 1.26.10
 
@@ -45,7 +44,7 @@ jobs:
       # used to speedup go test
       - name: Go Build Cache
         id: build-cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ steps.go-cache-paths.outputs.go-build }}
           key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
@@ -57,7 +56,7 @@ jobs:
           go test -timeout 30s ./... -test.v
 
       - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@5daf1e915a5f0af01ddbcd89a43b8061ff4f1a89 # v7.2.2
+        uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
         with:
           install-only: true
 
@@ -77,7 +76,7 @@ jobs:
         run: ls -l ~/artifacts
 
       - name: Save Linux Build Artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build-artifact-linux
           path: ~/artifacts/linux.tar.gz
@@ -125,7 +124,7 @@ jobs:
           submodules: true
 
       - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 1.26.10
 
@@ -135,7 +134,7 @@ jobs:
           mkdir ~/artifacts
 
       - name: Download Linux Build Artifacts
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         with:
           name: build-artifact-linux
@@ -164,7 +163,7 @@ jobs:
 
       - name: Save Install DB Logs
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: install-db-logs-${{ matrix.test_block }}-${{ matrix.platform }}
           path: ~/.steampipe/logs
@@ -181,7 +180,7 @@ jobs:
           echo ">> here"
 
       - name: Save Test Suite Logs
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: test-logs-${{ matrix.test_block }}-${{ matrix.platform }}
           path: ~/.steampipe/logs

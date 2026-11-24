@@ -16,7 +16,8 @@ import (
 	"github.com/turbot/steampipe/v2/pkg/filepaths"
 )
 
-// every place Steampipe starts a postgres server must write pg_hba.conf first, never start postgres if that
+// every place Steampipe starts a postgres server must write pg_hba.conf first (the old server of an upgrade reads
+// the rules from a temporary file through hba_file instead, so its data folder is never written to), never start postgres if that
 // write fails, and pass the socket settings. Each case runs the real code path with a stand-in postgres, a script
 // that records its command line, a copy of the pg_hba.conf in its data folder when it started, and that it ran.
 
@@ -26,13 +27,16 @@ func writeRecordingPostgres(t *testing.T, binaryPath string) string {
 	recordDir := t.TempDir()
 	script := fmt.Sprintf(`#!/bin/sh
 dir=""
+hbafile=""
 prev=""
 for arg in "$@"; do
   if [ "$prev" = "-D" ]; then dir="$arg"; fi
+  case "$arg" in hba_file=*) hbafile="${arg#hba_file=}";; esac
   prev="$arg"
 done
 printf '%%s\n' "$@" > %[1]s/args
-if [ -f "$dir/pg_hba.conf" ]; then cp "$dir/pg_hba.conf" %[1]s/hba; fi
+if [ -n "$hbafile" ]; then cp "$hbafile" %[1]s/hba
+elif [ -f "$dir/pg_hba.conf" ]; then cp "$dir/pg_hba.conf" %[1]s/hba; fi
 touch %[1]s/done
 exec sleep 60
 `, recordDir)
@@ -140,6 +144,10 @@ func TestStartDatabaseInLocation_WritesPgHbaAndSetsSocket(t *testing.T) {
 	})
 
 	assertRecordedStart(t, recordDir, filepath.Join(location, "data"))
+	// the rules came from hba_file: the old data folder holds no pg_hba.conf that an older version would trip on
+	if _, err := os.Stat(filepath.Join(location, "data", pgHbaFileName)); !os.IsNotExist(err) {
+		t.Errorf("the old data folder must not get a pg_hba.conf, stat err: %v", err)
+	}
 }
 
 // A pg_hba.conf that cannot be written must stop postgres from being started at all. Writing it after the start

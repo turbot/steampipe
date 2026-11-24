@@ -317,7 +317,8 @@ func prepareDb(ctx context.Context) error {
 
 	if needsInit() {
 		statushooks.SetStatus(ctx, "Cleanup any Steampipe processes…")
-		killInstanceIfAny(ctx)
+		// only this install directory's own leftovers: a service running from another install directory is not ours to stop
+		killInstanceInDataDirIfAny(ctx, filepaths.GetDataLocation())
 		if err := installDatabase(ctx, nil); err != nil {
 			return err
 		}
@@ -463,6 +464,11 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 		return err
 	}
 
+	// before the data folder is touched, so a rule file that cannot be read leaves nothing to clear
+	if err := checkPgHbaRulesReadable(ctx); err != nil {
+		return err
+	}
+
 	statushooks.SetStatus(ctx, "Cleaning up…")
 
 	err := prepareDataLocation(filepaths.GetDataLocation())
@@ -475,9 +481,14 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	}
 
 	statushooks.SetStatus(ctx, "Initializing database…")
-	err = initDatabase()
+	err = initDatabase(ctx)
 	if err != nil {
 		log.Printf("[TRACE] initDatabase failed: %v", err)
+		// the message says what the user can do about it
+		var carryErr *pgHbaCarryOverError
+		if errors.As(err, &carryErr) {
+			return carryErr
+		}
 		return fmt.Errorf("Initializing database... FAILED!")
 	}
 
@@ -597,7 +608,7 @@ func isValidDatabaseName(databaseName string) bool {
 	return databaseName[0] == '_' || (databaseName[0] >= 'a' && databaseName[0] <= 'z')
 }
 
-func initDatabase() error {
+func initDatabase(ctx context.Context) error {
 	putils.LogTime("db_local.install.initDatabase start")
 	defer putils.LogTime("db_local.install.initDatabase end")
 
@@ -640,6 +651,12 @@ func initDatabase() error {
 	err = os.Unsetenv("LC_ALL")
 	if err != nil {
 		log.Printf("[TRACE] failed to return back to original locale settings:\n %s", err.Error())
+		return err
+	}
+
+	// the rule files the user put in the older install's pg_hba.conf.d go in before Steampipe's file is written,
+	// which reads them
+	if err := carryOverPgHbaRules(ctx); err != nil {
 		return err
 	}
 

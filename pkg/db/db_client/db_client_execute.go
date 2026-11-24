@@ -107,9 +107,11 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 	}
 	startTime := time.Now()
 	// get a context with a timeout for the query to execute within
-	// we don't use the cancelFn from this timeout context, since usage will lead to 'pgx'
-	// prematurely closing the database connection that this query executed in
-	ctxExecute := c.getExecuteContext(ctx)
+	// NOTE: cancelExecute must NOT be called while the rows are being read, otherwise 'pgx' prematurely closes
+	// the database connection that this query executed in.
+	// So it is called in the read-rows goroutine once the rows are closed, or on an error return after
+	// the session has been released
+	ctxExecute, cancelExecute := c.getExecuteContext(ctx)
 
 	var tx *sql.Tx
 
@@ -126,6 +128,8 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 			if onComplete != nil {
 				onComplete()
 			}
+			// the query is over - release the timeout context and its timer
+			cancelExecute()
 		}
 	}()
 
@@ -145,6 +149,10 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 
 	// read the rows in a go routine
 	go func() {
+		// release the timeout context and its timer once the rows are closed and the session released
+		// (this is deferred first so it runs last)
+		defer cancelExecute()
+
 		// define a callback which fetches the timing information
 		// this will be invoked after reading rows is complete but BEFORE closing the rows object (which closes the connection)
 		timingCallback := func() {
@@ -163,17 +171,19 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 	return result, nil
 }
 
-func (c *DbClient) getExecuteContext(ctx context.Context) context.Context {
+// getExecuteContext returns the context to execute a query in, and the func which releases it.
+// The caller must call the cancel func once the query has finished with its rows - and not before,
+// as cancelling early makes 'pgx' close the connection the query is running on.
+// The cancel func is never nil.
+func (c *DbClient) getExecuteContext(ctx context.Context) (context.Context, context.CancelFunc) {
 	queryTimeout := time.Duration(viper.GetInt(pconstants.ArgDatabaseQueryTimeout)) * time.Second
 	// if timeout is zero, do not set a timeout
 	if queryTimeout == 0 {
-		return ctx
+		return ctx, func() {}
 	}
 	// create a context with a deadline
 	shouldBeDoneBy := time.Now().Add(queryTimeout)
-	newCtx, _ := context.WithDeadline(ctx, shouldBeDoneBy) //nolint:gosec,govet // G118/lostcancel: cancel is intentionally discarded - pgx prematurely cancels the PG connection if this cancel func is invoked in a defer
-
-	return newCtx
+	return context.WithDeadline(ctx, shouldBeDoneBy)
 }
 
 func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, session *db_common.DatabaseSession, resultChannel queryresult.TimingResultStream) {
@@ -266,11 +276,13 @@ quals from %s.%s order by duration_ms desc`, constants.InternalSchema, constants
 	return scans, err
 }
 
+// startQueryFunc starts a query and returns its rows
+type startQueryFunc func(ctx context.Context, query string, args ...any) (pgx.Rows, error)
+
 // run query in a goroutine, so we can check for cancellation
 // in case the client becomes unresponsive and does not respect context cancellation
 func (c *DbClient) startQuery(ctx context.Context, conn *pgx.Conn, query string, args ...any) (rows pgx.Rows, err error) {
-	doneChan := make(chan bool)
-	go func() {
+	return runQuery(ctx, func() (pgx.Rows, error) {
 		// Request text format for timestamptz so PostgreSQL returns the value
 		// formatted in the session timezone, matching psql behavior.
 		// By default pgx uses binary format which loses session timezone info.
@@ -279,16 +291,38 @@ func (c *DbClient) startQuery(ctx context.Context, conn *pgx.Conn, query string,
 			pgtype.TimestamptzOID: pgx.TextFormatCode,
 		})
 		queryArgs = append(queryArgs, args...)
-		rows, err = conn.Query(ctx, query, queryArgs...) //nolint:sqlclosecheck // rows is a named return; on error the caller (startQueryWithRetries) does not close it today - a fix was reverted from this PR, see #5054
-		close(doneChan)
+		return conn.Query(ctx, query, queryArgs...)
+	})
+}
+
+// runQuery calls query in a goroutine, so we can check for cancellation.
+//
+// If ctx is done before query returns, runQuery returns ctx's error and nil rows. Callers
+// must therefore check rows for nil before closing them. The rows that query returns later
+// are closed here, as nobody else holds them: pgx keeps the connection busy until they are.
+func runQuery(ctx context.Context, query func() (pgx.Rows, error)) (pgx.Rows, error) {
+	type queryResult struct {
+		rows pgx.Rows
+		err  error
+	}
+	// buffered, so the goroutine never blocks if we have stopped listening
+	resultChan := make(chan queryResult, 1)
+	go func() {
+		rows, err := query()
+		resultChan <- queryResult{rows, err}
 	}()
 
 	select {
-	case <-doneChan:
+	case res := <-resultChan:
+		return res.rows, res.err
 	case <-ctx.Done():
-		err = ctx.Err()
+		go func() {
+			if res := <-resultChan; res.rows != nil {
+				res.rows.Close()
+			}
+		}()
+		return nil, ctx.Err()
 	}
-	return
 }
 
 func (c *DbClient) readRows(ctx context.Context, rows pgx.Rows, result *queryresult.Result, timingCallback func()) {
