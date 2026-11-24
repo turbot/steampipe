@@ -1,3 +1,29 @@
+## [2.5.3] - 2026-11-24
+
+### Security
+
+- A remote database URL whose password holds an unencoded `/`, `?`, `#` or `@` is now refused with a hint to percent-encode it, so the password no longer shows in errors. Put the user name and password before the host, with `@` written `%40`. (#5218)
+  - Update needs: Write an `@` in the user name or password as `%40`: a raw one, which worked in 2.5.2, is now refused. An `@` after the host is refused even as `%40`, and so is a `#`, so pass an `sslrootcert` path holding `@` in `PGSSLROOTCERT`.
+
+### Improvements
+
+- Aggregator connections with two or more child connections are no longer re-imported on every service start when nothing about them changed, so startup is faster on databases with large aggregators. (#5205)
+- [dep][go](deps): Bump github.com/jackc/pgx/v5 from 5.10.0 to 5.13.0. (#5208)
+- When a plugin stops answering, Steampipe now stops waiting after 5 minutes and reports the plugin's own error, instead of stalling connection refreshes until it restarts. (#5215)
+
+### Bug fixes
+
+- Rate limiters you add or change while the service is running now reach plugins running under a custom instance name (for example `plugin "aws_prod"`), so no restart is needed. (#5194)
+- Starting Steampipe for the first time in a new install directory no longer stops Steampipe services running from other install directories; `steampipe service stop --force` still stops them all. (#5195)
+- The interactive prompt now shows your input as plain text and writes the reason to the Steampipe log when syntax highlighting fails, instead of showing garbled input with no explanation. (#5196)
+- After a Postgres upgrade is interrupted (for example with `kill -9`), the older Steampipe version can still connect to its database, because the upgrade no longer rewrites the old data directory's `pg_hba.conf`. (#5198)
+- Rules you put in `pg_hba.conf.d/` now carry over when Steampipe upgrades to a new Postgres major version, so the connections they allow or block stay the same. (#5200)
+- When a plugin's binary is installed but Steampipe cannot read it (for example its folder permissions deny your user), the connection now reports an error naming the plugin and the reason instead of "plugin not installed". (#5201)
+- An oversized `STEAMPIPE_MAX_PARALLEL` value, such as 3000000000, now stops `steampipe query` with an error naming the setting and its largest allowed value (2147483647), instead of a broken connection pool. (#5202)
+- `steampipe query` with a `--query-timeout` set now releases each query's timeout context as soon as the query finishes, instead of holding it until the timeout passes. (#5203)
+- A connection whose state could not be saved (the database transaction failed at commit) is now reported as failed, with an error naming the connection, instead of being shown as up to date. (#5206)
+- A query that Steampipe retries because a table is not found yet no longer leaves its connection busy, so the next query in the same session runs straight away. (#5207)
+
 ## [2.5.2] - 2026-11-21
 
 ### Security
