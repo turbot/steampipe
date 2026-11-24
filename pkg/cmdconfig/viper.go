@@ -120,9 +120,6 @@ func setBaseDefaults() error {
 		pconstants.ArgServiceCacheEnabled:  true,
 		pconstants.ArgCacheMaxTtl:          300,
 
-		// dashboard
-		pconstants.ArgDashboardStartTimeout: constants.DashboardStartTimeout.Seconds(),
-
 		// memory
 		pconstants.ArgMemoryMaxMbPlugin: 1024,
 		pconstants.ArgMemoryMaxMb:       1024,
@@ -163,28 +160,27 @@ func setDefaultsFromEnv() {
 
 	// a map of known environment variables to map to viper keys
 	envMappings := map[string]envMapping{
-		constants.EnvInstallDir:            {[]string{pconstants.ArgInstallDir}, String},
-		constants.EnvWorkspaceChDir:        {[]string{pconstants.ArgModLocation}, String},
-		constants.EnvTelemetry:             {[]string{pconstants.ArgTelemetry}, String},
-		constants.EnvUpdateCheck:           {[]string{pconstants.ArgUpdateCheck}, Bool},
-		constants.EnvPipesHost:             {[]string{pconstants.ArgPipesHost}, String},
-		constants.EnvPipesToken:            {[]string{pconstants.ArgPipesToken}, String},
-		constants.EnvPipesInstallDir:       {[]string{pconstants.ArgPipesInstallDir}, String},
-		constants.EnvSnapshotLocation:      {[]string{pconstants.ArgSnapshotLocation}, String},
-		constants.EnvWorkspaceDatabase:     {[]string{pconstants.ArgWorkspaceDatabase}, String},
-		constants.EnvServicePassword:       {[]string{pconstants.ArgServicePassword}, String},
-		constants.EnvDisplayWidth:          {[]string{pconstants.ArgDisplayWidth}, Int},
-		constants.EnvMaxParallel:           {[]string{pconstants.ArgMaxParallel}, Int},
-		constants.EnvQueryTimeout:          {[]string{pconstants.ArgDatabaseQueryTimeout}, Int},
-		constants.EnvDatabaseStartTimeout:  {[]string{pconstants.ArgDatabaseStartTimeout}, Int},
-		constants.EnvDatabaseSSLPassword:   {[]string{pconstants.ArgDatabaseSSLPassword}, String},
-		constants.EnvDashboardStartTimeout: {[]string{pconstants.ArgDashboardStartTimeout}, Int},
-		constants.EnvCacheTTL:              {[]string{pconstants.ArgCacheTtl}, Int},
-		constants.EnvCacheMaxTTL:           {[]string{pconstants.ArgCacheMaxTtl}, Int},
-		constants.EnvCacheMaxSize:          {[]string{pconstants.ArgMaxCacheSizeMb}, Int},
-		constants.EnvMemoryMaxMb:           {[]string{pconstants.ArgMemoryMaxMb}, Int},
-		constants.EnvMemoryMaxMbPlugin:     {[]string{pconstants.ArgMemoryMaxMbPlugin}, Int},
-		constants.EnvPluginStartTimeout:    {[]string{pconstants.ArgPluginStartTimeout}, Int},
+		constants.EnvInstallDir:           {[]string{pconstants.ArgInstallDir}, String},
+		constants.EnvWorkspaceChDir:       {[]string{pconstants.ArgModLocation}, String},
+		constants.EnvTelemetry:            {[]string{pconstants.ArgTelemetry}, String},
+		constants.EnvUpdateCheck:          {[]string{pconstants.ArgUpdateCheck}, Bool},
+		constants.EnvPipesHost:            {[]string{pconstants.ArgPipesHost}, String},
+		constants.EnvPipesToken:           {[]string{pconstants.ArgPipesToken}, String},
+		constants.EnvPipesInstallDir:      {[]string{pconstants.ArgPipesInstallDir}, String},
+		constants.EnvSnapshotLocation:     {[]string{pconstants.ArgSnapshotLocation}, String},
+		constants.EnvWorkspaceDatabase:    {[]string{pconstants.ArgWorkspaceDatabase}, String},
+		constants.EnvServicePassword:      {[]string{pconstants.ArgServicePassword}, String},
+		constants.EnvDisplayWidth:         {[]string{pconstants.ArgDisplayWidth}, Int},
+		constants.EnvMaxParallel:          {[]string{pconstants.ArgMaxParallel}, Int},
+		constants.EnvQueryTimeout:         {[]string{pconstants.ArgDatabaseQueryTimeout}, Int},
+		constants.EnvDatabaseStartTimeout: {[]string{pconstants.ArgDatabaseStartTimeout}, Int},
+		constants.EnvDatabaseSSLPassword:  {[]string{pconstants.ArgDatabaseSSLPassword}, String},
+		constants.EnvCacheTTL:             {[]string{pconstants.ArgCacheTtl}, Int},
+		constants.EnvCacheMaxTTL:          {[]string{pconstants.ArgCacheMaxTtl}, Int},
+		constants.EnvCacheMaxSize:         {[]string{pconstants.ArgMaxCacheSizeMb}, Int},
+		constants.EnvMemoryMaxMb:          {[]string{pconstants.ArgMemoryMaxMb}, Int},
+		constants.EnvMemoryMaxMbPlugin:    {[]string{pconstants.ArgMemoryMaxMbPlugin}, Int},
+		constants.EnvPluginStartTimeout:   {[]string{pconstants.ArgPluginStartTimeout}, Int},
 
 		// we need this value to go into different locations
 		constants.EnvCacheEnabled: {[]string{
