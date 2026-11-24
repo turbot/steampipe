@@ -19,11 +19,18 @@ var errUnusableRemoteURL = errors.New("cannot use the workspace database URL: ch
 //
 // A /, ? or # ends the authority, so a password that holds one pushes the separating @ after the authority. A
 // well-formed URL has its only @ inside the authority. So any @ after the authority, raw or percent-decoded, in the
-// path, a setting's name or value, or the fragment, is refused, and so is any fragment, which pgx ignores. Settings
+// path, a setting's name or value, or the fragment, is refused, and so is any #, which pgx reads as data. Settings
 // that do not parse are refused too: pgx drops them, and with them any @ they hold.
+//
+// pgx ends the user-info at the first @ before any /, and net/url at the last @. So a password that holds a raw @
+// puts its own text in pgx's host: a second @ before the first / is refused.
 func checkRemoteConnString(connString string) error {
 	u, err := url.Parse(connString)
 	if err != nil || strings.Contains(connString, "#") || strings.Contains(u.Path, "@") {
+		return errUnusableRemoteURL
+	}
+	_, afterScheme, _ := strings.Cut(connString, "://")
+	if beforePath, _, _ := strings.Cut(afterScheme, "/"); strings.Count(beforePath, "@") > 1 {
 		return errUnusableRemoteURL
 	}
 	settings, err := url.ParseQuery(u.RawQuery)
