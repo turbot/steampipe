@@ -33,7 +33,7 @@ jobs:
       # this is required, check golangci-lint-action docs
       - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
-          go-version: '1.26.10'
+          go-version: '1.26.11'
           cache: false # setup-go v4 caches by default, do not change this parameter, check golangci-lint-action doc: https://github.com/golangci/golangci-lint-action/pull/704
 
       - name: golangci-lint
