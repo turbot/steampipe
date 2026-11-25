@@ -9,8 +9,6 @@ permissions:
 
 env:
   STEAMPIPE_UPDATE_CHECK: false
-  SPIPETOOLS_PG_CONN_STRING: ${{ secrets.SPIPETOOLS_PG_CONN_STRING }}
-  SPIPETOOLS_TOKEN: ${{ secrets.SPIPETOOLS_TOKEN }}
   STEAMPIPE_LOG: info
 
 jobs:
@@ -127,6 +125,8 @@ jobs:
         uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 1.26.10
+          # This job holds the Pipes test secrets (the test suite step), so it neither restores nor saves a cache.
+          cache: false
 
       - name: Prepare for downloads
         id: prepare-for-downloads
@@ -173,6 +173,10 @@ jobs:
         id: run-test-suite
         timeout-minutes: 15
         continue-on-error: true
+        # The cloud tests read these. Only this step gets them, so the build job holds no secret and keeps its cache.
+        env:
+          SPIPETOOLS_PG_CONN_STRING: ${{ secrets.SPIPETOOLS_PG_CONN_STRING }}
+          SPIPETOOLS_TOKEN: ${{ secrets.SPIPETOOLS_TOKEN }}
         run: |
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
           $GITHUB_WORKSPACE/tests/acceptance/run.sh ${{ matrix.test_block }}.bats

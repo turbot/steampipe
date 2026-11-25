@@ -15,7 +15,7 @@ jobs:
 
   acceptance:
     uses: ./.github/workflows/11-test-acceptance.yaml
-    # The acceptance workflow reads repository secrets at its top level.
+    # The acceptance workflow's test suite step reads repository secrets.
     secrets: inherit
 
   ci:
