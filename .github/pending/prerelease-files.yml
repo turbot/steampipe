@@ -21,4 +21,5 @@ jobs:
       commit: ${{ github.sha }}
       tag: ${{ inputs.tag }}
       goreleaser-config: .goreleaser.yml
-      artifact: prerelease-assets
+      # The shared build uploads under exactly this name, and the publish step looks for <assets>-<tag>.
+      artifact: prerelease-assets-${{ inputs.tag }}
