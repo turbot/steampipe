@@ -140,6 +140,9 @@ func getSchemaRecordsFromRows(rows pgx.Rows) ([]schemaRecord, error) {
 		}
 		records = append(records, t)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return records, nil
 }
