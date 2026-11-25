@@ -1,0 +1,89 @@
+# Makes a numbered prerelease (v2.6.0-beta.1) of the next version from a commit on develop: a tag made by the release App and a
+# GitHub Release marked as a prerelease, with the same files a release carries. It makes no commit, changelog section, PR, Homebrew
+# update or steampipe.io page.
+# Start it by hand, on main, as a member of turbot/pipelings-release-approvers:
+#   gh workflow run prerelease.yml --ref main -f commit=<tip of develop> -f version=2.6.0 -f pre=beta
+# It runs only from main, and main takes only release PRs, so this file reaches main with the next release.
+# The commit's code is built by prerelease-files.yml in a run on develop, never in this run on main, which holds the release key.
+name: Prerelease
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: The full 40-character commit to make the prerelease of. It must be in the history of the branch.
+        required: true
+        type: string
+      branch:
+        description: The branch the commit is on
+        required: false
+        type: string
+        default: develop
+      version:
+        description: The version still to come, X.Y.Z, newer than the newest release
+        required: true
+        type: string
+      pre:
+        description: The kind of prerelease. The number after it is the next free one.
+        required: true
+        type: choice
+        options: [alpha, beta, rc]
+        default: beta
+
+permissions: {}
+
+jobs:
+  start:
+    # GitHub checks every job of the called workflow against this grant, the skipped publish job too, so a smaller grant fails at startup.
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+      id-token: write
+    uses: turbot/shipyard-workflows/.github/workflows/prerelease.yml@v0
+    with:
+      step: start
+      commit: ${{ inputs.commit }}
+      branch: ${{ inputs.branch }}
+      version: ${{ inputs.version }}
+      pre: ${{ inputs.pre }}
+      approvers: turbot/pipelings-release-approvers
+    secrets:
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+  build:
+    # Starts prerelease-files.yml on the branch and waits for it. No secret, no checkout of this repo's code.
+    needs: start
+    permissions:
+      actions: write
+      contents: read
+      id-token: write
+    uses: turbot/shipyard-workflows/.github/workflows/prerelease-build.yml@v0
+    with:
+      commit: ${{ inputs.commit }}
+      branch: ${{ inputs.branch }}
+      version: ${{ inputs.version }}
+      pre: ${{ inputs.pre }}
+      tag: ${{ needs.start.outputs.tag }}
+      assets: prerelease-assets
+      workflow: prerelease-files.yml
+  publish:
+    needs: [start, build]
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+      id-token: write
+    uses: turbot/shipyard-workflows/.github/workflows/prerelease.yml@v0
+    with:
+      step: publish
+      commit: ${{ inputs.commit }}
+      branch: ${{ inputs.branch }}
+      version: ${{ inputs.version }}
+      pre: ${{ inputs.pre }}
+      approvers: turbot/pipelings-release-approvers
+      tag: ${{ needs.start.outputs.tag }}
+      assets: prerelease-assets
+      build-workflow: prerelease-files.yml
+      build-run: ${{ needs.build.outputs.run }}
+    secrets:
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
