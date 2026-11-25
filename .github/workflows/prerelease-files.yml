@@ -1,0 +1,25 @@
+# Builds the files of a prerelease at the tip of the branch it is started on, with goreleaser at the tag's version, and uploads them as
+# the artifact prerelease-assets-<tag>. Started by prerelease.yml (its `build` job) on develop. It holds no secret and names no
+# environment: the commit's code runs here, never in the run on main that holds the release key.
+name: Prerelease files
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The prerelease's tag (v2.6.0-beta.1), as the start job of prerelease.yml named it
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  files:
+    uses: turbot/shipyard-workflows/.github/workflows/go-cli-prerelease-build.yml@v0
+    with:
+      commit: ${{ github.sha }}
+      tag: ${{ inputs.tag }}
+      goreleaser-config: .goreleaser.yml
+      # The shared build uploads under exactly this name, and the publish step looks for <assets>-<tag>.
+      artifact: prerelease-assets-${{ inputs.tag }}
