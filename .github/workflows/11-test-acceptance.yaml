@@ -62,8 +62,6 @@ jobs:
         run: |
           cd steampipe
           goreleaser release --clean --snapshot --parallelism 2 --config=.acceptance.goreleaser.yml
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Move build artifacts
         run: |
