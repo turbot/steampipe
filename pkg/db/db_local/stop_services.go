@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	psutils "github.com/shirou/gopsutil/process"
 	putils "github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/v2/pkg/constants"
@@ -161,8 +162,6 @@ WHERE
 GROUP BY application_name
 `
 
-	counts := &ClientCount{}
-
 	log.Println("[INFO] ClientConnectionAppName: ", runtime.ClientConnectionAppName)
 	rows, err := client.Query(ctx, query, "client backend", runtime.ClientConnectionAppName)
 	if err != nil {
@@ -170,6 +169,12 @@ GROUP BY application_name
 	}
 	defer rows.Close()
 
+	return countClientsFromRows(rows)
+}
+
+// countClientsFromRows adds up the (application_name, count) rows of countClients's query
+func countClientsFromRows(rows pgx.Rows) (*ClientCount, error) {
+	counts := &ClientCount{}
 	for rows.Next() {
 		var appName string
 		var count int

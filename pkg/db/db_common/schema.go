@@ -29,7 +29,11 @@ func LoadForeignSchemaNames(ctx context.Context, conn *pgx.Conn) ([]string, erro
 	if err != nil {
 		return nil, err
 	}
+	return getForeignSchemaNamesFromRows(res)
+}
 
+// getForeignSchemaNamesFromRows returns the sorted foreign schema names in res, leaving out the internal and legacy command schemas
+func getForeignSchemaNamesFromRows(res pgx.Rows) ([]string, error) {
 	var foreignSchemaNames []string
 	var schema string
 	for res.Next() {
