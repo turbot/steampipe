@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/v2/modconfig"
@@ -51,15 +52,30 @@ func SetUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error
 	}
 
 	// set the search path for all these roles
+	queries, err := userSearchPathQueries(rows, escapedSearchPath)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Printf("[TRACE] user search path sql: %v", queries)
+	_, err = ExecuteSqlInTransaction(ctx, conn.Conn(), queries...)
+	if err != nil {
+		return nil, err
+	}
+	return searchPath, nil
+}
+
+// userSearchPathQueries returns the statements that set escapedSearchPath for each user in rows, except root
+func userSearchPathQueries(rows pgx.Rows, escapedSearchPath []string) ([]string, error) {
+	users, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
+		return nil, err
+	}
 	var queries = []string{
 		"LOCK TABLE pg_user IN SHARE ROW EXCLUSIVE MODE;",
 	}
 
-	for rows.Next() {
-		var user string
-		if err := rows.Scan(&user); err != nil {
-			return nil, err
-		}
+	for _, user := range users {
 		if user == "root" {
 			continue
 		}
@@ -69,13 +85,7 @@ func SetUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error
 			strings.Join(escapedSearchPath, ","),
 		))
 	}
-
-	log.Printf("[TRACE] user search path sql: %v", queries)
-	_, err = ExecuteSqlInTransaction(ctx, conn.Conn(), queries...)
-	if err != nil {
-		return nil, err
-	}
-	return searchPath, nil
+	return queries, nil
 }
 
 // GetDefaultSearchPath builds default search path from the connection schemas, book-ended with public and internal
