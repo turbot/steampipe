@@ -195,6 +195,10 @@ func countClientsFromRows(rows pgx.Rows) (*ClientCount, error) {
 			counts.PluginManagerClients += count
 		}
 	}
+	// a query that fails partway stops Next, and leaves its error here
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return counts, nil
 }

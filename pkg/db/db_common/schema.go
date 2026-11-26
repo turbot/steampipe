@@ -34,12 +34,12 @@ func LoadForeignSchemaNames(ctx context.Context, conn *pgx.Conn) ([]string, erro
 
 // getForeignSchemaNamesFromRows returns the sorted foreign schema names in res, leaving out the internal and legacy command schemas
 func getForeignSchemaNamesFromRows(res pgx.Rows) ([]string, error) {
+	schemas, err := pgx.CollectRows(res, pgx.RowTo[string])
+	if err != nil {
+		return nil, err
+	}
 	var foreignSchemaNames []string
-	var schema string
-	for res.Next() {
-		if err := res.Scan(&schema); err != nil {
-			return nil, err
-		}
+	for _, schema := range schemas {
 		// ignore internal schema and legacy command schema
 		if schema != constants.InternalSchema && schema != constants.LegacyCommandSchema {
 			foreignSchemaNames = append(foreignSchemaNames, schema)

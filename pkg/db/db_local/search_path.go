@@ -67,15 +67,15 @@ func SetUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error
 
 // userSearchPathQueries returns the statements that set escapedSearchPath for each user in rows, except root
 func userSearchPathQueries(rows pgx.Rows, escapedSearchPath []string) ([]string, error) {
+	users, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
+		return nil, err
+	}
 	var queries = []string{
 		"LOCK TABLE pg_user IN SHARE ROW EXCLUSIVE MODE;",
 	}
 
-	for rows.Next() {
-		var user string
-		if err := rows.Scan(&user); err != nil {
-			return nil, err
-		}
+	for _, user := range users {
 		if user == "root" {
 			continue
 		}
