@@ -31,7 +31,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
-          go-version: 1.26.10
+          go-version: 1.26.11
 
       - name: Fetching Go Cache Paths
         id: go-cache-paths
@@ -122,7 +122,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
-          go-version: 1.26.10
+          go-version: 1.26.11
           # This job holds the Pipes test secrets (the test suite step), so it neither restores nor saves a cache.
           cache: false
 
