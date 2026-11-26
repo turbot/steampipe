@@ -6,8 +6,8 @@
 # - Three acceptance files CI runs, service, force_stop and ssl: they call
 #   `steampipe service stop --force`, which stops every steampipe service on the machine, so on a
 #   worker they would stop other runs' services and the owner's own (see never_run). CI runs them.
-# - cloud: it reaches Pipes workspaces with a real token. With no token it skips every test, so it
-#   proves nothing on a worker. CI runs it.
+# - cloud and snapshot: they reach Pipes workspaces with a real token. With no token they skip every
+#   test, so they prove nothing on a worker. CI runs them.
 
 ci_is_proof: false
 
@@ -56,7 +56,7 @@ checks:
   lint:
     run: 'd=$(mktemp -d) && GOBIN="$d" go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 && GOOS=linux "$d/golangci-lint" run --timeout=10m'
     cost: 2
-  # Every acceptance file CI runs, in CI's order, but the four left out above. Builds this
+  # Every acceptance file CI runs, in CI's order, but the five left out above. Builds this
   # checkout into a temporary directory; each file gets its own temporary install directory with
   # the chaos plugins from the public registry, and both are removed when it ends.
   acceptance:
