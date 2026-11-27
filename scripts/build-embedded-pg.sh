@@ -6,17 +6,17 @@
 # Follows design/embedded_postgres_build_instructions.md (macOS §3.2-3.4,
 # Linux §3.5-3.6) and adds what that recipe lacks: pruning to the five shipped
 # binaries, bundling OpenSSL (and ICU for PG16+) with relocatable library
-# paths, and an ad-hoc re-sign on macOS. On macOS it builds OpenSSL from
-# source (Homebrew's dylibs carry the build host's minimum macOS version)
+# paths, and an ad-hoc re-sign on macOS. On macOS it builds OpenSSL and ICU
+# from source (Homebrew's dylibs carry the build host's minimum macOS version)
 # instead of using Homebrew's. It downloads the PostgreSQL source from
-# ftp.postgresql.org and, on macOS, OpenSSL from github.com, and checks both
-# against SHA-256 checksums. To build a different PostgreSQL version only
-# PG_VERSION changes.
+# ftp.postgresql.org and, on macOS, OpenSSL and ICU from github.com, and
+# checks each against a pinned SHA-256. To build a different PostgreSQL
+# version only PG_VERSION changes.
 #
-# Required tools: macOS - Xcode command line tools, and Homebrew icu4c for
-# PG16+. Linux - build-essential, flex, bison, curl, pkg-config, perl
-# (shasum), libreadline-dev, zlib1g-dev, libssl-dev, patchelf, file (and
-# libicu-dev for PG16+). Run it on the platform it builds for.
+# Required tools: macOS - Xcode command line tools. Linux - build-essential,
+# flex, bison, curl, pkg-config, perl (shasum), libreadline-dev, zlib1g-dev,
+# libssl-dev, patchelf, file (and libicu-dev for PG16+). Run it on the
+# platform it builds for.
 #
 # Usage:
 #   scripts/build-embedded-pg.sh [PG_VERSION] [OUTPUT_DIR]
@@ -138,23 +138,67 @@ if [[ "$OS" == "Darwin" ]]; then
 
   # PostgreSQL 16+ builds with ICU by default and `configure` hard-fails
   # without icu-uc/icu-i18n (PG18 in particular). PG14/15 build fine
-  # without it (no ICU flag is passed). When
-  # building >=16, require icu4c (keg-only on Homebrew) and put its
-  # pkg-config on PKG_CONFIG_PATH, mirroring how Homebrew builds its own
-  # postgresql@18 (--with-icu + icu4c pkgconfig).
+  # without it (no ICU flag is passed).
+  #
+  # ICU is built from source for the same reason as OpenSSL: Homebrew's
+  # dylibs carry the build host's minimum macOS version (26.0 on a current
+  # Mac), so the package would fail to load on the oldest macOS Steampipe
+  # supports. The ICU major is a collation-stability contract - bumping it
+  # can change text sort order - so the release is pinned by checksum here.
   PG_MAJOR="${PG_VERSION%%.*}"
   ICU_CONFIGURE=()
   if [[ "$PG_MAJOR" -ge 16 ]]; then
-    ICU_PREFIX="$(brew --prefix icu4c 2>/dev/null || true)"
-    if [[ -z "$ICU_PREFIX" || ! -d "$ICU_PREFIX/lib/pkgconfig" ]]; then
-      # fall back to the highest installed versioned icu4c keg
-      ICU_PREFIX="$(ls -d "$(brew --prefix)"/opt/icu4c@* 2>/dev/null | sort -V | tail -1 || true)"
-    fi
-    if [[ -z "$ICU_PREFIX" || ! -d "$ICU_PREFIX/lib/pkgconfig" ]]; then
-      echo "ERROR: PostgreSQL $PG_VERSION needs ICU but icu4c was not found; run 'brew install icu4c'" >&2
-      exit 1
-    fi
+    ICU_VERSION="79.1"
+    ICU_SHA256="06fa63ecb521048f8082f12ad988f6b678d90cbd88aafce24cbc94902b191d99"
+    ICU_TARBALL="icu4c-${ICU_VERSION}-sources.tgz"
+    ICU_PREFIX="$OUTPUT_DIR/icu-${ICU_VERSION}-darwin-${ARCH}"
+    # The latter-day ICU tarballs unpack to a version-independent `icu/`
+    # directory, so the extraction is keyed off the pinned tarball name
+    # instead.
+    (
+      cd "$OUTPUT_DIR"
+      fetch_verified "https://github.com/unicode-org/icu/releases/download/release-${ICU_VERSION/-/.}/${ICU_TARBALL}" \
+        "$ICU_TARBALL" "$ICU_SHA256"
+      rm -rf icu "$ICU_PREFIX"
+      tar -xf "$ICU_TARBALL"
+      cd icu/source
+      # Shared libraries, matching what Homebrew's icu4c provided before and
+      # what the bundling step below relocates; --with-library-bits=64 keeps
+      # the build at the single architecture the packages ship.
+      # --disable-tests/--disable-samples leave only icu-uc and icu-i18n,
+      # which is all PostgreSQL links.
+      ./configure --prefix="$ICU_PREFIX" --libdir="$ICU_PREFIX/lib" \
+        --enable-shared --disable-static \
+        --disable-tests --disable-samples \
+        --with-library-bits=64
+      make -j"$(sysctl -n hw.ncpu)"
+      make install
+      # ICU installs one real file per library under the full-version name
+      # (libicuuc.79.1.dylib), symlinks the major-soname and unversioned
+      # entries to it, and records the install name as the bare major soname
+      # ("libicuuc.79.dylib"). A linker resolving `-licuuc` reads that install
+      # name, so anything built against this prefix stores a relative name
+      # dyld can only resolve from the current directory. Homebrew's icu4c
+      # ships the same layout but with an `@rpath/libicu*.79.dylib` install
+      # name, which preserves relocatability and matches what the bundling
+      # step below copies. Set the soname form on the real file - symlinks
+      # stay symlinks, so the copies cannot diverge.
+      for stem in libicudata libicuuc libicui18n; do
+        major="$stem.${ICU_VERSION%%.*}.dylib"
+        for f in "$ICU_PREFIX/lib/${stem}".*.*.dylib; do
+          [[ -f "$f" && ! -L "$f" ]] || continue
+          install_name_tool -id "@rpath/$major" "$f"
+          for dep in libicudata libicuuc; do
+            install_name_tool -change "${dep}.${ICU_VERSION%%.*}.dylib" \
+              "@loader_path/${dep}.${ICU_VERSION%%.*}.dylib" "$f" 2>/dev/null || true
+          done
+        done
+      done
+    )
     echo "== PG$PG_MAJOR: building --with-icu using $ICU_PREFIX"
+    # `configure --with-icu` resolves ICU through pkg-config (PG18 hard-fails
+    # otherwise), so point it at the freshly built .pc files instead of the
+    # --with-includes/--with-libraries pair, which only covers OpenSSL here.
     export PKG_CONFIG_PATH="$ICU_PREFIX/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
     ICU_CONFIGURE=(--with-icu)
   fi
@@ -241,14 +285,17 @@ if [[ "$OS" == "Darwin" ]]; then
         cp -L "$src" "$BUNDLE_ROOT/$LIB_SUBDIR/$(basename "$src")"
         install_name_tool -id "@rpath/$(basename "$src")" "$BUNDLE_ROOT/$LIB_SUBDIR/$(basename "$src")"
       done
-      # rewrite every reference into the build-machine ICU prefix:
-      # within a bundled ICU lib -> @loader_path (siblings); elsewhere
-      # (the bin/* binaries) -> @rpath.
+      # rewrite every reference to the ICU libraries: within a bundled ICU
+      # lib -> @loader_path (siblings); elsewhere (the bin/* binaries) ->
+      # @rpath. References carry the @rpath form because the from-source
+      # libraries above were given that install name; the prefix and
+      # Homebrew-keg patterns are kept for a prefix that still points at
+      # Homebrew's icu4c.
       relocate_icu() {
         local f="$1" anchor="$2"
         otool -L "$f" | awk 'NR>1{print $1}' | while read -r dep; do
           case "$dep" in
-            "$ICU_PREFIX"/*|*/icu4c*/lib/libicu*)
+            "$ICU_PREFIX"/*|*/icu4c*/lib/libicu*|@rpath/libicu*)
               install_name_tool -change "$dep" "$anchor/$(basename "$dep")" "$f" 2>/dev/null || true ;;
           esac
         done
