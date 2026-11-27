@@ -24,3 +24,5 @@ jobs:
     uses: turbot/shipyard-workflows/.github/workflows/announce.yml@v0
     with:
       tag: ${{ inputs.tag || github.ref_name }}
+      # The fleet's release-PR hook opens the release PR as the fleet's turbot App, user ID 340042353, as the ship caller's `automation-ids` says.
+      automation-ids: "340042353"

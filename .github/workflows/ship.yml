@@ -17,6 +17,7 @@ jobs:
       id-token: write
     uses: turbot/shipyard-workflows/.github/workflows/go-cli-ship.yml@v0
     with:
+      automation-ids: "340042353"
       goreleaser-config: .goreleaser.yml
   tag:
     needs: ship
@@ -29,6 +30,7 @@ jobs:
     uses: turbot/shipyard-workflows/.github/workflows/tag.yml@v0
     with:
       ship-result: ${{ needs.ship.result }}
+      automation-ids: "340042353"
       product: Steampipe
       assets: release-assets
     secrets:
@@ -44,6 +46,7 @@ jobs:
       id-token: write
     uses: turbot/shipyard-workflows/.github/workflows/homebrew.yml@v0
     with:
+      automation-ids: "340042353"
       tap: turbot/homebrew-tap
       formula: steampipe
       versioned: true
@@ -66,6 +69,7 @@ jobs:
       id-token: write
     uses: turbot/shipyard-workflows/.github/workflows/changelog-page.yml@v0
     with:
+      automation-ids: "340042353"
       page-targets: turbot/steampipe.io:content/changelog/
     secrets:
       RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
