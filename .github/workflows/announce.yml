@@ -24,5 +24,3 @@ jobs:
     uses: turbot/shipyard-workflows/.github/workflows/announce.yml@v0
     with:
       tag: ${{ inputs.tag || github.ref_name }}
-      # The fleet's release-PR hook opens the release PR as the fleet App, as the ship caller's `automation-logins` says.
-      automation-logins: turbot-agent-fleet[bot]
